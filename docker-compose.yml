@@ -1,0 +1,20 @@
+services:
+
+  eureka-server:
+    build: ./services/eureka-server
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - jobtrackr-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8761/"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+
+networks:
+  jobtrackr-network:
+    driver: bridge
