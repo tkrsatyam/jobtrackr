@@ -10,9 +10,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.apache.http.HttpHeaders;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -61,11 +61,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        request = new MutableHttpServletRequest(request);
-        ((MutableHttpServletRequest) request).putHeader("X-User-Id", claims.getSubject());
-        ((MutableHttpServletRequest) request).putHeader("X-User-Email", claims.get("email", String.class));
-        ((MutableHttpServletRequest) request).putHeader("X-User-Role", claims.get("role", String.class));
+        MutableHttpServletRequest mutableRequest = new MutableHttpServletRequest(request);
+        mutableRequest.putHeader("X-User-Id", claims.getSubject());
+        mutableRequest.putHeader("X-User-Email", claims.get("email", String.class));
+        mutableRequest.putHeader("X-User-Role", claims.get("role", String.class));
 
-        filterChain.doFilter(request, response);
+        filterChain.doFilter(mutableRequest, response);
     }
 }
