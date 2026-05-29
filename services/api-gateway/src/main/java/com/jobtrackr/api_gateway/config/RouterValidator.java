@@ -1,5 +1,6 @@
 package com.jobtrackr.api_gateway.config;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 
@@ -15,8 +16,8 @@ public class RouterValidator {
             "/api/auth/oauth2"
     );
 
-    public boolean isSecured(ServerHttpRequest request) {
+    public boolean isSecured(HttpServletRequest request) {
         return OPEN_ENDPOINTS.stream()
-                .noneMatch(uri -> request.getURI().getPath().contains(uri));
+                .noneMatch(uri -> request.getRequestURI().contains(uri));
     }
 }
