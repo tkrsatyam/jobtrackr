@@ -73,8 +73,8 @@ services:
       - JWT_SECRET=${JWT_SECRET}
 #      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
 #      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
     depends_on:
       eureka-server:
         condition: service_healthy
