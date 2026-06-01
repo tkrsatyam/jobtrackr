@@ -8,6 +8,7 @@ import com.jobtrackr.user_service.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -47,10 +48,11 @@ public class UserService {
         userRepository.save(user);
     }
 
+    @Transactional
     public void deleteAccount(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        refreshTokenRepository.revokeAllByUser(user);
+        refreshTokenRepository.deleteAllByUser(user);
         userRepository.delete(user);
     }
 
