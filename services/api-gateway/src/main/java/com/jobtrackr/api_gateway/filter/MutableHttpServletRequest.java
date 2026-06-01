@@ -24,8 +24,19 @@ public class MutableHttpServletRequest extends HttpServletRequestWrapper {
     }
 
     @Override
+    public Enumeration<String> getHeaders(String name) {
+        String customValue = customHeaders.get(name);
+        if (customValue != null) {
+            return Collections.enumeration(List.of(customValue));
+        }
+        Enumeration<String> original = super.getHeaders(name);
+        return original != null ? original : Collections.emptyEnumeration();
+    }
+
+    @Override
     public Enumeration<String> getHeaderNames() {
         List<String> names = Collections.list(super.getHeaderNames());
+        names.removeIf(name -> super.getHeader(name) == null);
         names.addAll(customHeaders.keySet());
         return Collections.enumeration(names);
     }
