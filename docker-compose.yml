@@ -28,6 +28,25 @@ services:
       timeout: 3s
       retries: 5
 
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: jobtrackr_users
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - jobtrackr-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   api-gateway:
     build: ./services/api-gateway
     container_name: api-gateway
@@ -44,6 +63,31 @@ services:
     networks:
       - jobtrackr-network
 
+  user-service:
+    build: ./services/user-service
+    container_name: user-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - JWT_SECRET=${JWT_SECRET}
+#      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+#      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - jobtrackr-network
+
 networks:
   jobtrackr-network:
     driver: bridge
+
+volumes:
+  postgres_data:
