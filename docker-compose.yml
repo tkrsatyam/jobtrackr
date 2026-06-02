@@ -39,6 +39,7 @@ services:
       POSTGRES_DB: jobtrackr_users
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db:/docker-entrypoint-initdb.d
     networks:
       - jobtrackr-network
     healthcheck:
