@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -17,7 +19,7 @@ public class AuthResponse {
     @Builder.Default
     private String tokenType = "Bearer";
 
-    private Long userId;
+    private UUID userId;
     private String email;
     private String fullName;
     private String role;

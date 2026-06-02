@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -16,25 +18,25 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/me")
-    public ResponseEntity<UserProfileDTO> getProfile(@RequestHeader("X-User-Id") Long userId) {
+    public ResponseEntity<UserProfileDTO> getProfile(@RequestHeader("X-User-Id") UUID userId) {
         return ResponseEntity.ok(userService.getProfile(userId));
     }
 
     @PutMapping("/me")
-    public ResponseEntity<UserProfileDTO> updateProfile(@RequestHeader("X-User-Id") Long userId,
+    public ResponseEntity<UserProfileDTO> updateProfile(@RequestHeader("X-User-Id") UUID userId,
                                                         @RequestBody UserProfileDTO dto) {
         return ResponseEntity.ok(userService.updateProfile(userId, dto));
     }
 
     @PutMapping("/me/password")
-    public ResponseEntity<Void> changePassword(@RequestHeader("X-User-Id") Long userId,
+    public ResponseEntity<Void> changePassword(@RequestHeader("X-User-Id") UUID userId,
                                                @Valid @RequestBody ChangePasswordRequest request) {
         userService.changePassword(userId, request);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/me")
-    public ResponseEntity<Void> deleteAccount(@RequestHeader("X-User-Id") Long userId) {
+    public ResponseEntity<Void> deleteAccount(@RequestHeader("X-User-Id") UUID userId) {
         userService.deleteAccount(userId);
         return ResponseEntity.noContent().build();
     }
