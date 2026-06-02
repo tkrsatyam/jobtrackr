@@ -7,8 +7,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "users")
@@ -19,19 +21,16 @@ import java.time.LocalDateTime;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @UuidGenerator
+    private UUID id;
 
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column
     private String password;
 
-    @Column
     private String fullName;
 
-    @Column
     private String avatarUrl;
 
     @Enumerated(EnumType.STRING)
@@ -43,7 +42,6 @@ public class User {
     @Builder.Default
     private Role role = Role.USER;
 
-    @Column
     private String providerId;
 
     @CreationTimestamp
