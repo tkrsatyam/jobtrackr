@@ -10,6 +10,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -18,13 +20,13 @@ public class UserService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UserProfileDTO getProfile(Long usedId) {
-        User user = userRepository.findById(usedId)
+    public UserProfileDTO getProfile(UUID userId) {
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return toDto(user);
     }
 
-    public UserProfileDTO updateProfile(Long userId, UserProfileDTO dto) {
+    public UserProfileDTO updateProfile(UUID userId, UserProfileDTO dto) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         user.setFullName(dto.getFullName());
@@ -32,7 +34,7 @@ public class UserService {
         return toDto(userRepository.save(user));
     }
 
-    public void changePassword(Long userId, ChangePasswordRequest request) {
+    public void changePassword(UUID userId, ChangePasswordRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -49,7 +51,7 @@ public class UserService {
     }
 
     @Transactional
-    public void deleteAccount(Long userId) {
+    public void deleteAccount(UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         refreshTokenRepository.deleteAllByUser(user);
