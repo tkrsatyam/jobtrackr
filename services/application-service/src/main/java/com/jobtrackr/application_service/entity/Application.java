@@ -86,11 +86,11 @@ public class Application {
     private LocalDateTime updatedAt;
 
     @Builder.Default
-    @OneToMany(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<ApplicationStatusHistory> statusHistory = new ArrayList<>();
 
     @Builder.Default
-    @OneToMany(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<ApplicationTag> tags = new ArrayList<>();
 
     @Builder.Default

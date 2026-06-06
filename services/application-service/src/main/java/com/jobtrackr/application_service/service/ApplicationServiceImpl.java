@@ -44,14 +44,13 @@ public class ApplicationServiceImpl implements ApplicationService{
     public ApplicationResponse createApplication(CreateApplicationRequest request, HttpServletRequest httpRequest) {
 
         UUID userId = userContextHolder.getUserId(httpRequest);
-
         Application application = applicationMapper.toEntity(request, userId);
-        application = applicationRepository.save(application);
 
         ApplicationStatusHistory initialHistory = applicationMapper.toHistoryEntity(
                 application, application.getStatus(), "Application created");
-        statusHistoryRepository.save(initialHistory);
+        application.getStatusHistory().add(initialHistory);
 
+        application = applicationRepository.save(application);
         eventProducer.sendApplicationCreated(ApplicationCreatedEvent.builder()
                 .applicationId(application.getApplicationId())
                 .userId(application.getUserId())
@@ -147,14 +146,14 @@ public class ApplicationServiceImpl implements ApplicationService{
 
         ApplicationStatus previousStatus = application.getStatus();
         transitionValidator.validate(previousStatus, request.getStatus());
-
         application.setStatus(request.getStatus());
-        application = applicationRepository.save(application);
+
 
         ApplicationStatusHistory history = applicationMapper.toHistoryEntity(
-                application, application.getStatus(), request.getNote());
-        statusHistoryRepository.save(history);
+                application, request.getStatus(), request.getNote());
+        application.getStatusHistory().add(history);
 
+        application = applicationRepository.save(application);
         eventProducer.sendStatusUpdated(StatusUpdatedEvent.builder()
                 .applicationId(applicationId)
                 .userId(userId)
@@ -272,7 +271,7 @@ public class ApplicationServiceImpl implements ApplicationService{
 
                 ApplicationStatusHistory history = applicationMapper.toHistoryEntity(
                         application, request.getStatus(), "Bulk status change");
-                statusHistoryRepository.save(history);
+                application.getStatusHistory().add(history);
 
                 eventProducer.sendStatusUpdated(StatusUpdatedEvent.builder()
                         .applicationId(application.getApplicationId())
