@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/applications/{id}/tag")
+@RequestMapping("/api/applications/{id}/tags")
 @RequiredArgsConstructor
 public class ApplicationTagController {
 

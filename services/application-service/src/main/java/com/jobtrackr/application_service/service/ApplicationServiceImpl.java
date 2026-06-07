@@ -85,15 +85,14 @@ public class ApplicationServiceImpl implements ApplicationService{
                 .where(ApplicationSpecification.forUser(userId))
                 .and(ApplicationSpecification.notDeleted());
 
-        if (filter.getStatus() != null) spec.and(ApplicationSpecification.hasStatus(filter.getStatus()));
-        if (filter.getPriority() != null) spec.and(ApplicationSpecification.hasPriority(filter.getPriority()));
-        if (filter.getWorkMode() != null) spec.and(ApplicationSpecification.hasWorkMode(filter.getWorkMode()));
-        if (filter.getIsArchived() != null) spec.and(ApplicationSpecification.isArchived(filter.getIsArchived()));
-        if (filter.getStatus() != null) spec.and(ApplicationSpecification.hasStatus(filter.getStatus()));
-        if (filter.getCompany() != null) spec.and(ApplicationSpecification.companyContains(filter.getCompany()));
-        if (filter.getRole() != null) spec.and(ApplicationSpecification.roleContains(filter.getRole()));
-        if (filter.getAppliedAfter() != null) spec.and(ApplicationSpecification.appliedAfter(filter.getAppliedAfter()));
-        if (filter.getAppliedBefore() != null) spec.and(ApplicationSpecification.appliedBefore(filter.getAppliedBefore()));
+        if (filter.getStatus() != null) spec = spec.and(ApplicationSpecification.hasStatus(filter.getStatus()));
+        if (filter.getPriority() != null) spec = spec.and(ApplicationSpecification.hasPriority(filter.getPriority()));
+        if (filter.getWorkMode() != null) spec = spec.and(ApplicationSpecification.hasWorkMode(filter.getWorkMode()));
+        if (filter.getIsArchived() != null) spec = spec.and(ApplicationSpecification.isArchived(filter.getIsArchived()));
+        if (filter.getCompany() != null) spec = spec.and(ApplicationSpecification.companyContains(filter.getCompany()));
+        if (filter.getRole() != null) spec = spec.and(ApplicationSpecification.roleContains(filter.getRole()));
+        if (filter.getAppliedAfter() != null) spec = spec.and(ApplicationSpecification.appliedAfter(filter.getAppliedAfter()));
+        if (filter.getAppliedBefore() != null) spec = spec.and(ApplicationSpecification.appliedBefore(filter.getAppliedBefore()));
 
         return applicationRepository.findAll(spec, pageable)
                 .map(applicationMapper::toResponse);
@@ -199,7 +198,7 @@ public class ApplicationServiceImpl implements ApplicationService{
                     .tag(normalizedTag)
                     .build();
             application.getTags().add(newTag);
-            application =  applicationRepository.save(application);
+            application = applicationRepository.save(application);
         }
 
         return applicationMapper.toResponse(application);

@@ -73,8 +73,8 @@ public class ApplicationController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApplicationResponse> updateApplication(@PathVariable UUID id, UpdateApplicationRequest request,
-                                                                 HttpServletRequest httpRequest) {
+    public ResponseEntity<ApplicationResponse> updateApplication(
+            @PathVariable UUID id, @RequestBody UpdateApplicationRequest request, HttpServletRequest httpRequest) {
         return ResponseEntity.ok(applicationService.updateApplication(id, request, httpRequest));
     }
 

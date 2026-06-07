@@ -19,8 +19,8 @@ public class ApplicationStatusController {
     private final ApplicationService applicationService;
 
     @PutMapping
-    public ResponseEntity<ApplicationResponse> changeStatus(@PathVariable UUID id, ChangeStatusRequest request,
-                                                            HttpServletRequest httpRequest) {
+    public ResponseEntity<ApplicationResponse> changeStatus(
+            @PathVariable UUID id, @RequestBody ChangeStatusRequest request, HttpServletRequest httpRequest) {
         return ResponseEntity.ok(applicationService.changeStatus(id, request, httpRequest));
     }
 
