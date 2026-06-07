@@ -39,6 +39,7 @@ services:
       POSTGRES_DB: jobtrackr_users
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db:/docker-entrypoint-initdb.d
     networks:
       - jobtrackr-network
     healthcheck:
@@ -80,6 +81,27 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - jobtrackr-network
+
+  application-service:
+    build: ./services/application-service
+    container_name: application-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+#      kafka:
+#        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
