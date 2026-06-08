@@ -1,59 +1,46 @@
-# JobtrackrFe
+# Jobtrackr - Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.0.2.
+Angular 17+ frontend for JobTrackr. See the [root README](../../README.md) for full project overview, architecture, and setup.
 
-## Development server
 
-To start a local development server, run:
+## Stack
+
+- Angular 17+ (standalone components)
+- Angular Material (Azure/Blue theme)
+- Angular CDK (drag-and-drop for Kanban board)
+- SCSS
+
+
+## Dev Setup
 
 ```bash
+npm install
 ng serve
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Runs at `http://localhost:4200`. Expects the API Gateway running at `http://localhost:8080` — start the backend with `docker compose up -d` from the project root first.
 
-## Code scaffolding
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Structure
 
-```bash
-ng generate component component-name
+```
+src/app/
+├── core/          # Guards, interceptors, token storage
+├── shared/        # Reusable components, pipes, models, constants
+├── features/      # Auth, dashboard, applications, settings
+└── layout/        # Shell, sidebar, topbar
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Key Notes
+
+- Auth interceptor silently refreshes expired tokens — no manual token handling needed in services
+- All identity headers (`X-User-Id` etc.) are injected by the Gateway — never send userId from the frontend
+- Status transitions are enforced client-side via `status-transitions.ts` before hitting the API
+- Tags are stored lowercase by the backend; displayed in title case via `TitleCaseTagPipe`
+
+
+## Build
 
 ```bash
-ng generate --help
+ng build --configuration production
 ```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
