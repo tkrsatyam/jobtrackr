@@ -7,7 +7,7 @@ const REFRESH_TOKEN_KEY = 'jobtrackr_refresh_token';
 @Injectable({
   providedIn: 'root',
 })
-export class TokenStorage {
+export class TokenStorageService {
   
   private accessTokenSubject = new BehaviorSubject<string | null> (
     localStorage.getItem(ACCESS_TOKEN_KEY)
