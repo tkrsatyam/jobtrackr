@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse, HttpHandlerFn, HttpInterceptorFn, HttpRequest } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { BehaviorSubject, catchError, filter, switchMap, take, throwError } from 'rxjs';
-import { TokenStorage } from '../services/token-storage';
+import { TokenStorageService } from '../services/token-storage.service';
 import { Router } from '@angular/router';
 import { AuthResponse } from '../../shared/models/auth.model';
 import { environment } from '../../../environments/environment';
@@ -15,7 +15,7 @@ function addToken(req:HttpRequest<unknown>, token: string): HttpRequest<unknown>
 
 export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, next: HttpHandlerFn) => {
 
-  const tokenStorage = inject(TokenStorage);
+  const tokenStorage = inject(TokenStorageService);
   const router = inject(Router);
   const http = inject(HttpClient);
 
