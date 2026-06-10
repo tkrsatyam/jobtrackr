@@ -1,0 +1,34 @@
+.auth-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: #f5f7fa;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 420px;
+    padding: 24px;
+}
+
+mat-card-content {
+    padding-top: 16px !important;
+}
+
+.full-width {
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+.error-text {
+    color: #c62828;
+    font-size: 14px;
+    margin: 8px 0;
+}
+
+.auth-link {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 14px;
+}
