@@ -1,0 +1,15 @@
+<div class="timeline">
+    @for (entry of entries(); track entry.changedAt) {
+        <div class="timeline-entry">
+            <div class="timeline-dot" [class]="'status-dot-' + entry.status"></div>
+
+            <div class="timeline-content">
+                <span class="timeline-status">{{ statusLabels[entry.status] }}</span>
+                <span class="timeline-date">{{ entry.changedAt | date:'medium' }}</span>
+                @if (entry.note) {
+                    <p class="timeline-note">{{ entry.note }}</p>
+                }
+            </div>
+        </div>
+    }
+</div>
