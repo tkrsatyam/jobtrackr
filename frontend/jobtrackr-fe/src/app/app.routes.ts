@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { authGuard } from './core/guards/auth-guard';
 
 // TODO add routing along with creating components
 export const routes: Routes = [
@@ -10,5 +11,12 @@ export const routes: Routes = [
     {
         path: 'register',
         loadComponent: () => import('./features/auth/register/register.component').then(m => m.RegisterComponent)
-    }
+    },
+    {
+        path: '',
+        loadComponent: () => import('./layout/shell/shell.component').then(m => m.ShellComponent),
+        canActivate: [authGuard],
+        children: []
+    },
+    { path: '**', redirectTo: 'dashboard' }
 ];

@@ -1,0 +1,32 @@
+.topbar {
+    height: var(--topbar-height);
+    display: flex;
+    align-items: center;
+    padding: 0 var(--spacing-md);
+    background: var(--mat-sys-surface);
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.topbar-spacer {
+    flex: 1;
+}
+
+.user-menu-header {
+    padding: var(--spacing-sm) var(--spacing-md) var(--spacing-xs);
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+    margin-bottom: var(--spacing-xs);
+
+    .user-name {
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+
+    .user-email {
+        margin-top: var(--spacing-xs);
+        font-size: 0.8rem;
+        color: var(--mat-sys-on-surface-variant);
+    }
+}

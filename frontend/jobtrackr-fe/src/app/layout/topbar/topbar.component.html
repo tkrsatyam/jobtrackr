@@ -1,0 +1,30 @@
+<header class="topbar">
+    <button mat-icon-button (click)="menuToggle.emit()">
+        <mat-icon>menu</mat-icon>
+    </button>
+
+    <span class="topbar-spacer"></span>
+
+    <div class="topbar-actions">
+        <button mat-icon-button [matMenuTriggerFor]="userMenu">
+            <mat-icon>account-circle</mat-icon>
+        </button>
+
+        <mat-menu #userMenu="matMenu">
+            @if (currentUser()) {
+                <div class="user-menu-header">
+                    <p class="user-name">{{ currentUser()?.fullName }}</p>
+                    <p class="user-email">{{ currentUser()?.email }}</p>
+                </div>
+            }
+
+            <button mat-menu-item routerLink="/settings">
+                <mat-icon>settings</mat-icon> Settings
+            </button>
+
+            <button mat-menu-item (click)="logout()">
+                <mat-icon>logout</mat-icon> Sign out
+            </button>
+        </mat-menu>
+    </div>
+</header>
