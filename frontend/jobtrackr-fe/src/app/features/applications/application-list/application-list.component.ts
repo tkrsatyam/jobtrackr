@@ -25,6 +25,7 @@ import { ALL_PRIORITIES, ALL_STATUSES, ALL_WORK_MODES, PRIORITY_LABELS, STATUS_L
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { BulkAction, BulkActionToolbarComponent } from '../components/bulk-action-toolbar/bulk-action-toolbar.component';
 
 type FilterType = 'select' | 'text' | 'boolean' | 'date';
 type ColumnType = 'text' | 'status' | 'priority' | 'date' | 'tags' | 'select' | 'actions';
@@ -64,8 +65,9 @@ interface ColumnConfig {
     MatSlideToggleModule,
     StatusBadgeComponent,
     PriorityBadgeComponent,
-    TagChipComponent
-  ],
+    TagChipComponent,
+    BulkActionToolbarComponent
+],
   templateUrl: './application-list.component.html',
   styleUrl: './application-list.component.scss',
 })
@@ -289,30 +291,40 @@ export class ApplicationListComponent implements OnInit {
     });
   }
 
-  bulkDelete(): void {
+  onBulkAction(action: BulkAction): void {
     const ids = this.selection.selected;
-    const ref = this.dialog.open(ConfirmDialogComponent, {
-      data: {
-        title: `Delete ${ids.length} Applications`,
-        message: `Are you sure you want to delete ${ids.length} applications? This cannot be undone.`,
-        confirmLabel: 'Delete All',
-        destructive: true
-      }
-    });
-    ref.afterClosed().subscribe(confirmed => {
-      if (!confirmed) return;
-      this.appService.bulkDelete(ids).subscribe(() => {
-        this.snackBar.open(`${ids.length} applications deleted`, 'OK', { duration: 3000 });
+
+    if (action.type === 'delete') {
+      const ref = this.dialog.open(ConfirmDialogComponent, {
+        data: {
+          title: `Delete ${ids.length} Applications`,
+          message: `Are you sure you want to delete ${ids.length} applications? This cannot be undone.`,
+          confirmLabel: 'Delete All',
+          destructive: true
+        }
+      });
+      ref.afterClosed().subscribe(confirmed => {
+        if (!confirmed) return;
+        this.appService.bulkDelete(ids).subscribe(() => {
+          this.snackBar.open(`${ids.length} applications deleted`, 'OK', { duration: 3000 });
+          this.load();
+        });
+      });
+    }
+
+    if (action.type == 'archive') {
+      this.appService.bulkArchive(ids).subscribe(() => {
+        this.snackBar.open(`${ids.length} applications archived`, 'OK', { duration: 3000 });
         this.load();
       });
-    });
-  }
-
-  bulkArchive(): void {
-    const ids = this.selection.selected;
-    this.appService.bulkArchive(ids).subscribe(() => {
-      this.snackBar.open(`${ids.length} applications archived`, 'OK', { duration: 3000 });
-    });
+    }
+    
+    if (action.type == 'status') {
+      this.appService.bulkChangeStatus(ids, action.status).subscribe(() => {
+        this.snackBar.open(`Status updated for ${ids.length} applications`, 'OK', { duration: 3000 });
+        this.load();
+      })
+    }
   }
 
 }

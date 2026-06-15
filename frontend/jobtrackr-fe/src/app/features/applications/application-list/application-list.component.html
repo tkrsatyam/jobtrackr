@@ -68,15 +68,9 @@
 </div>
 
 @if (selectedCount() > 0) {
-    <div class="bulk-toolbar">
-        <span>{{ selectedCount() }} selected</span>
-        <button mat-stroked-button (click)="bulkArchive()">
-            <mat-icon>archive</mat-icon> Archive
-        </button>
-        <button mat-stroked-button color="warn" (click)="bulkDelete()">
-            <mat-icon>delete</mat-icon> Delete
-        </button>
-    </div>
+    <app-bulk-action-toolbar 
+    [selectedCount]="selectedCount()"
+    (action)="onBulkAction($event)" />
 }
 
 @if (loading()) {
