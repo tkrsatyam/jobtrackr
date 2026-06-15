@@ -24,6 +24,14 @@ export const routes: Routes = [
             {
                 path: 'applications',
                 loadComponent: () => import('./features/applications/application-list/application-list.component').then(m => m.ApplicationListComponent)
+            },
+            {
+                path: 'applications/new',
+                loadComponent: () => import('./features/applications/application-create/application-create.component').then(m => m.ApplicationCreateComponent)
+            },
+            {
+                path: 'applications/:id/edit',
+                loadComponent: () => import('./features/applications/application-edit/application-edit.component').then(m => m.ApplicationEditComponent)
             }
         ]
     },
