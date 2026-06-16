@@ -66,3 +66,48 @@
   border: 2px dashed var(--mat-sys-outline-variant);
   border-radius: var(--radius);
 }
+
+.terminal-section {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  border-left: 1px solid var(--mat-sys-outline-variant);
+  padding-left: var(--spacing-md);
+  align-self: stretch;
+}
+
+.terminal-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.terminal-zones {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.terminal-zone {
+  border: 2px dashed var(--mat-sys-outline-variant);
+  border-radius: var(--radius);
+  padding: var(--spacing-sm) var(--spacing-md);
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  transition: border-color 0.15s, background 0.15s;
+
+  &.cdk-drop-list-dragging {
+    border-color: var(--mat-sys-primary);
+    background: var(--mat-sys-surface-container);
+  }
+}
+
+.terminal-zone-label {
+  font-size: 0.85rem;
+  color: var(--mat-sys-on-surface-variant);
+  pointer-events: none;
+}

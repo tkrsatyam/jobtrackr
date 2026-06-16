@@ -11,7 +11,7 @@ import { ApplicationService } from '../services/application.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ApplicationResponse, ApplicationStatus } from '../../../shared/models/application.model';
 import { ACTIVE_STATUSES, STATUS_LABELS } from '../../../shared/constants/enum-labels';
-import { getAllowedTransitions } from '../../../shared/constants/status-transitions';
+import { getAllowedTransitions, TERMINAL_STATUSES } from '../../../shared/constants/status-transitions';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { ApplicationCardComponent } from "../components/application-card/application-card.component";
@@ -38,8 +38,9 @@ export class ApplicationBoardComponent implements OnInit {
   columns = signal<Map<ApplicationStatus, ApplicationResponse[]>>(new Map());
 
   boardStatuses = ACTIVE_STATUSES;
+  terminalStatuses = TERMINAL_STATUSES;
   statusLabels = STATUS_LABELS;
-  columnIds = ACTIVE_STATUSES.map(status => `col-${status}`);
+  columnIds = [...ACTIVE_STATUSES, ...TERMINAL_STATUSES].map(status => `col-${status}`);
 
   ngOnInit(): void {
     this.load();
@@ -65,6 +66,10 @@ export class ApplicationBoardComponent implements OnInit {
 
   getColumnCards(status: ApplicationStatus): ApplicationResponse[] {
     return this.columns().get(status) ?? [];
+  }
+
+  getEmptyCards(): ApplicationResponse[] {    // for terminal statuses
+    return [];
   }
 
   onDrop(event: CdkDragDrop<ApplicationResponse[]>, targetStatus: ApplicationStatus): void {

@@ -16,7 +16,7 @@
 }
 
 <div class="kanban-board">
-    @for (status of boardStatuses; track status; let i = $index) {
+    @for (status of boardStatuses; track status) {
         <div class="kanban-column">
 
             <div class="column-header">
@@ -27,7 +27,7 @@
             <div 
                 class="column-cards"
                 cdkDropList
-                [id]="columnIds[i]"
+                [id]="'col-' + status"
                 [cdkDropListData]="getColumnCards(status)"
                 [cdkDropListConnectedTo]="columnIds"
                 (cdkDropListDropped)="onDrop($event, status)">
@@ -48,4 +48,21 @@
             </div>
         </div>
     }
+
+    <div class="terminal-section">
+        <p class="terminal-label">Move to terminal state</p>
+        <div class="terminal-zones">
+            @for (status of terminalStatuses; track status) {
+                <div
+                    class="terminal-zone"
+                    cdkDropList
+                    [id]="'col-' + status"
+                    [cdkDropListData]="getEmptyCards()"
+                    [cdkDropListConnectedTo]="columnIds"
+                    (cdkDropListDropped)="onDrop($event, status)">
+                    <span class="terminal-zone-label">{{ statusLabels[status] }}</span>
+                </div>
+            }
+        </div>
+    </div>
 </div>
