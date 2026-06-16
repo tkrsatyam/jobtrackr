@@ -5,9 +5,7 @@
     padding: 0 var(--spacing-md);
     background: var(--mat-sys-surface);
     border-bottom: 1px solid var(--mat-sys-outline-variant);
-    position: sticky;
-    top: 0;
-    z-index: 100;
+    flex-shrink: 0;
 }
 
 .topbar-spacer {

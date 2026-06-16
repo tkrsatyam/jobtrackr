@@ -1,7 +1,8 @@
 .shell-layout {
     display: grid;
     grid-template-columns: var(--sidebar-width) 1fr;
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
     transition: grid-template-columns 0.25s ease;
 
     &.sidebar-collapsed {
@@ -12,13 +13,15 @@
 .shell-sidebar {
     grid-column: 1;
     overflow: hidden;
+    height: 100vh;
 }
 
 .shell-main {
     grid-column: 2;
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
 }
 
 .shell-content {
