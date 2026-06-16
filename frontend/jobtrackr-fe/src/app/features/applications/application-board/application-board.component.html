@@ -1,0 +1,51 @@
+<div class="page-header">
+    <h1>Board View</h1>
+    <div class="page-actions">
+        <a mat-stroked-button routerLink="/applications">
+            <mat-icon>list</mat-icon> List View
+        </a>
+
+        <a mat-flat-button color="primary" routerLink="/applications/new">
+            <mat-icon>add</mat-icon> Add Application
+        </a>
+    </div>
+</div>
+
+@if (loading()) {
+    <mat-progress-bar mode="indeterminate"/>
+}
+
+<div class="kanban-board">
+    @for (status of boardStatuses; track status; let i = $index) {
+        <div class="kanban-column">
+
+            <div class="column-header">
+                <span class="column-title">{{ statusLabels[status] }}</span>
+                <span class="column-count">{{ getColumnCards(status).length }}</span>
+            </div>
+
+            <div 
+                class="column-cards"
+                cdkDropList
+                [id]="columnIds[i]"
+                [cdkDropListData]="getColumnCards(status)"
+                [cdkDropListConnectedTo]="columnIds"
+                (cdkDropListDropped)="onDrop($event, status)">
+                
+                @for (app of getColumnCards(status); track app.applicationId) {
+                    <div cdkDrag [cdkDragData]="app">
+                        <app-application-card 
+                            [app]="app"
+                            (archiveRequested)="onArchive($event)"
+                            (deleteRequested)="onDelete($event)" />
+                    </div>
+                }
+
+                @if (getColumnCards(status).length === 0) {
+                    <div class="empty-column">Drop here</div>
+                }
+                
+            </div>
+        </div>
+    }
+</div>
