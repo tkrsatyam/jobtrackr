@@ -1,0 +1,30 @@
+<div class="status-panel">
+
+    <div class="status-current">
+        <span class="label">Current Status</span>
+        <app-status-badge [status]="currentStatus()" />
+    </div>
+
+    @if (!terminal()) {
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Note (optional)</mat-label>
+            <input 
+                matInput
+                [(ngModel)]="note"
+                placeholder="Add context for this status change..." />
+        </mat-form-field>
+
+        <div class="transition-buttons">
+            @for (next of allowedTransitions(); track next) {
+                <button mat-stroked-button (click)="changeStatus(next)">
+                    → {{ statusLabels[next] }}
+                </button>
+            }
+        </div>
+    } @else {
+        <p class="terminal-note">
+            This application has reached a terminal state and cannot be updated further.
+        </p>
+    }
+    
+</div>

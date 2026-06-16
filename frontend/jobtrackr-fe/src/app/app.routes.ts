@@ -30,6 +30,10 @@ export const routes: Routes = [
                 loadComponent: () => import('./features/applications/application-create/application-create.component').then(m => m.ApplicationCreateComponent)
             },
             {
+                path: 'applications/:id',
+                loadComponent: () => import('./features/applications/application-detail/application-detail.component').then(m => m.ApplicationDetailComponent)
+            },
+            {
                 path: 'applications/:id/edit',
                 loadComponent: () => import('./features/applications/application-edit/application-edit.component').then(m => m.ApplicationEditComponent)
             }
