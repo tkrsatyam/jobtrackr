@@ -18,7 +18,10 @@
 <div class="board-container">
     <div class="kanban-board" cdkScrollable>
         @for (status of boardStatuses; track status) {
-            <div class="kanban-column">
+            <div
+                class="kanban-column"
+                [class.column-dimmed]="isColumnDimmed(status)"
+                [class.column-highlighted]="isColumnHighlighted(status)">
 
                 <div class="column-header">
                     <span class="column-title">{{ statusLabels[status] }}</span>
@@ -34,7 +37,11 @@
                     (cdkDropListDropped)="onDrop($event, status)">
                     
                     @for (app of getColumnCards(status); track app.applicationId) {
-                        <div cdkDrag [cdkDragData]="app">
+                        <div
+                            cdkDrag
+                            [cdkDragData]="app"
+                            (cdkDragStarted)="onDragStarted($event, app)"
+                            (cdkDragEnded)="onDragEnded($event)">
                             <app-application-card 
                                 [app]="app"
                                 (archiveRequested)="onArchive($event)"
@@ -56,6 +63,8 @@
                 @for (status of terminalStatuses; track status) {
                     <div
                         class="terminal-zone"
+                        [class.terminal-dimmed]="isColumnDimmed(status)"
+                        [class.terminal-highlighted]="isColumnHighlighted(status)"
                         cdkDropList
                         [id]="'col-' + status"
                         [cdkDropListData]="getEmptyCards()"

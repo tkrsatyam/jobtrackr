@@ -1,4 +1,4 @@
-import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
+import { CdkDragDrop, CdkDragEnd, CdkDragStart, DragDropModule } from '@angular/cdk/drag-drop';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -44,6 +44,9 @@ export class ApplicationBoardComponent implements OnInit {
   statusLabels = STATUS_LABELS;
   columnIds = [...ACTIVE_STATUSES, ...TERMINAL_STATUSES].map(status => `col-${status}`);
 
+  draggedApp = signal<ApplicationResponse | null>(null);
+  allowedForDrag = signal<Set<ApplicationStatus>>(new Set());
+
   ngOnInit(): void {
     this.load();
   }
@@ -72,6 +75,31 @@ export class ApplicationBoardComponent implements OnInit {
 
   getEmptyCards(): ApplicationResponse[] {    // for terminal statuses
     return [];
+  }
+
+  onDragStarted(event: CdkDragStart, app: ApplicationResponse): void {
+    this.draggedApp.set(app);
+    const allowed = getAllowedTransitions(app.status);
+    this.allowedForDrag.set(new Set(allowed));
+  }
+
+  onDragEnded(event: CdkDragEnd): void {
+    this.draggedApp.set(null);
+    this.allowedForDrag.set(new Set())
+  }
+
+  isColumnDimmed(status: ApplicationStatus): boolean {
+    const dragged = this.draggedApp();
+    if (!dragged) return false;
+    if (status === dragged.status) return false;
+    return !this.allowedForDrag().has(status);
+  }
+
+  isColumnHighlighted(status: ApplicationStatus): boolean {
+    const dragged = this.draggedApp();
+    if (!dragged) return false;
+    if (status === dragged.status) return false;
+    return this.allowedForDrag().has(status);
   }
 
   onDrop(event: CdkDragDrop<ApplicationResponse[]>, targetStatus: ApplicationStatus): void {

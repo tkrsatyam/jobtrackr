@@ -37,6 +37,19 @@
   background: var(--mat-sys-surface-container-low);
   border-radius: var(--radius);
   overflow: hidden;
+  transition: opacity 0.2s ease, filter 0.2s ease;
+
+  &.column-dimmed {
+    opacity: 0.35;
+    filter: grayscale(0.4);
+    pointer-events: none;
+  }
+
+  &.column-highlighted {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: 2px;
+    background: var(--mat-sys-surface-container);
+  }
 }
 
 .column-header {
@@ -105,7 +118,22 @@
   min-height: 48px;
   display: flex;
   align-items: center;
-  transition: border-color 0.15s, background 0.15s;
+  transition: opacity 0.2s ease, border-color 0.2s ease;
+
+  &.terminal-dimmed {
+    opacity: 0.35;
+    pointer-events: none;
+  }
+
+  &.terminal-highlighted {
+    outline: 2px solid var(--mat-sys-primary);
+    background: var(--mat-sys-surface-container);
+    color: var(--mat-sys-primary);
+
+    .terminal-zone-label {
+      color: var(--mat-sys-primary);
+    }
+  }
 
   &.cdk-drop-list-dragging {
     border-color: var(--mat-sys-primary);
