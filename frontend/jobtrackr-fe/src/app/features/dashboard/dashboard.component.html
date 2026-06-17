@@ -1,0 +1,39 @@
+<div class="page-container">
+    <div class="page-header">
+        <h1>Dashboard</h1>
+        <a mat-flat-button color="primary" routerLink="/applications/new">
+            <mat-icon>add</mat-icon> Add application
+        </a>
+    </div>
+
+    @if (loading()) {
+        <mat-progress-bar mode="indeterminate" />
+    }
+
+    <div class="stat-grid">
+        @for (card of statCards; track card.label) {
+            <div class="stat-card">
+                <span class="stat-label">{{ card.label }}</span>
+                <span class="stat-value" [class]="card.modifier ?? ''">{{ card.value() }}</span>
+            </div>
+        }
+    </div>
+
+    <section class="recent-section">
+        <h2>Recent Activity</h2>
+        @if (recent().length > 0) {
+            <div class="recent-list">
+                @for (app of recent(); track app.applicationId) {
+                    <a class="recent-item" [routerLink]="['/applications', app.applicationId]">
+                        <div class="recent-company">{{ app.companyName }}</div>
+                        <div class="recent-role">{{ app.role }}</div>
+                        <app-status-badge [status]="app.status" />
+                        <span class="recent-date">{{ app.updatedAt | date: 'mediumDate' }}</span>
+                    </a>
+                }
+            </div>
+        } @else if (!loading()) {
+            <p class="empty-hint">No applications yet. <a routerLink="/applications/new">Add your first one.</a></p>
+        }
+    </section>    
+</div>

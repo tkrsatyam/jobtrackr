@@ -1,0 +1,51 @@
+<div class="kanban-card mat-elevation-z1" [class.archived]="app().isArchived">
+    <div class="card-top">
+        <a [routerLink]="['/applications', app().applicationId]" class="card-company">
+            {{ app().companyName }}
+        </a>
+
+        <button mat-icon-button class="card-menu-btn" [matMenuTriggerFor]="cardMenu">
+            <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #cardMenu="matMenu">
+            <button mat-menu-item [routerLink]="['/applications', app().applicationId]">
+                <mat-icon>visibility</mat-icon> View
+            </button>
+            <button mat-menu-item [routerLink]="['/applications', app().applicationId, 'edit']">
+                <mat-icon>edit</mat-icon> Edit
+            </button>
+            <button mat-menu-item (click)="archiveRequested.emit(app())">
+                <mat-icon>archive</mat-icon> Archive
+            </button>
+            <button mat-menu-item (click)="deleteRequested.emit(app())">
+                <mat-icon>delete</mat-icon> Delete
+            </button>
+        </mat-menu>
+    </div>
+
+    @if (app().isArchived) {
+        <div class="archived-badge">
+            <mat-icon>archive</mat-icon> Archived
+        </div>
+    }
+
+    <p class="card-role">{{ app().role }}</p>
+
+    <div class="card-meta">
+        <app-priority-badge [priority]="app().priority" />
+        @if (app().appliedDate) {
+            <span class="card-date">{{ app().appliedDate }}</span>
+        }
+    </div>
+
+    @if (app().tags.length > 0) {
+        <div class="card-tags">
+            @for (tag of app().tags.slice(0, 2); track tag) {
+                <app-tag-chip [tag]="tag"/>
+            }
+            @if (app().tags.length > 2) {
+                <span class="tag-overflow">+{{ app().tags.length - 2 }}</span>
+            }
+        </div>
+    }
+</div>

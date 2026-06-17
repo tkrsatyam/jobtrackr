@@ -1,0 +1,34 @@
+<header class="topbar">
+    <button mat-icon-button (click)="menuToggle.emit()">
+        <mat-icon>menu</mat-icon>
+    </button>
+
+    <div class="topbar-brand">
+        <a href="" class="brand-text">JobTrackr</a>
+    </div>
+
+    <span class="topbar-spacer"></span>
+
+    <div class="topbar-actions">
+        <button mat-icon-button [matMenuTriggerFor]="userMenu">
+            <mat-icon>account_circle</mat-icon>
+        </button>
+
+        <mat-menu #userMenu="matMenu">
+            @if (currentUser()) {
+                <div class="user-menu-header">
+                    <p class="user-name">{{ currentUser()?.fullName }}</p>
+                    <p class="user-email">{{ currentUser()?.email }}</p>
+                </div>
+            }
+
+            <button mat-menu-item routerLink="/settings">
+                <mat-icon>settings</mat-icon> Settings
+            </button>
+
+            <button mat-menu-item (click)="logout()">
+                <mat-icon>logout</mat-icon> Logout
+            </button>
+        </mat-menu>
+    </div>
+</header>

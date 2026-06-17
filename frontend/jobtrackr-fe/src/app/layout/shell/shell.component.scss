@@ -1,0 +1,31 @@
+.shell-layout {
+    display: grid;
+    grid-template-columns: var(--sidebar-width) 1fr;
+    height: 100vh;
+    overflow: hidden;
+    transition: grid-template-columns 0.25s ease;
+
+    &.sidebar-collapsed {
+        grid-template-columns: 0 1fr;
+    }
+}
+
+.shell-sidebar {
+    grid-column: 1;
+    overflow: hidden;
+    height: 100vh;
+}
+
+.shell-main {
+    grid-column: 2;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.shell-content {
+    flex: 1;
+    padding: var(--spacing-lg);
+    overflow-y: auto;
+}

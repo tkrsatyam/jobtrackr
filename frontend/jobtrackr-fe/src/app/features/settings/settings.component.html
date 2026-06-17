@@ -1,0 +1,134 @@
+<div class="page-container">
+    <div class="page-header">
+        <h1>Settings</h1>
+    </div>
+
+    <div class="settings-grid">
+
+        <mat-card>
+            <mat-card-header>
+                <mat-card-title>Profile</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+            
+                <div class="profile-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Full Name</span>
+                        <span class="detail-value">{{ currentUser()?.fullName }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Email</span>
+                        <span class="detail-value">{{ currentUser()?.email }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Provider</span>
+                        <span class="detail-value">{{ currentUser()?.provider }}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Role</span>
+                        <span class="detail-value">{{ currentUser()?.role }}</span>
+                    </div>
+                </div>
+
+                <div class="card-actions">
+                    <button mat-stroked-button (click)="openProfileForm()">
+                        <mat-icon>edit</mat-icon> Update Profile
+                    </button>
+                    @if (isLocalUser()) {
+                        <button mat-stroked-button (click)="openPasswordForm()">
+                            <mat-icon>lock</mat-icon> Change Password
+                        </button>
+                    }
+                </div>
+            </mat-card-content>
+        </mat-card>
+
+        @if (showProfileForm()) {
+            <mat-card>
+                <mat-card-header>
+                    <mat-card-title>Update Profile</mat-card-title>
+                </mat-card-header>
+                <mat-card-content>
+                    <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="settings-form">
+                        <mat-form-field appearance="outline" class="full-width">
+                            <mat-label>Full Name</mat-label>
+                            <input matInput formControlName="fullName" />
+                            @if (profileForm.get('fullName')?.hasError('minLength') && profileForm.get('fullName')?.touched) {
+                                <mat-error>At least 2 characters</mat-error>
+                            }
+                        </mat-form-field>
+
+                        <!-- TODO Modify later when implementing Document service -->
+                        <mat-form-field appearance="outline" class="full-width">
+                            <mat-label>Avatar URL</mat-label>
+                            <input matInput formControlName="avatarUrl" placeholder="https://...">
+                        </mat-form-field>
+
+                        <div class="form-actions">
+                            <button mat-stroked-button type="button" (click)="cancelProfileForm()">
+                                Cancel
+                            </button>
+                            <button mat-flat-button color="primary" type="submit" [disabled]="profileSaving()">
+                                @if (profileSaving()) {
+                                    <mat-spinner diameter="20" />
+                                } @else {
+                                    Save
+                                }
+                            </button>
+                        </div>
+                    </form>
+                </mat-card-content>
+            </mat-card>
+            }   
+
+        @if (isLocalUser() && showPasswordForm()) {
+            <mat-card>
+                <mat-card-header>
+                    <mat-card-title>Change Password</mat-card-title>
+                </mat-card-header>
+                <mat-card-content>
+                    <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" class="settings-form">
+                        <mat-form-field appearance="outline" class="full-width">
+                            <mat-label>Current Password</mat-label>
+                            <input matInput formControlName="currentPassword" type="password" />
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" class="full-width">
+                            <mat-label>New Password</mat-label>
+                            <input matInput formControlName="newPassword" type="password" />
+                            @if (passwordForm.get('newPassword')?.hasError('minLength') && passwordForm.get('newPassword')?.touched) {
+                                <mat-error>At least 8 characters</mat-error>
+                            }
+                        </mat-form-field>
+
+                        <div class="form-actions">
+                            <button mat-stroked-button type="button" (click)="cancelPasswordForm()">
+                                Cancel
+                            </button>
+                            <button mat-flat-button color="primary" type="submit" [disabled]="passwordSaving()">
+                                @if (profileSaving()) {
+                                    <mat-spinner diameter="20" />
+                                } @else {
+                                    Save
+                                }
+                            </button>
+                        </div>
+                    </form>
+                </mat-card-content>
+            </mat-card>
+        }
+
+        <mat-card class="danger-card">
+            <mat-card-header>
+                <mat-card-title>Danger Zone</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <p>Permanently delete your account and all data. This cannot be undone.</p>
+                <button mat-stroked-button class="delete-btn" (click)="deleteAccount()">
+                    <mat-icon>delete_forever</mat-icon> Delete Account
+                </button>
+            </mat-card-content>
+        </mat-card>
+
+    </div>
+</div>

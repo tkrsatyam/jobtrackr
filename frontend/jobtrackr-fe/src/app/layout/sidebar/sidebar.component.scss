@@ -1,0 +1,55 @@
+.sidebar {
+    background: var(--mat-sys-surface-container-low);
+    border-right: 1px solid var(--mat-sys-outline-variant);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.sidebar-brand {
+    height: var(--topbar-height);
+    display: flex;
+    align-items: center;
+    padding: 0 var(--spacing-lg);
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+
+    .brand-text {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--mat-sys-primary);
+    }
+}
+
+.nav-list {
+    list-style: none;
+    padding: var(--spacing-sm) 0;
+    flex: 1;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    text-decoration: none;
+    color: var(--mat-sys-on-surface-variant);
+    transition: background 0.15s;
+    font-size: 0.9rem;
+
+    mat-icon {
+        font-size: 1.2rem;
+        width: 1.2rem;
+        height: 1.2rem;
+    }
+
+    &.hover {
+        background: var(--mat-sys-surface-container);
+    }
+
+    &.active {
+        color: var(--mat-sys-primary);
+        background-color: var(--mat-sys-secondary-container);
+        font-weight: 500;
+    }
+}

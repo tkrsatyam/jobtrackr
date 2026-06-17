@@ -1,0 +1,30 @@
+.application-form {
+    max-width: 800px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.form-row {
+    display: flex;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+    margin-bottom: var(--spacing-sm);
+
+    mat-form-field {
+        flex: 1 1 180px;
+    }
+
+    .flex-2 {
+        flex: 2 1 240px;
+    }
+}
+
+.full-width {
+    width: 100%;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: var(--spacing-sm);
+}

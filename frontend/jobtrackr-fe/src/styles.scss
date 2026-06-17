@@ -1,1 +1,110 @@
-/* You can add global styles to this file, and also import other style files */
+@use '@angular/material' as mat;
+
+html {
+  height: 100%;
+  @include mat.theme((
+    color: (
+      primary: mat.$azure-palette,
+      tertiary: mat.$blue-palette,
+    ),
+    typography: (
+      plain-family: 'Roboto, sans-serif',
+      brand-family: 'Roboto, sans-serif',
+    ),
+    density: 0,
+  ));
+}
+
+body {
+  font-size: 15px;
+  line-height: 1.5;
+  font-family: Roboto, sans-serif;
+  color-scheme: light;
+  background-color: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  margin: 0;
+  height: 100%;
+}
+
+// ─── JobTrackr CSS Variables ───────────────────────────────────────────────
+
+:root {
+  // Status colors
+  --color-saved: #9e9e9e;
+  --color-applied: #1976d2;
+  --color-phone-screen: #ab47bc;
+  --color-interview: #7b1fa2;
+  --color-technical-round: #f57c00;
+  --color-hr-round: #fbc02d;
+  --color-offer: #388e3c;
+  --color-accepted: #1b5e20;
+  --color-rejected: #c62828;
+  --color-ghosted: #424242;
+  --color-withdrawn: #4e342e;
+
+  // Priority colors
+  --color-priority-low: #9e9e9e;
+  --color-priority-medium: #1976d2;
+  --color-priority-high: #f57c00;
+  --color-priority-dream: #ffd600;
+
+  // Layout
+  --sidebar-width: 240px;
+  --topbar-height: 64px;
+
+  // Spacing tokens
+  --spacing-xxs: 2px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+
+  // Shape & shadow
+  --radius: 8px;
+  --shadow:    0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
+}
+
+// ─── Global Resets ─────────────────────────────────────────────────────────
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+// ─── Status & Priority Badges ──────────────────────────────────────────────
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #fff;
+
+  &.status-SAVED          { background: var(--color-saved); color: #333; }
+  &.status-APPLIED        { background: var(--color-applied); }
+  &.status-PHONE_SCREEN   { background: var(--color-phone-screen); }
+  &.status-INTERVIEW      { background: var(--color-interview); }
+  &.status-TECHNICAL_ROUND{ background: var(--color-technical-round); }
+  &.status-HR_ROUND       { background: var(--color-hr-round); color: #333; }
+  &.status-OFFER          { background: var(--color-offer); }
+  &.status-ACCEPTED       { background: var(--color-accepted); }
+  &.status-REJECTED       { background: var(--color-rejected); }
+  &.status-GHOSTED        { background: var(--color-ghosted); }
+  &.status-WITHDRAWN      { background: var(--color-withdrawn); }
+
+  &.priority-LOW    { background: var(--color-priority-low); color: #333; }
+  &.priority-MEDIUM { background: var(--color-priority-medium); }
+  &.priority-HIGH   { background: var(--color-priority-high); }
+  &.priority-DREAM  { background: var(--color-priority-dream); color: #333; }
+}
+
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}

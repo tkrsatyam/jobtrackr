@@ -1,0 +1,36 @@
+<div class="bulk-toolbar">
+    <span class="bulk-count">{{ selectedCount() }} selected</span>
+
+    @if (!showStatusPicker()) {
+        <div class="bulk-actions">
+            <button mat-stroked-button (click)="toggleStatusPicker()">
+                <mat-icon>swap_horiz</mat-icon> Change Status
+            </button>
+
+            <button mat-stroked-button (click)="onArchive()">
+                <mat-icon>archive</mat-icon> Archive
+            </button>
+
+            <button mat-stroked-button (click)="onDelete()">
+                <mat-icon>delete</mat-icon> Delete
+            </button>
+        </div>
+    }   @else {
+        <div class="bulk-status-picker">
+            <mat-form-field appearance="outline" class="status-select">
+                <mat-label>New Status</mat-label>
+                <mat-select [(ngModel)]="selectedStatus">
+                    @for (status of activeStatuses; track status) {
+                        <mat-option [value]="status">{{ statusLabels[status] }}</mat-option>
+                    }
+                </mat-select>
+            </mat-form-field>
+            <button mat-flat-button color="primary" (click)="applyStatusChange()" [disabled]="!selectedStatus()">
+                Apply
+            </button>
+            <button mat-stroked-button (click)="toggleStatusPicker()">
+                Cancel
+            </button>
+        </div>
+    }
+</div>

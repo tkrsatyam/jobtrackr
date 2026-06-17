@@ -1,0 +1,50 @@
+<div class="auth-topbar">
+    <a href="" class="auth-brand">JobTrackr</a>
+</div>
+
+<div class="auth-container">
+    <mat-card class="auth-card">
+        <mat-card-header>
+            <mat-card-title>Create your account</mat-card-title>
+        </mat-card-header>
+
+        <mat-card-content>
+            <form [formGroup]="form" (ngSubmit)="submit()">
+                <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Full Name</mat-label>
+                    <input matInput formControlName="fullName" autocomplete="name">
+                    @if (form.get('fullName')?.hasError('minlength')) {
+                        <mat-error>Name must be at least 2 characters</mat-error>
+                    }
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Email</mat-label>
+                    <input matInput formControlName="email" type="email" autocomplete="email">
+                    @if (form.get('email')?.hasError('email')) {
+                        <mat-error>Enter a valid email</mat-error>
+                    }
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="full-width">
+                    <mat-label>Password</mat-label>
+                    <input matInput formControlName="password" type="password" autocomplete="new-password">
+                    @if (form.get('password')?.hasError('minlength')) {
+                        <mat-error>Password must be at least 8 characters</mat-error>
+                    }
+                </mat-form-field>
+
+                @if (error()) {
+                    <p class="error-text">{{ error() }}</p>
+                }
+
+                <button mat-flat-button color="primary" type="submit" [disabled]="loading()" class="full-width">
+                    @if (loading()) {
+                        <mat-spinner diameter="20"/>
+                    } @else { Create Account }
+                </button>
+            </form>
+            <p class="auth-link">Already have an account? <a routerLink="/login">Login</a></p>
+        </mat-card-content>
+    </mat-card>
+</div>

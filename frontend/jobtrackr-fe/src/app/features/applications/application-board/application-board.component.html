@@ -1,0 +1,79 @@
+<div class="page-header">
+    <h1>Board View</h1>
+    <div class="page-actions">
+        <a mat-stroked-button routerLink="/applications">
+            <mat-icon>list</mat-icon> List View
+        </a>
+
+        <a mat-flat-button color="primary" routerLink="/applications/new">
+            <mat-icon>add</mat-icon> Add Application
+        </a>
+    </div>
+</div>
+
+@if (loading()) {
+    <mat-progress-bar mode="indeterminate"/>
+}
+
+<div class="board-container">
+    <div class="kanban-board" cdkScrollable>
+        @for (status of boardStatuses; track status) {
+            <div
+                class="kanban-column"
+                [class.column-dimmed]="isColumnDimmed(status)"
+                [class.column-highlighted]="isColumnHighlighted(status)">
+
+                <div class="column-header">
+                    <span class="column-title">{{ statusLabels[status] }}</span>
+                    <span class="column-count">{{ getColumnCards(status).length }}</span>
+                </div>
+
+                <div 
+                    class="column-cards"
+                    cdkDropList
+                    [id]="'col-' + status"
+                    [cdkDropListData]="getColumnCards(status)"
+                    [cdkDropListConnectedTo]="columnIds"
+                    (cdkDropListDropped)="onDrop($event, status)">
+                    
+                    @for (app of getColumnCards(status); track app.applicationId) {
+                        <div
+                            cdkDrag
+                            [cdkDragData]="app"
+                            (cdkDragStarted)="onDragStarted($event, app)"
+                            (cdkDragEnded)="onDragEnded($event)">
+                            <app-application-card 
+                                [app]="app"
+                                (archiveRequested)="onArchive($event)"
+                                (deleteRequested)="onDelete($event)" />
+                        </div>
+                    }
+
+                    @if (getColumnCards(status).length === 0) {
+                        <div class="empty-column">Drop here</div>
+                    }
+                    
+                </div>
+            </div>
+        }
+
+        <div class="terminal-section">
+            <p class="terminal-label">Move to terminal state</p>
+            <div class="terminal-zones">
+                @for (status of terminalStatuses; track status) {
+                    <div
+                        class="terminal-zone"
+                        [class.terminal-dimmed]="isColumnDimmed(status)"
+                        [class.terminal-highlighted]="isColumnHighlighted(status)"
+                        cdkDropList
+                        [id]="'col-' + status"
+                        [cdkDropListData]="getEmptyCards()"
+                        [cdkDropListConnectedTo]="columnIds"
+                        (cdkDropListDropped)="onDrop($event, status)">
+                        <span class="terminal-zone-label">{{ statusLabels[status] }}</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,184 @@
+<div class="page-container">
+    <div class="page-header">
+        <h1>Applications</h1>
+        <div class="page-actions">
+            <a mat-stroked-button routerLink="/applications/board">
+                <mat-icon>view_kanban</mat-icon> Board View
+            </a>
+
+            <a mat-flat-button color="primary" routerLink="/applications/new">
+                <mat-icon>add</mat-icon> Add Application
+            </a>
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        @for (filter of filterConfigs; track filter.key) {
+            @switch (filter.type) {
+                @case ('select') {
+                    <mat-form-field appearance="outline" class="filter-field">
+                        <mat-label>{{ filter.label }}</mat-label>
+                        <mat-select
+                            [value]="getFilterValue(filter.key)"
+                            (valueChange)="setFilterValue(filter.key, $event)">
+
+                            <mat-option value="">All</mat-option>
+                            @for (option of filter.options!; track option.value) {
+                                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                            }
+                        </mat-select>
+                    </mat-form-field>
+                }
+                @case ('text') {
+                    <mat-form-field appearance="outline" class="filter-field">
+                        <mat-label>{{ filter.label }}</mat-label>
+                        <input 
+                            matInput
+                            [value]="getFilterValue(filter.key)"
+                            (input)="setFilterValue(filter.key, $any($event.target).value)"
+                            placeholder="Search..." />
+                    </mat-form-field>
+                }
+                @case ('boolean') {
+                    <div class="filter-toggle">
+                        <mat-slide-toggle
+                            [checked]="getBooleanFilterValue(filter.key)"
+                            (change)="toggleBooleanFilter(filter.key)">
+                            {{ filter.label }}
+                        </mat-slide-toggle>
+                    </div>
+                }
+                @case ('date') {
+                    <mat-form-field appearance="outline" class="filter-field">
+                        <mat-label>{{ filter.label }}</mat-label>
+                        <input 
+                            matInput
+                            [matDatepicker]="picker"
+                            [value]="getDateFilterValue(filter.key)"
+                            (dateChange)="setDateFilterValue(filter.key, $event.value)" />
+                        <mat-datepicker-toggle matIconSuffix [for]="picker" />
+                        <mat-datepicker #picker />
+                    </mat-form-field>
+                }
+            }
+        }
+
+        <button mat-stroked-button (click)="resetFilters()">
+            <mat-icon>clear</mat-icon> Reset
+        </button>
+    </div>
+
+    @if (selectedCount() > 0) {
+        <app-bulk-action-toolbar 
+        [selectedCount]="selectedCount()"
+        (action)="onBulkAction($event)" />
+    }
+
+    @if (loading()) {
+        <mat-progress-bar mode="indeterminate" />
+    }
+
+    <div class="table-container mat-elevation-z2">
+        <table mat-table [dataSource]="applications()">
+            
+            @for (col of columns; track col.key) {
+                <ng-container [matColumnDef]="col.key">
+                    <th mat-header-cell *matHeaderCellDef>
+
+                        @switch (col.type) {
+                            @case ('select') {
+                                <mat-checkbox
+                                    [checked]="isAllSelected()"
+                                    [indeterminate]="selectedCount() > 0 && !isAllSelected()"
+                                    (change)="toggleSelectAll()" />
+                            }
+                            @default {
+                                {{ col.header }}
+                            }
+                        }
+
+                    </th>
+
+                    <td mat-cell *matCellDef="let app">
+
+                        @switch (col.type) {
+                            @case ('select') {
+                                <mat-checkbox 
+                                    [checked]="selection.isSelected(app.applicationId)"
+                                    (change)="selection.toggle(app.applicationId)" />
+                            }
+                            @case ('text') {
+                                @if (col.key === 'company') {
+                                    <a [routerLink]="['/applications', app.applicationId]" class="company-link">
+                                        {{ app[col.field!] }}
+                                    </a>
+                                } @else {
+                                    {{ app[col.field!] }}
+                                }
+                            }
+                            @case ('status') {
+                                <app-status-badge [status]="app.status" />
+                            }
+                            @case ('priority') {
+                                <app-priority-badge [priority]="app.priority" />
+                            }
+                            @case ('date') {
+                                {{ app[col.field!] | date:'mediumDate' }}
+                            }
+                            @case ('tags') {
+                                <div class="tag-list">
+                                    @for (tag of app.tags.slice(0, 3); track tag) {
+                                        <app-tag-chip [tag]="tag" />
+                                    }
+                                    @if (app.tags.length > 3) {
+                                        <span class="tag-overflow">+{{ app.tags.length - 3 }}</span>
+                                    }
+                                </div>
+                            }
+                            @case ('actions') {
+                                <button mat-icon-button [matMenuTriggerFor]="rowMenu">
+                                    <mat-icon>more-vert</mat-icon>
+                                </button>
+                                <mat-menu #rowMenu="matMenu">
+                                    <button mat-menu-item [routerLink]="['/applications', app.applicationId]">
+                                        <mat-icon>visibility</mat-icon> View
+                                    </button>
+                                    <button mat-menu-item [routerLink]="['/applications', app.applicationId, 'edit']">
+                                        <mat-icon>edit</mat-icon> Edit
+                                    </button>
+                                    <button mat-menu-item (click)="archive(app.applicationId)">
+                                        <mat-icon>archive</mat-icon> {{ app.isArchived ? 'Unarchive' : 'Archive' }}
+                                    </button>
+                                    <button mat-menu-item (click)="delete(app.applicationId)">
+                                        <mat-icon>delete</mat-icon> Delete
+                                    </button>
+                                </mat-menu>
+                            }
+                        }
+                    </td>
+                </ng-container>
+            }
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row 
+                *matRowDef="let row; columns: displayedColumns;"
+                [class.archived-row]="row.isArchived">
+            </tr>
+
+            <tr class="mat-row" *matNoDataRow>
+                <td class="mat-cell empty-state" [attr.colspan]="displayedColumns.length">
+                    No applications found. <a routerLink="/applications/new">Add your first one.</a>
+                </td>
+            </tr>
+            
+        </table>
+
+        <mat-paginator 
+            [length]="totalElements()"
+            [pageSize]="pageSize()"
+            [pageSizeOptions]="[10, 20, 50]"
+            [pageIndex]="page()"
+            (page)="onPageChange($event)"
+            showFirstLastButtons />
+    </div>
+</div>

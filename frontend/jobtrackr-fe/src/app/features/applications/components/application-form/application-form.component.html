@@ -1,0 +1,94 @@
+<form [formGroup]="form" (ngSubmit)="submit()" class="application-form">
+
+    <div class="form-row">
+        <mat-form-field appearance="outline" class="flex-2">
+            <mat-label>Company Name</mat-label>
+            <input matInput formControlName="companyName">
+            @if (form.get('companyName')?.hasError('required') && form.get('companyName')?.touched) {
+                <mat-error>Company name is required</mat-error>
+            }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="flex-2">
+            <mat-label>Role</mat-label>
+            <input matInput formControlName="role">
+            @if (form.get('role')?.hasError('required') && form.get('role')?.touched) {
+                <mat-error>Role is required</mat-error>
+            }
+        </mat-form-field>
+    </div>
+
+    <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Job URL</mat-label>
+        <input matInput formControlName="jobUrl" type="url" placeholder="https://...">
+    </mat-form-field>
+
+    <div class="form-row">
+        @for (field of selectFields; track field.key) {
+            @if (field.showInEditMode || !initialValue()) {
+                <mat-form-field appearance="outline">
+                    <mat-label>{{ field.label }}</mat-label>
+                    <mat-select [formControlName]="field.key">
+                        @if (field.key === 'workMode') {
+                            <mat-option value="">Not specified</mat-option>
+                        }
+                        @for (option of field.options; track option.value) {
+                            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                        }
+                    </mat-select>
+                </mat-form-field>
+            }
+        }
+    </div>
+
+    <div class="form-row">
+        <mat-form-field appearance="outline">
+            <mat-label>Location</mat-label>
+            <input matInput formControlName="location">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+            <mat-label>Applied Date</mat-label>
+            <input matInput [matDatepicker]="picker" formControlName="appliedDate">
+            <mat-datepicker-toggle matIconSuffix [for]="picker" />
+            <mat-datepicker #picker />
+        </mat-form-field>
+    </div>
+
+    <div class="form-row">
+        <mat-form-field appearance="outline">
+            <mat-label>Currency</mat-label>
+            <input matInput formControlName="currency">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+            <mat-label>Min Salary</mat-label>
+            <input matInput type="number" formControlName="salaryMin">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+            <mat-label>Max Salary</mat-label>
+            <input matInput type="number" formControlName="salaryMax">
+        </mat-form-field>
+    </div>
+
+    @if (showTagInput()) {
+        <app-tag-input [initialTags]="initialValue()?.tags ?? []" />
+    }
+
+    <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Notes</mat-label>
+        <textarea matInput formControlName="notes" rows="3"></textarea>
+    </mat-form-field>
+
+    <div class="form-actions">
+        <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">
+            @if (submitting()) {
+                <mat-spinner diameter="20" />
+            } @else {
+                {{ initialValue() ? 'Save Changes' : 'Create Application' }}
+            }
+        </button>
+    </div>
+    
+</form>

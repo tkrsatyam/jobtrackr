@@ -1,0 +1,79 @@
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-lg);
+
+    h1 {
+        font-size: 1.5rem;
+        font-weight: 500;
+    }
+
+    .page-actions {
+        display: flex;
+        gap: var(--spacing-sm);
+    }
+}
+
+.filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+    align-items: center;
+    
+    .filter-field {
+        flex: 1 1 140px;
+    }
+
+    .filter-toggle {
+        display: flex;
+        align-items: center;
+        height: 56px;
+    }
+}
+
+.table-container {
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+
+    table {
+        width: 100%;
+    }
+}
+
+.company-link {
+    color: var(--mat-sys-primary);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+    align-items: center;
+}
+
+.tag-overflow {
+    font-size: 0.8rem;
+    color: var(--mat-sys-on-surface-variant);
+}
+
+.archived-row {
+    opacity: 0.55;
+    background: var(--mat-sys-surface-container-low);
+
+    .company-link {
+        color: var(--mat-sys-on-surface-variant);
+    }
+}
+
+.empty-state {
+    text-align: center;
+    padding: var(--spacing-xl) var(--spacing-md);
+    color: var(--mat-sys-on-surface-variant);
+    font-size: 0.9rem;
+}

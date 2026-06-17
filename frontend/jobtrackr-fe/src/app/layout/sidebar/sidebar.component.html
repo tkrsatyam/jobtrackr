@@ -1,0 +1,21 @@
+<nav class="sidebar">
+    <div class="sidebar-brand">
+        <span class="brand-text"></span>
+    </div>
+
+    <ul class="nav-list">
+        @for (item of navItems; track item.route) {
+            <li> 
+                <a  class="nav-item"
+                    [routerLink]="item.route"
+                    routerLinkActive="active"
+                    [routerLinkActiveOptions]="{ exact: item.exact }"
+                    matRipple>
+
+                    <mat-icon>{{ item.icon }}</mat-icon>
+                    <span>{{ item.label }}</span>
+                </a>
+            </li>
+        }
+    </ul>
+</nav>
