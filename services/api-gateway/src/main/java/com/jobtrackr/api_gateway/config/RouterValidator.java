@@ -16,6 +16,10 @@ public class RouterValidator {
     );
 
     public boolean isSecured(HttpServletRequest request) {
+        if (request.getMethod().equalsIgnoreCase("OPTIONS")) {
+            return false;
+        }
+
         return OPEN_ENDPOINTS.stream()
                 .noneMatch(uri -> request.getRequestURI().contains(uri));
     }
