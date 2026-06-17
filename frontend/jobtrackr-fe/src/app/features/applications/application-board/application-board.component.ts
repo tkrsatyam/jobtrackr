@@ -101,6 +101,12 @@ export class ApplicationBoardComponent implements OnInit {
     this.columns.set(newColumns);
 
     this.appService.changeStatus(app.applicationId, { status: targetStatus }).subscribe({
+      next: a => {
+        if (TERMINAL_STATUSES.includes(targetStatus)) {
+          this.snackBar.open(`${a.companyName} application status updated to ${STATUS_LABELS[a.status]}`, 'OK', { duration: 3000 });
+        }
+        this.load();
+      },
       error: () => {
         this.load();
         this.snackBar.open('Status update failed', 'OK', { duration: 3000 });

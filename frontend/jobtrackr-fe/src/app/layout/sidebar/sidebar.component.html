@@ -9,7 +9,7 @@
                 <a  class="nav-item"
                     [routerLink]="item.route"
                     routerLinkActive="active"
-                    [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+                    [routerLinkActiveOptions]="{ exact: item.exact }"
                     matRipple>
 
                     <mat-icon>{{ item.icon }}</mat-icon>

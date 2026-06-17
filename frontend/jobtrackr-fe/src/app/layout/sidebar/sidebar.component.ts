@@ -7,6 +7,7 @@ interface NavItem {
   label: string;
   icon: string;
   route: string;
+  exact: boolean;
 }
 
 @Component({
@@ -22,9 +23,9 @@ interface NavItem {
 })
 export class SidebarComponent {
   navItems: NavItem[] = [
-    { label: 'Dashboard', icon: 'dashboard', route:'/dashboard' },
-    { label: 'Applications', icon: 'work_outline', route: '/applications' },
-    { label: 'Board', icon: 'view_kanban', route: '/applications/board' },
-    { label: 'Settings', icon: 'settings', route: '/settings' }
+    { label: 'Dashboard', icon: 'dashboard', route:'/dashboard', exact: true },
+    { label: 'Applications', icon: 'work_outline', route: '/applications', exact: true },
+    { label: 'Board', icon: 'view_kanban', route: '/applications/board', exact: true },
+    { label: 'Settings', icon: 'settings', route: '/settings', exact: true }
   ];
 }

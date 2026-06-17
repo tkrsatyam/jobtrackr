@@ -1,8 +1,29 @@
+.auth-topbar {
+  height: var(--topbar-height);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--spacing-xl);
+  background: var(--mat-sys-surface);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+.auth-brand {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--mat-sys-primary);
+}
+
 .auth-container {
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 100vh;
+    padding-top: var(--topbar-height);
 }
 
 .auth-card {
