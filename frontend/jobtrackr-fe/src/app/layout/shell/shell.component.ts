@@ -20,9 +20,9 @@ export class ShellComponent implements OnInit {
   sidebarOpen = signal(true);
 
   ngOnInit(): void {
-    // if (!this.authService.currentUser()) {
-    //   this.authService.getProfile().subscribe();
-    // }
+    if (!this.authService.currentUser()) {
+      this.authService.getProfile().subscribe();
+    }
   }
 
   toggleSidebar(): void {

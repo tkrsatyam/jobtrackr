@@ -1,7 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth-guard';
 
-// TODO add routing along with creating components
 export const routes: Routes = [
     { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     {
@@ -40,6 +39,10 @@ export const routes: Routes = [
             {
                 path: 'applications/:id/edit',
                 loadComponent: () => import('./features/applications/application-edit/application-edit.component').then(m => m.ApplicationEditComponent)
+            },
+            {
+                path: 'settings',
+                loadComponent:() => import('./features/settings/settings.component').then(m => m.SettingsComponent)
             }
         ]
     },
