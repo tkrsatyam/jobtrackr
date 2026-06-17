@@ -12,8 +12,8 @@
     &:not(:last-child)::before {
         content: '';
         position: absolute;
-        left: var(--spacing-sm);
-        top: var(--spacing-md);
+        left: 7px;  //hardcoded for better alignment
+        top: 19px;  //hardcoded for better alignment
         bottom: 0;
         width: var(--spacing-xxs);
         background: var(--mat-sys-outline-variant);

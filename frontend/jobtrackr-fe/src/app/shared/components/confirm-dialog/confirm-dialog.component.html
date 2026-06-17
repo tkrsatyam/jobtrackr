@@ -4,7 +4,7 @@
     <button mat-button mat-dialog-close>{{ data.cancelLabel ?? 'Cancel' }}</button>
     <button
         mat-flat-button
-        [color]="data.destructive ? 'warn' : 'primary'"
+        [class.destructive-btn]="data.destructive"
         [mat-dialog-close]="true">
         {{ data.confirmLabel ?? 'Confirm' }}
     </button>

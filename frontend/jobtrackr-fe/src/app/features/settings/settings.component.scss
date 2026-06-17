@@ -1,34 +1,81 @@
 .page-header {
-  margin: 0 auto;
   max-width: 800px;
   width: 100%;
+  margin: 0 auto var(--spacing-lg);
 
   h1 {
     font-size: 1.5rem;
     font-weight: 500;
-    margin-bottom: var(--spacing-lg);
   }
 }
 
 .settings-grid {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-lg);
   max-width: 800px;
   width: 100%;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+mat-card-title {
+  margin-bottom: var(--spacing-lg);
+}
+
+mat-card-header, mat-card-content {
+  margin: 0 auto;
+  max-width: 600px;
+  width: 100%;
+}
+
+.profile-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+
+  .detail-label {
+    font-size: 0.85rem;
+    color: var(--mat-sys-on-surface-variant);
+    min-width: 80px;
+    flex-shrink: 0;
+  }
+
+  .detail-value {
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+}
+
+.card-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
 }
 
 .full-width {
   width: 100%;
-  margin-bottom: var(--spacing-md);
+  max-width: 600px;
 }
 
-.settings-meta {
-  font-size: 0.85rem;
-  color: var(--mat-sys-on-surface-variant);
-  margin-bottom: var(--spacing-md);
-  line-height: 1.6;
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-xs);
+  max-width: 600px;
 }
 
 .danger-card {
@@ -40,4 +87,9 @@
     color: var(--mat-sys-on-surface-variant);
     margin-bottom: var(--spacing-md);
   }
+}
+
+.delete-btn {
+  color: var(--mat-sys-error) !important;
+  border-color: var(--mat-sys-error) !important;
 }
