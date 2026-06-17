@@ -29,6 +29,12 @@
 
         <div class="detail-grid">
             <div class="detail-main">
+                @if (app.isArchived) {
+                    <div class="archived-banner">
+                        <mat-icon>archive</mat-icon>
+                        This application is archived. Unarchive it to resume tracking.
+                    </div>
+                }
                 <section class="detail-section">
                     <h3>Details</h3>
                     <div class="detail-fields">
@@ -84,7 +90,7 @@
                             <div class="field-row">
                                 <span class="field-label">Job URL</span>
                                 <a [href]="app.jobUrl" target="_blank" rel="noopener">
-                                    Open Job Posting
+                                    {{ app.jobUrl }}
                                 </a>
                             </div>
                         }

@@ -1,4 +1,4 @@
-<div class="kanban-card mat-elevation-z1">
+<div class="kanban-card mat-elevation-z1" [class.archived]="app().isArchived">
     <div class="card-top">
         <a [routerLink]="['/applications', app().applicationId]" class="card-company">
             {{ app().companyName }}
@@ -22,6 +22,12 @@
             </button>
         </mat-menu>
     </div>
+
+    @if (app().isArchived) {
+        <div class="archived-badge">
+            <mat-icon>archive</mat-icon> Archived
+        </div>
+    }
 
     <p class="card-role">{{ app().role }}</p>
 
