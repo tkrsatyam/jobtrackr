@@ -15,17 +15,24 @@
   }
 }
 
+.board-container {
+  max-width: 1420px;
+  margin: 0 auto;
+  width: 100%;
+}
+
 .kanban-board {
   display: flex;
   gap: var(--spacing-md);
   overflow-x: auto;
   padding-bottom: var(--spacing-md);
   align-items: flex-start;
+  position: relative;
 }
 
 .kanban-column {
-  min-width: 240px;
-  max-width: 280px;
+  min-width: 160px;
+  max-width: 190px;
   flex-shrink: 0;
   background: var(--mat-sys-surface-container-low);
   border-radius: var(--radius);

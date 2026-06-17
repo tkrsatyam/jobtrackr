@@ -15,6 +15,7 @@ import { getAllowedTransitions, TERMINAL_STATUSES } from '../../../shared/consta
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { ApplicationCardComponent } from "../components/application-card/application-card.component";
+import { ScrollingModule } from '@angular/cdk/scrolling';
 
 @Component({
   selector: 'app-application-board',
@@ -24,7 +25,8 @@ import { ApplicationCardComponent } from "../components/application-card/applica
     MatButtonModule,
     MatIconModule,
     MatProgressBarModule,
-    ApplicationCardComponent
+    ApplicationCardComponent,
+    ScrollingModule
 ],
   templateUrl: './application-board.component.html',
   styleUrl: './application-board.component.scss',
