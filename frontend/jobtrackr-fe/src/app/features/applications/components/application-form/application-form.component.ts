@@ -38,8 +38,9 @@ export class ApplicationFormComponent implements OnInit{
   initialValue = input<ApplicationResponse | null>(null);
   submitting = input(false);
   formSubmit = output<CreateApplicationRequest | UpdateApplicationRequest>();
+  showTagInput = input(true);
 
-  @ViewChild(TagInputComponent) tagInput!: TagInputComponent;
+  @ViewChild(TagInputComponent)  tagInput!: TagInputComponent;
 
   form = this.fb.group({
     companyName: ['', Validators.required],
@@ -124,7 +125,7 @@ export class ApplicationFormComponent implements OnInit{
         : undefined,
       source: raw.source as ApplicationSource,
       notes: raw.notes || undefined,
-      tags: this.tagInput.getCurrentTags()
+      tags: this.tagInput ? this.tagInput.getCurrentTags() : []
     };
 
     this.formSubmit.emit(request);

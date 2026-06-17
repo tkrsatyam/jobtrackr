@@ -5,6 +5,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { TitleCaseTagPipe } from '../../../../shared/pipes/title-case-tag/title-case-tag-pipe';
+import { TagChipComponent } from '../../../../shared/components/tag-chip/tag-chip.component';
 
 @Component({
   selector: 'app-tag-input',
@@ -13,7 +14,7 @@ import { TitleCaseTagPipe } from '../../../../shared/pipes/title-case-tag/title-
     MatIconModule,
     MatFormFieldModule,
     MatInputModule,
-    TitleCaseTagPipe
+    TagChipComponent
   ],
   templateUrl: './tag-input.component.html',
   styleUrl: './tag-input.component.scss',

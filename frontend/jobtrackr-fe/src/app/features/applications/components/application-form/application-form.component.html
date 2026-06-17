@@ -72,7 +72,9 @@
         </mat-form-field>
     </div>
 
-    <app-tag-input [initialTags]="initialValue()?.tags ?? []" />
+    @if (showTagInput()) {
+        <app-tag-input [initialTags]="initialValue()?.tags ?? []" />
+    }
 
     <mat-form-field appearance="outline" class="full-width">
         <mat-label>Notes</mat-label>

@@ -1,19 +1,14 @@
 <mat-form-field appearance="outline" class="full-width">
     <mat-label>Tags</mat-label>
-    <mat-chip-grid #chipGrid aria-label="Application tags">
-        @for (tag of tags(); track tag) {
-            <mat-chip-row (removed)="removeTag(tag)">
-                {{ tag | titleCaseTag }}
-                <button matChipRemove aria-label="Remove tag">
-                    <mat-icon>cancel</mat-icon>
-                </button>
-            </mat-chip-row>
-        }
-    </mat-chip-grid>
     <input 
         placeholder="Add tag (Enter or comma)..."
         [matChipInputFor]="chipGrid"
         [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
         (matChipInputTokenEnd)="addTag($event)" />
+    <mat-chip-grid #chipGrid aria-label="Application tags">
+        @for (tag of tags(); track tag) {
+            <app-tag-chip [tag]="tag" [removable]="true" (removed)="removeTag($event)" />
+        }
+    </mat-chip-grid>
     <mat-hint>Lowercase, press Enter or comma to add</mat-hint>
 </mat-form-field>
