@@ -1,14 +1,16 @@
-@if (loading()) {
-    <mat-progress-bar mode="indeterminate" />
-} @else {
-    <div class="page-header">
-        <h1>Edit Application</h1>
-    </div>
+<div class="page-container">
+    @if (loading()) {
+        <mat-progress-bar mode="indeterminate" />
+    } @else {
+        <div class="page-header">
+            <h1>Edit Application</h1>
+        </div>
 
-    @if (application()) {
-        <app-application-form 
-        [initialValue]="application()"
-        [submitting]="submitting()"
-        (formSubmit)="onSubmit($event)"/>
+        @if (application()) {
+            <app-application-form 
+            [initialValue]="application()"
+            [submitting]="submitting()"
+            (formSubmit)="onSubmit($event)"/>
+        }
     }
-}
+</div>

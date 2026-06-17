@@ -1,80 +1,82 @@
-<div class="page-header">
-    <h1>Settings</h1>
-</div>
+<div class="page-container">
+    <div class="page-header">
+        <h1>Settings</h1>
+    </div>
 
-<div class="settings-grid">
+    <div class="settings-grid">
 
-    <mat-card>
-        <mat-card-header>
-            <mat-card-title>Profile</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-            @if (currentUser()) {
-                <p class="settings-meta">
-                    <strong>Email:</strong> {{ currentUser()!.email }}<br>
-                    <strong>Provider:</strong> {{ currentUser()!.provider }}
-                </p>
-            }
-            <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
-                <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Full Name</mat-label>
-                    <input matInput formControlName="fullName" />
-                </mat-form-field>
-                <!-- TODO Modify later when implementing Document service -->
-                <mat-form-field appearance="outline" class="full-width">
-                    <mat-label>Avatar URL</mat-label>
-                    <input matInput formControlName="avatarUrl" placeholder="https://...">
-                </mat-form-field>
-                <button mat-flat-button color="primary" type="submit" [disabled]="profileSaving()">
-                    @if (profileSaving()) {
-                        <mat-spinner diameter="20" />
-                    } @else {
-                        Save Profile
-                    }
-                </button>
-            </form>
-        </mat-card-content>
-    </mat-card>
-
-    @if (isLocalUser()) {
         <mat-card>
             <mat-card-header>
-                <mat-card-title>Change Password</mat-card-title>
+                <mat-card-title>Profile</mat-card-title>
             </mat-card-header>
             <mat-card-content>
-                <form [formGroup]="passwordForm" (ngSubmit)="changePassword()">
+                @if (currentUser()) {
+                    <p class="settings-meta">
+                        <strong>Email:</strong> {{ currentUser()!.email }}<br>
+                        <strong>Provider:</strong> {{ currentUser()!.provider }}
+                    </p>
+                }
+                <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
                     <mat-form-field appearance="outline" class="full-width">
-                        <mat-label>Current Password</mat-label>
-                        <input matInput formControlName="currentPassword" type="password" />
+                        <mat-label>Full Name</mat-label>
+                        <input matInput formControlName="fullName" />
                     </mat-form-field>
+                    <!-- TODO Modify later when implementing Document service -->
                     <mat-form-field appearance="outline" class="full-width">
-                        <mat-label>New Password</mat-label>
-                        <input matInput formControlName="newPassword" type="password" />
-                        @if (passwordForm.get('newPassword')?.hasError('minLength')) {
-                            <mat-error>At least 8 characters</mat-error>
-                        }
+                        <mat-label>Avatar URL</mat-label>
+                        <input matInput formControlName="avatarUrl" placeholder="https://...">
                     </mat-form-field>
-                    <button mat-flat-button color="primary" type="submit" [disabled]="passwordSaving()">
-                        @if (passwordSaving()) {
+                    <button mat-flat-button color="primary" type="submit" [disabled]="profileSaving()">
+                        @if (profileSaving()) {
                             <mat-spinner diameter="20" />
                         } @else {
-                            Change Password
+                            Save Profile
                         }
                     </button>
                 </form>
             </mat-card-content>
         </mat-card>
-    }
 
-    <mat-card class="danger-card">
-        <mat-card-header>
-            <mat-card-title>Danger Zone</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-            <p>Permanently delete your account and all data. This cannot be undone.</p>
-            <button mat-stroked-button color="warn" (click)="deleteAccount()">
-                Delete Account
-            </button>
-        </mat-card-content>
-    </mat-card>
+        @if (isLocalUser()) {
+            <mat-card>
+                <mat-card-header>
+                    <mat-card-title>Change Password</mat-card-title>
+                </mat-card-header>
+                <mat-card-content>
+                    <form [formGroup]="passwordForm" (ngSubmit)="changePassword()">
+                        <mat-form-field appearance="outline" class="full-width">
+                            <mat-label>Current Password</mat-label>
+                            <input matInput formControlName="currentPassword" type="password" />
+                        </mat-form-field>
+                        <mat-form-field appearance="outline" class="full-width">
+                            <mat-label>New Password</mat-label>
+                            <input matInput formControlName="newPassword" type="password" />
+                            @if (passwordForm.get('newPassword')?.hasError('minLength')) {
+                                <mat-error>At least 8 characters</mat-error>
+                            }
+                        </mat-form-field>
+                        <button mat-flat-button color="primary" type="submit" [disabled]="passwordSaving()">
+                            @if (passwordSaving()) {
+                                <mat-spinner diameter="20" />
+                            } @else {
+                                Change Password
+                            }
+                        </button>
+                    </form>
+                </mat-card-content>
+            </mat-card>
+        }
+
+        <mat-card class="danger-card">
+            <mat-card-header>
+                <mat-card-title>Danger Zone</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+                <p>Permanently delete your account and all data. This cannot be undone.</p>
+                <button mat-stroked-button color="warn" (click)="deleteAccount()">
+                    Delete Account
+                </button>
+            </mat-card-content>
+        </mat-card>
+    </div>
 </div>

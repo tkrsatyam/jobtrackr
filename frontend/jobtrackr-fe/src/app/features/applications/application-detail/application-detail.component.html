@@ -1,151 +1,153 @@
-@if (loading()) {
-    <mat-progress-bar mode="indeterminate" />
-}
+<div class="page-container">
+    @if (loading()) {
+        <mat-progress-bar mode="indeterminate" />
+    }
 
-@if (application(); as app) {
-    <div class="detail-header">
-        <div>
-            <a routerLink="/applications" class="back-link">
-                ← Applications
-            </a>
-            <h1>{{ app.companyName }}</h1>
-            <p class="detail-role">{{ app.role }}</p>
+    @if (application(); as app) {
+        <div class="detail-header">
+            <div>
+                <a routerLink="/applications" class="back-link">
+                    ← Applications
+                </a>
+                <h1>{{ app.companyName }}</h1>
+                <p class="detail-role">{{ app.role }}</p>
+            </div>
+
+            <div class="detail-actions">
+                <button mat-stroked-button [routerLink]="['/applications', app.applicationId, 'edit']">
+                    <mat-icon>edit</mat-icon> Edit
+                </button>
+                <button mat-stroked-button (click)="toggleArchive()">
+                    <mat-icon>{{ app.isArchived ? 'unarchive' : 'archive' }}</mat-icon>
+                    {{ app.isArchived ? 'Unarchive' : 'Archive' }}
+                </button>
+                <button mat-stroked-button color="warn" (click)="delete()">
+                    <mat-icon>delete</mat-icon> Delete
+                </button>
+            </div>
         </div>
 
-        <div class="detail-actions">
-            <button mat-stroked-button [routerLink]="['/applications', app.applicationId, 'edit']">
-                <mat-icon>edit</mat-icon> Edit
-            </button>
-            <button mat-stroked-button (click)="toggleArchive()">
-                <mat-icon>{{ app.isArchived ? 'unarchive' : 'archive' }}</mat-icon>
-                {{ app.isArchived ? 'Unarchive' : 'Archive' }}
-            </button>
-            <button mat-stroked-button color="warn" (click)="delete()">
-                <mat-icon>delete</mat-icon> Delete
-            </button>
-        </div>
-    </div>
-
-    <div class="detail-grid">
-        <div class="detail-main">
-            <section class="detail-section">
-                <h3>Details</h3>
-                <div class="detail-fields">
-                    <div class="field-row">
-                        <span class="field-label">Status</span>
-                        <app-status-badge [status]="app.status" />
-                    </div>
-
-                    <div class="field-row">
-                        <span class="field-label">Priority</span>
-                        <app-priority-badge [priority]="app.priority" />
-                    </div>
-
-                    @if (app.workMode) {
-                        <div class="field-row">
-                            <span class="field-label">Work Mode</span>
-                            <span>{{ workModeLabels[app.workMode] }}</span>
-                        </div>
-                    }
-
-                    @if (app.location) {
-                        <div class="field-row">
-                            <span class="field-label">Location</span>
-                            <span>{{ app.location }}</span>
-                        </div>
-                    }
-
-                    @if (app.appliedDate) {
-                        <div class="field-row">
-                            <span class="field-label">Applied Date</span>
-                            <span>{{ app.appliedDate | date: 'mediumDate' }}</span>
-                        </div>
-                    }
-
-                    <div class="field-row">
-                        <span class="field-label">Source</span>
-                        <span>{{ sourceLabels[app.source] }}</span>
-                    </div>
-
-                    @if (app.salaryMin || app.salaryMax) {
-                        <div class="field-row">
-                            <span class="field-label">Salary</span>
-                            <span>
-                                {{ app.salaryMin | salaryFormat:app.currency }}
-                                @if (app.salaryMax) {
-                                    — {{ app.salaryMax | salaryFormat:app.currency }}
-                                }
-                            </span>
-                        </div>
-                    }
-
-                    @if (app.jobUrl) {
-                        <div class="field-row">
-                            <span class="field-label">Job URL</span>
-                            <a [href]="app.jobUrl" target="_blank" rel="noopener">
-                                Open Job Posting
-                            </a>
-                        </div>
-                    }
-
-
-                </div>
-            </section>
-
-            @if (app.notes) {
+        <div class="detail-grid">
+            <div class="detail-main">
                 <section class="detail-section">
-                    <h3>Notes</h3>
-                    <p class="notes-text">{{ app.notes }}</p>
-                </section>
-            }
-
-            <section class="detail-section">
-                <h3>Tags</h3>
-                <div class="tag-list">
-                    @for (tag of app.tags; track tag) {
-                        <app-tag-chip [tag]="tag" [removable]="true" (removed)="onTagRemoved($event)"/>
-                    }
-
-                    @if (showTagInput()) {
-                        <div class="inline-tag-input">
-                            <input 
-                                class="tag-text-input"
-                                [(ngModel)]="newTagValue"
-                                (keydown)="onTagInputKeydown($event)"
-                                placeholder="tag name..."
-                                autofocus />
-                            
-                            <button mat-icon-button (click)="onTagAdded()" matTooltip="Add tag">
-                                <mat-icon>check</mat-icon>
-                            </button>
-
-                            <button mat-icon-button (click)="showTagInput.set(false)" matTooltip="Cancel">
-                                <mat-icon>close</mat-icon>
-                            </button>
+                    <h3>Details</h3>
+                    <div class="detail-fields">
+                        <div class="field-row">
+                            <span class="field-label">Status</span>
+                            <app-status-badge [status]="app.status" />
                         </div>
-                    } @else {
-                        <button mat-stroked-button class="add-tag-btn" (click)="showTagInput.set(true)">
-                            <mat-icon>add</mat-icon> Add Tag
-                        </button>
-                    }
-                </div>
-            </section>
+
+                        <div class="field-row">
+                            <span class="field-label">Priority</span>
+                            <app-priority-badge [priority]="app.priority" />
+                        </div>
+
+                        @if (app.workMode) {
+                            <div class="field-row">
+                                <span class="field-label">Work Mode</span>
+                                <span>{{ workModeLabels[app.workMode] }}</span>
+                            </div>
+                        }
+
+                        @if (app.location) {
+                            <div class="field-row">
+                                <span class="field-label">Location</span>
+                                <span>{{ app.location }}</span>
+                            </div>
+                        }
+
+                        @if (app.appliedDate) {
+                            <div class="field-row">
+                                <span class="field-label">Applied Date</span>
+                                <span>{{ app.appliedDate | date: 'mediumDate' }}</span>
+                            </div>
+                        }
+
+                        <div class="field-row">
+                            <span class="field-label">Source</span>
+                            <span>{{ sourceLabels[app.source] }}</span>
+                        </div>
+
+                        @if (app.salaryMin || app.salaryMax) {
+                            <div class="field-row">
+                                <span class="field-label">Salary</span>
+                                <span>
+                                    {{ app.salaryMin | salaryFormat:app.currency }}
+                                    @if (app.salaryMax) {
+                                        — {{ app.salaryMax | salaryFormat:app.currency }}
+                                    }
+                                </span>
+                            </div>
+                        }
+
+                        @if (app.jobUrl) {
+                            <div class="field-row">
+                                <span class="field-label">Job URL</span>
+                                <a [href]="app.jobUrl" target="_blank" rel="noopener">
+                                    Open Job Posting
+                                </a>
+                            </div>
+                        }
+
+
+                    </div>
+                </section>
+
+                @if (app.notes) {
+                    <section class="detail-section">
+                        <h3>Notes</h3>
+                        <p class="notes-text">{{ app.notes }}</p>
+                    </section>
+                }
+
+                <section class="detail-section">
+                    <h3>Tags</h3>
+                    <div class="tag-list">
+                        @for (tag of app.tags; track tag) {
+                            <app-tag-chip [tag]="tag" [removable]="true" (removed)="onTagRemoved($event)"/>
+                        }
+
+                        @if (showTagInput()) {
+                            <div class="inline-tag-input">
+                                <input 
+                                    class="tag-text-input"
+                                    [(ngModel)]="newTagValue"
+                                    (keydown)="onTagInputKeydown($event)"
+                                    placeholder="tag name..."
+                                    autofocus />
+                                
+                                <button mat-icon-button (click)="onTagAdded()" matTooltip="Add tag">
+                                    <mat-icon>check</mat-icon>
+                                </button>
+
+                                <button mat-icon-button (click)="showTagInput.set(false)" matTooltip="Cancel">
+                                    <mat-icon>close</mat-icon>
+                                </button>
+                            </div>
+                        } @else {
+                            <button mat-stroked-button class="add-tag-btn" (click)="showTagInput.set(true)">
+                                <mat-icon>add</mat-icon> Add Tag
+                            </button>
+                        }
+                    </div>
+                </section>
+            </div>
+
+            <div class="detail-sidebar">
+                <section class="detail-section">
+                    <h3>Update Status</h3>
+                    <app-status-change-panel 
+                        [currentStatus]="app.status"
+                        (statusChange)="onStatusChange($event)"/>
+                </section>
+
+                <mat-divider />
+
+                <section class="detail-section">
+                    <h3>Status History</h3>
+                    <app-status-timeline [entries]="app.statusHistory" />
+                </section>
+            </div>
         </div>
-
-        <div class="detail-sidebar">
-            <section class="detail-section">
-                <h3>Update Status</h3>
-                <app-status-change-panel 
-                    [currentStatus]="app.status"
-                    (statusChange)="onStatusChange($event)"/>
-            </section>
-
-            <mat-divider />
-
-            <section class="detail-section">
-                <h3>Status History</h3>
-                <app-status-timeline [entries]="app.statusHistory" />
-            </section>
-        </div>
-    </div>
-}
+    }
+</div>

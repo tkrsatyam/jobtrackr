@@ -1,5 +1,7 @@
 .page-header {
-    margin-bottom: var(--spacing-lg);
+    max-width: 800px;
+    width: 100%;
+    margin: 0 auto var(--spacing-lg);
 
     h1 {
         font-size: 1.5rem;
