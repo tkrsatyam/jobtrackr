@@ -8,6 +8,21 @@
     flex-shrink: 0;
 }
 
+.topbar-brand {
+    height: var(--topbar-height);
+    display: flex;
+    align-items: center;
+    padding: 0 var(--spacing-lg);
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+
+    .brand-text {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--mat-sys-primary);
+        text-decoration: none;
+    }
+}
+
 .topbar-spacer {
     flex: 1;
 }
