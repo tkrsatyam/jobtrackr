@@ -61,7 +61,7 @@
 
 .recent-item {
     display: grid;
-    grid-template-columns: 1fr 1fr auto auto;
+    grid-template-columns: 1fr 1fr 140px auto;
     align-items: center;
     gap: var(--spacing-md);
     padding: var(--spacing-sm) var(--spacing-lg);
