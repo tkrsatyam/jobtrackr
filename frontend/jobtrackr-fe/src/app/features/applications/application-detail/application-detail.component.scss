@@ -144,14 +144,19 @@
   }
 
   button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     width: 28px;
     height: 28px;
-    line-height: 28px;
-
+    
     mat-icon {
       font-size: 1rem;
       width: 1rem;
       height: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
   }
 }
