@@ -19,17 +19,20 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
     align-items: center;
     
     .filter-field {
         flex: 1 1 140px;
+
+        ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+            display: none;
+        }
     }
 
     .filter-toggle {
         display: flex;
         align-items: center;
-        height: 56px;
     }
 }
 

@@ -8,6 +8,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { RegisterRequest } from '../../../shared/models/auth.model';
+import { MatIconModule } from "@angular/material/icon";
 
 @Component({
   selector: 'app-register',
@@ -18,8 +19,9 @@ import { RegisterRequest } from '../../../shared/models/auth.model';
     MatInputModule,
     MatButtonModule,
     MatProgressSpinnerModule,
-    MatCardModule
-  ],
+    MatCardModule,
+    MatIconModule
+],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss',
 })
@@ -28,6 +30,7 @@ export class RegisterComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
 
+  showPassword = signal(false);
   loading = signal(false);
   error = signal<string | null>(null);
 

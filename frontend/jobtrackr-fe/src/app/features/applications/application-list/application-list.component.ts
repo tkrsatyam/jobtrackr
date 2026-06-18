@@ -20,7 +20,6 @@ import { ApplicationService } from '../services/application.service';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ApplicationFilter, ApplicationResponse, ApplicationStatus, PriorityLevel, WorkMode } from '../../../shared/models/application.model';
-import { SelectionModel } from '@angular/cdk/collections';
 import { ALL_PRIORITIES, ALL_STATUSES, ALL_WORK_MODES, PRIORITY_LABELS, STATUS_LABELS, WORK_MODE_LABELS } from '../../../shared/constants/enum-labels';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { MatDatepickerModule } from '@angular/material/datepicker';
@@ -111,11 +110,6 @@ export class ApplicationListComponent implements OnInit {
       type: 'text'
     },
     {
-      key: 'isArchived',
-      label: 'Show Archived',
-      type: 'boolean'
-    },
-    {
       key: 'appliedAfter',
       label: 'Applied After',
       type: 'date'
@@ -124,6 +118,11 @@ export class ApplicationListComponent implements OnInit {
       key: 'appliedBefore',
       label: 'Applied Before',
       type: 'date'
+    },
+    {
+      key: 'isArchived',
+      label: 'Show Archived',
+      type: 'boolean'
     }
   ];
 
@@ -141,8 +140,8 @@ export class ApplicationListComponent implements OnInit {
   page = signal(0);
   pageSize = signal(20);
 
-  selection = new SelectionModel<string>(true, []);
-  selectedCount = computed(() => this.selection.selected.length);
+  selectedIds = signal<Set<string>>(new Set());
+  selectedCount = computed(() => this.selectedIds().size);
 
   columns: ColumnConfig[] = [
     { key: 'select', header: '', type: 'select' },
@@ -169,7 +168,7 @@ export class ApplicationListComponent implements OnInit {
 
   load(): void {
     this.loading.set(true);
-    this.selection.clear();
+    this.selectedIds.set(new Set());
 
     const values = this.filterValues();
     const filter: ApplicationFilter = {
@@ -254,16 +253,30 @@ export class ApplicationListComponent implements OnInit {
     this.load();
   }
 
-  toggleSelectAll(): void {
-    if (this.selection.selected.length === this.applications().length) {
-      this.selection.clear();
-    } else {
-      this.applications().forEach(a => this.selection.select(a.applicationId));
-    }
+  isSelected(id: string): boolean {
+    return this.selectedIds().has(id);
+  }
+
+  toggleSelection(id: string): void {
+    this.selectedIds.update(set => {
+      const next = new Set(set);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
   }
 
   isAllSelected(): boolean {
-    return this.selection.selected.length === this.applications().length && this.applications().length > 0;
+    const ids = this.selectedIds();
+    const apps = this.applications();
+    return apps.length > 0 && apps.every(app => ids.has(app.applicationId));
+  }
+
+  toggleSelectAll(): void {
+    if (this.isAllSelected()) {
+      this.selectedIds.set(new Set());
+    } else {
+      this.selectedIds.set(new Set(this.applications().map(app => app.applicationId)));
+    }
   }
 
   delete(id: string): void {
@@ -292,7 +305,7 @@ export class ApplicationListComponent implements OnInit {
   }
 
   onBulkAction(action: BulkAction): void {
-    const ids = this.selection.selected;
+    const ids = [...this.selectedIds()];
 
     if (action.type === 'delete') {
       const ref = this.dialog.open(ConfirmDialogComponent, {

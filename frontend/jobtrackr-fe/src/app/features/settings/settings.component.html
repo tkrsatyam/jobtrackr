@@ -49,7 +49,7 @@
                     <mat-card-title>Update Profile</mat-card-title>
                 </mat-card-header>
                 <mat-card-content>
-                    <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="settings-form">
+                    <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="settings-form compact-fields">
                         <mat-form-field appearance="outline" class="full-width">
                             <mat-label>Full Name</mat-label>
                             <input matInput formControlName="fullName" />
@@ -87,15 +87,37 @@
                     <mat-card-title>Change Password</mat-card-title>
                 </mat-card-header>
                 <mat-card-content>
-                    <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" class="settings-form">
+                    <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" class="settings-form compact-fields">
                         <mat-form-field appearance="outline" class="full-width">
                             <mat-label>Current Password</mat-label>
-                            <input matInput formControlName="currentPassword" type="password" />
+                            <input
+                                matInput
+                                formControlName="currentPassword"
+                                [type]="showCurrentPassword() ? 'text' : 'password'">
+                            <button
+                                mat-icon-button
+                                matSuffix
+                                type="button"
+                                (click)="showCurrentPassword.update(v => !v)"
+                                [attr.aria-label]="showCurrentPassword() ? 'Hide password' : 'Show password'">
+                                <mat-icon>{{ showCurrentPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+                            </button>
                         </mat-form-field>
 
                         <mat-form-field appearance="outline" class="full-width">
                             <mat-label>New Password</mat-label>
-                            <input matInput formControlName="newPassword" type="password" />
+                            <input
+                                matInput
+                                formControlName="newPassword"
+                                [type]="showNewPassword() ? 'text' : 'password'">
+                            <button
+                                mat-icon-button
+                                matSuffix
+                                type="button"
+                                (click)="showNewPassword.update(v => !v)"
+                                [attr.aria-label]="showNewPassword() ? 'Hide password' : 'Show password'">
+                                <mat-icon>{{ showNewPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+                            </button>
                             @if (passwordForm.get('newPassword')?.hasError('minLength') && passwordForm.get('newPassword')?.touched) {
                                 <mat-error>At least 8 characters</mat-error>
                             }
