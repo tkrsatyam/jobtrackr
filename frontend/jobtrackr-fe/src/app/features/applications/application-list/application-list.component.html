@@ -104,8 +104,8 @@
                         @switch (col.type) {
                             @case ('select') {
                                 <mat-checkbox 
-                                    [checked]="selection.isSelected(app.applicationId)"
-                                    (change)="selection.toggle(app.applicationId)" />
+                                    [checked]="isSelected(app.applicationId)"
+                                    (change)="toggleSelection(app.applicationId)" />
                             }
                             @case ('text') {
                                 @if (col.key === 'company') {

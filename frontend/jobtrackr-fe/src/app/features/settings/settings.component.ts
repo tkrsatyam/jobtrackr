@@ -42,6 +42,8 @@ export class SettingsComponent implements OnInit {
 
   showProfileForm = signal(false);
   showPasswordForm = signal(false);
+  showCurrentPassword = signal(false);
+  showNewPassword = signal(false);
 
   profileSaving = signal(false);
   passwordSaving = signal(false);
