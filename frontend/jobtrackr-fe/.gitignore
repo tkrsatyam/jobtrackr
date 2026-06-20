@@ -37,6 +37,7 @@ yarn-error.log
 testem.log
 /typings
 __screenshots__/
+**/material-variables.scss
 
 # System files
 .DS_Store
