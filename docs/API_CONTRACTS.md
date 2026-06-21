@@ -128,23 +128,32 @@ Update profile. Only `fullName` and `avatarUrl` are editable. Email, role, and p
 
 ---
 
+### GET `/ping`
+Health check endpoint for Render keep-warm pings. No auth required.
+
+**Response `200`:** `"User service: pong"`
+
+---
+
 ## 📁 Applications (Application Service) — `/api/applications`
 
 ### GET `/api/applications` 🔒
 Get all applications for the current user.
 
 **Query Params:**
+
 | Param | Type | Description |
 |---|---|---|
-| `status` | string | Filter by status (e.g. `APPLIED,INTERVIEW`) |
-| `priority` | string | `LOW,MEDIUM,HIGH,DREAM` |
-| `workMode` | string | `REMOTE,HYBRID,ON_SITE` |
-| `search` | string | Search company or role name |
-| `tags` | string | Comma-separated tags |
-| `dateFrom` | date | Applied date from (ISO 8601) |
-| `dateTo` | date | Applied date to (ISO 8601) |
-| `sortBy` | string | `appliedDate,companyName,updatedAt` (default: `updatedAt`) |
-| `sortDir` | string | `asc,desc` (default: `desc`) |
+| `status` | string | Filter by status enum value (e.g. `APPLIED`) |
+| `priority` | string | Filter by priority (`LOW`, `MEDIUM`, `HIGH`, `DREAM`) |
+| `workMode` | string | Filter by work mode (`REMOTE`, `HYBRID`, `ON_SITE`) |
+| `isArchived` | boolean | Filter by archived state (`true` / `false`) |
+| `company` | string | Partial, case-insensitive match on company name |
+| `role` | string | Partial, case-insensitive match on role |
+| `appliedAfter` | date | Applied date from (ISO 8601 — `YYYY-MM-DD`) |
+| `appliedBefore` | date | Applied date to (ISO 8601 — `YYYY-MM-DD`) |
+| `sortBy` | string | Field to sort by (default: `createdAt`) |
+| `sortDir` | string | `asc` or `desc` (default: `desc`) |
 | `page` | int | Page number (default: 0) |
 | `size` | int | Page size (default: 20) |
 
@@ -154,8 +163,10 @@ Get all applications for the current user.
   "content": [
     {
       "applicationId": "uuid",
+      "userId": "uuid",
       "companyName": "Google",
       "role": "Software Engineer II",
+      "jobUrl": null,
       "status": "INTERVIEW",
       "priority": "DREAM",
       "workMode": "HYBRID",
@@ -164,15 +175,20 @@ Get all applications for the current user.
       "salaryMax": 2500000,
       "currency": "INR",
       "appliedDate": "2024-01-10",
-      "tags": ["product-company", "dream-job"],
       "source": "LINKEDIN",
-      "lastUpdated": "2024-01-14T09:00:00Z"
+      "notes": null,
+      "isArchived": false,
+      "isDeleted": false,
+      "createdAt": "2024-01-10T10:00:00",
+      "updatedAt": "2024-01-14T09:00:00",
+      "tags": ["product-company", "dream-job"],
+      "statusHistory": []
     }
   ],
   "totalElements": 47,
   "totalPages": 3,
-  "currentPage": 0,
-  "pageSize": 20
+  "number": 0,
+  "size": 20
 }
 ```
 
@@ -211,6 +227,7 @@ Get single application with full detail.
 ```json
 {
   "applicationId": "uuid",
+  "userId": "uuid",
   "companyName": "Zepto",
   "role": "Backend Engineer",
   "jobUrl": "https://...",
@@ -223,31 +240,44 @@ Get single application with full detail.
   "currency": "INR",
   "appliedDate": "2024-01-15",
   "source": "NAUKRI",
-  "tags": ["startup"],
   "notes": "...",
+  "isArchived": false,
+  "isDeleted": false,
+  "createdAt": "2024-01-15T10:00:00",
+  "updatedAt": "2024-01-20T11:00:00",
+  "tags": ["startup"],
   "statusHistory": [
-    { "status": "APPLIED", "changedAt": "2024-01-15T10:00:00Z", "note": "" },
-    { "status": "PHONE_SCREEN", "changedAt": "2024-01-18T14:00:00Z", "note": "HR called, scheduled for 20th" },
-    { "status": "INTERVIEW", "changedAt": "2024-01-20T11:00:00Z", "note": "Round 1 done, went well" }
-  ],
-  "linkedDocuments": ["doc-uuid-1"],
-  "linkedContacts": ["contact-uuid-1"],
-  "linkedReminders": ["reminder-uuid-1"],
-  "createdAt": "2024-01-15T10:00:00Z",
-  "updatedAt": "2024-01-20T11:00:00Z"
+    { "status": "APPLIED", "note": "Application created", "changedAt": "2024-01-15T10:00:00" },
+    { "status": "PHONE_SCREEN", "note": "HR called", "changedAt": "2024-01-18T14:00:00" },
+    { "status": "INTERVIEW", "note": "Round 1 done, went well", "changedAt": "2024-01-20T11:00:00" }
+  ]
 }
 ```
 
 ---
 
-### PATCH `/api/applications/{id}` 🔒
+### PUT `/api/applications/{id}` 🔒
 Update application fields.
 
 **Request:** Any subset of application fields.
 
 ---
 
-### PATCH `/api/applications/{id}/status` 🔒
+### DELETE `/api/applications/{id}` 🔒
+Soft delete an application.
+
+**Response `204`:** No content.
+
+---
+
+### PUT `/api/applications/{id}/archive` 🔒
+Toggle archive state. Archives an unarchived application; unarchives an archived one.
+
+**Response `200`:** Full `ApplicationResponse` with updated `isArchived` value.
+
+---
+
+### PUT `/api/applications/{id}/status` 🔒
 Change application status.
 
 **Request:**
@@ -261,25 +291,78 @@ Change application status.
 
 ---
 
-### DELETE `/api/applications/{id}` 🔒
-Soft delete an application.
+### GET `/api/applications/{id}/status/history` 🔒
+Get full status history for an application, ordered newest first.
 
+**Response `200`:**
+```json
+[
+  { "status": "PHONE_SCREEN", "note": "HR called", "changedAt": "2024-01-18T14:00:00" },
+  { "status": "APPLIED", "note": "Application created", "changedAt": "2024-01-15T10:00:00" }
+]
+```
+Note: `changedAt` serializes as `LocalDateTime` — no timezone offset or `Z` suffix.
+
+---
+
+### POST `/api/applications/{id}/tags` 🔒
+Add a tag to an application. Tags are stored lowercase. Adding a duplicate is a no-op.
+
+**Request:**
+```json
+{ "tag": "Java" }
+```
+**Response `200`:** Full `ApplicationResponse` with updated `tags` list.
+
+---
+
+### DELETE `/api/applications/{id}/tags/{tag}` 🔒
+Remove a tag from an application. Removing a non-existent tag is a no-op.
+
+**Response `200`:** Full `ApplicationResponse` with updated `tags` list.
+
+---
+
+### POST `/api/applications/bulk/delete` 🔒
+Soft delete multiple applications.
+
+**Request:**
+```json
+{ "ids": ["uuid1", "uuid2", "uuid3"] }
+```
 **Response `204`:** No content.
 
 ---
 
-### POST `/api/applications/bulk` 🔒
-Bulk actions on applications.
+### POST `/api/applications/bulk/archive` 🔒
+Archive multiple applications (sets `isArchived = true`).
+
+**Request:**
+```json
+{ "ids": ["uuid1", "uuid2", "uuid3"] }
+```
+**Response `204`:** No content.
+
+---
+
+### POST `/api/applications/bulk/status` 🔒
+Change status for multiple applications. Invalid transitions are silently skipped per application.
 
 **Request:**
 ```json
 {
-  "applicationIds": ["uuid1", "uuid2"],
-  "action": "ARCHIVE",
-  "payload": {}
+  "ids": ["uuid1", "uuid2", "uuid3"],
+  "status": "PHONE_SCREEN"
 }
 ```
-Actions: `ARCHIVE`, `DELETE`, `CHANGE_STATUS`, `ADD_TAG`
+**Response `204`:** No content.
+
+---
+
+### GET `/ping`
+Health check endpoint for Render keep-warm pings. No auth required.
+
+**Response `200`:** `"Application service: pong"`
 
 ---
 
@@ -548,20 +631,49 @@ Update notification preferences.
 
 ## ⚠️ Error Response Format
 
-**Current implementation** (User Service — `GlobalExceptionHandler`):
+### Application Service (`GlobalExceptionHandler`)
+
+Standard errors:
+```json
+{ "error": "Descriptive error message", "timestamp": "2024-01-15T10:00:00" }
+```
+
+Validation errors (`@Valid` failures):
+```json
+{
+  "error": "Validation failed",
+  "fieldErrors": { "companyName": "Company name is required", "role": "Role is required" },
+  "timestamp": "2024-01-15T10:00:00"
+}
+```
+
+Invalid enum value (e.g. passing `"APPLYED"` for status):
+```json
+{
+  "error": "Invalid value 'APPLYED' for field 'status'. Accepted values are: [SAVED, APPLIED, PHONE_SCREEN, ...]",
+  "timestamp": "2024-01-15T10:00:00"
+}
+```
+
+Note: `timestamp` is `LocalDateTime` — no timezone offset or `Z` suffix.
+
+---
+
+### User Service (`GlobalExceptionHandler`)
 
 Runtime errors:
 ```json
 { "error": "Descriptive error message" }
 ```
 
-Validation errors return a map of field names to messages:
+Validation errors return a flat map of field names to messages:
 ```json
 {
   "email": "must be a well-formed email address",
   "password": "Password must be at least 8 characters"
 }
 ```
+---
 
 **Planned standardised format** (to be implemented across all services in a later phase):
 ```json

@@ -31,12 +31,16 @@ JobTrackr is a distributed, event-driven microservices application. Each service
 
 ### 3.1 Client Layer
 
-**Angular SPA**
-- Single Page Application served via Nginx in production
-- Communicates exclusively with the API Gateway
-- Uses Angular HttpInterceptor to attach JWT to every request
-- WebSocket / SSE connection to Notification Service for real-time alerts
-- Lazy-loaded feature modules per domain (Applications, Analytics, etc.)
+**Angular SPA** (`frontend/jobtrackr-fe`)
+- Built with Angular 17+ standalone components, lazy-loaded routes
+- Angular Material for UI components
+- Angular CDK for drag-and-drop (kanban board)
+- `authInterceptor` attaches JWT to every request; handles 401 by silently refreshing the token and retrying the original request
+- `authGuard` protects all authenticated routes, redirects to `/login`
+- `TokenStorageService` stores tokens in `localStorage`, exposes reactive signals
+- Routes: `/login`, `/register`, `/dashboard`, `/applications`, `/applications/board`, `/applications/new`, `/applications/:id`, `/applications/:id/edit`, `/settings`
+- Environment-based API URL: `http://localhost:8080` (dev) / `https://jobtrackr-gateway.onrender.com` (prod)
+- WebSocket / SSE connection to Notification Service — Phase 3
 
 ---
 
@@ -121,15 +125,32 @@ Built on `spring-cloud-starter-gateway-server-webmvc`, not the reactive/WebFlux 
 
 ### 3.5 Application Service
 
-**Owns:** Job application records, status history, tags
+**Owns:** Job application records, status history, tags, document references (UUID only)
 
 **Key flows:**
-- Create application → save to PostgreSQL → publish `application.created` event to Kafka
-- Status change → append to status_history → publish `application.status.updated` event
-- Delete → soft delete (set `is_deleted = true`) → publish `application.deleted` event
-- Queries → PostgreSQL with filtering, sorting, pagination
+- Create application → build entity with defaults → add initial history entry via cascade → save to PostgreSQL → publish `application.created` event (currently logged only — Kafka wired in Phase 3)
+- Status change → validate transition via `StatusTransitionValidator` → append history entry to collection via cascade → save → publish `application.status.updated` event
+- Delete → soft delete (`is_deleted = true`) → publish `application.deleted` event
+- Archive → toggle `is_archived` flag
+- Tag management → add/remove tags per application (stored lowercase, displayed title-case on frontend)
+- Bulk operations → bulk delete, bulk archive, bulk status change (invalid transitions silently skipped per item)
+- Queries → JPA Specifications for dynamic filtering, Spring Data pagination
 
-**Does NOT know about:** Documents, contacts, reminders. It only stores their UUIDs as references.
+**Does NOT know about:** Document metadata, contacts, reminders. Stores only their UUIDs as cross-service references in `application_documents` table.
+
+**Document enrichment:** `DocumentServiceClient` (OpenFeign) calls Document Service to enrich responses with document metadata. Falls back to empty list if Document Service is unavailable — core application tracking is never blocked by Document Service being down.
+
+**Kafka producer:** `KafkaProducerConfig` is annotated `@Profile("!prod")` — not active in production yet. `ApplicationEventProducer` logs events only (send calls commented out). Full Kafka wiring happens in Phase 3.
+
+**`/ping` endpoint:** `GET /ping` → `200 "Application service: pong"` — used for Render keep-warm pings.
+
+**Prod profile (`application-prod.properties`):**
+- Eureka fully disabled via properties
+- Database via `${DB_URL}` (Neon PostgreSQL)
+- Redis via `${REDIS_URL}` (Upstash `rediss://` URL format)
+- Kafka intentionally omitted — `KafkaProducerConfig` excluded via `@Profile("!prod")`, log-only stub handles prod fine until Phase 3
+- SQL logging disabled
+- Log level set to INFO
 
 ---
 
@@ -321,7 +342,6 @@ Application containers:
 
 Frontend:
 - angular dev server  (port 4200)  ✅ running today
-```
 
 ---
 
@@ -332,14 +352,15 @@ Frontend:
 Valid transitions are enforced in a `StatusTransitionValidator`:
 
 ```
-SAVED        → APPLIED, WITHDRAWN
-APPLIED      → PHONE_SCREEN, INTERVIEW, REJECTED, GHOSTED, WITHDRAWN
-PHONE_SCREEN → INTERVIEW, REJECTED, GHOSTED, WITHDRAWN
-INTERVIEW    → TECHNICAL_ROUND, HR_ROUND, OFFER, REJECTED, GHOSTED, WITHDRAWN
-TECHNICAL_ROUND → HR_ROUND, OFFER, REJECTED, WITHDRAWN
-HR_ROUND     → OFFER, REJECTED, WITHDRAWN
-OFFER        → ACCEPTED, REJECTED, WITHDRAWN
+SAVED           → APPLIED, WITHDRAWN
+APPLIED         → PHONE_SCREEN, INTERVIEW, REJECTED, GHOSTED, WITHDRAWN
+PHONE_SCREEN    → INTERVIEW, TECHNICAL_ROUND, REJECTED, GHOSTED, WITHDRAWN
+INTERVIEW       → TECHNICAL_ROUND, HR_ROUND, OFFER, REJECTED, GHOSTED, WITHDRAWN
+TECHNICAL_ROUND → HR_ROUND, OFFER, REJECTED, GHOSTED, WITHDRAWN
+HR_ROUND        → OFFER, REJECTED, GHOSTED, WITHDRAWN
+OFFER           → ACCEPTED, REJECTED, WITHDRAWN
 ```
+
 Terminal states: `ACCEPTED, REJECTED, GHOSTED, WITHDRAWN`
 
 ### 9.2 Reminder Service — Deduplication
@@ -362,6 +383,7 @@ Analytics doesn't query Application Service. Instead it maintains its own read m
 
 ### 10.1 Local Development
 All 9 services + all infrastructure run via Docker Compose on your machine. See `docker-compose.yml` in the repo root.
+> Application Service uses the same prod Eureka disable pattern as User Service — properties-based (`eureka.client.enabled=false` etc.) since it has no `@Profile` on the main class. Kafka is additionally excluded via `@Profile("!prod")` on `KafkaProducerConfig`.
 
 ### 10.2 Production — Free Tier
 

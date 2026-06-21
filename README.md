@@ -66,14 +66,14 @@ Built as a **microservices system** using **Angular + Spring Boot**, this projec
 
 ```bash
 # Clone the repo
-git clone https://github.com/yourname/jobtrackr.git
+git clone https://github.com/tkrsatyam/jobtrackr.git
 cd jobtrackr
 
 # Start all infrastructure + services
 docker compose up -d
 
 # Frontend
-cd frontend
+cd frontend/jobtrackr-fe
 npm install
 ng serve
 ```
@@ -90,6 +90,9 @@ Eureka Dashboard at `http://localhost:8761`
 jobtrackr/
 ├── README.md
 ├── docker-compose.yml
+├── scripts/
+│   └── init-db/
+│       └── 01-init.sql
 ├── services/
 │   ├── eureka-server/
 │   ├── api-gateway/
@@ -143,13 +146,13 @@ jobtrackr/
 
 ## 🏗️ Build Phases
 
-| Phase | Focus | Est. Duration |
+| Phase | Focus | Status |
 |---|---|---|
-| 1 | Foundation — Gateway, User, Application services + Angular shell | 2–3 weeks |
-| 2 | Core Features — Document, Contact, Reminder services | 2 weeks |
-| 3 | Event-Driven — Kafka + Notification service | 1–2 weeks |
-| 4 | Intelligence — Analytics service + MongoDB aggregations + Charts | 1–2 weeks |
-| 5 | Polish — OAuth2, real-time notifications, deployment | 1 week |
+| 1 | Foundation — Gateway, User, Application services + Angular shell | ✅ Complete |
+| 2 | Core Features — Document, Contact, Reminder services | ⬜ Not started |
+| 3 | Event-Driven — Kafka + Notification service | ⬜ Not started |
+| 4 | Intelligence — Analytics service + MongoDB aggregations + Charts | ⬜ Not started |
+| 5 | Polish — OAuth2, real-time notifications, deployment | ⬜ Not started |
 
 ---
 
