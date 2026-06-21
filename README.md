@@ -88,15 +88,16 @@ Eureka Dashboard at `http://localhost:8761`
 jobtrackr/
 ├── README.md
 ├── docker-compose.yml
-├── api-gateway/
-├── eureka-server/
-├── user-service/
-├── application-service/
-├── reminder-service/
-├── document-service/
-├── contact-service/
-├── notification-service/
-├── analytics-service/
+├── services/
+│   ├── eureka-server/
+│   ├── api-gateway/
+│   ├── user-service/
+│   ├── application-service/
+│   ├── reminder-service/
+│   ├── document-service/
+│   ├── contact-service/
+│   ├── notification-service/
+│   └── analytics-service/
 ├── frontend/
 └── docs/
     ├── FEATURES.md
@@ -163,7 +164,7 @@ This project is deployed at zero cost using free tiers across multiple platforms
 | Application Service | ✅ Render | Core feature — must be live |
 | Reminder, Document, Contact, Notification, Analytics | 🖥️ Local only | Not built yet (Phase 2+) or pending Render's free tier slot |
 
-> Phase 1 services (Gateway, User, Application) are deployed and live. Analytics Service doesn't exist yet — it's Phase 4. All 8 services run fully in local dev; deployment will expand as later phases are built, scoped to stay within Render's free tier (4 web services max).
+> Phase 1 services — Eureka, Gateway, User Service, Application Service — are fully built and run locally via Docker Compose. Gateway, User Service, and Application Service are also deployed live on Render. Reminder, Document, Contact, Notification, and Analytics don't exist yet (Phase 2–4); deployment will expand as they're built, scoped to stay within Render's free tier (4 web services max).
 
 > Render free services sleep after 15 min of inactivity. A GitHub Actions workflow pings all three services every 10 minutes on weekdays, 10:30 AM–5:00 PM IST, to keep them warm during active hours — outside that window, expect a cold start (~2–3 minutes) on the first request.
 

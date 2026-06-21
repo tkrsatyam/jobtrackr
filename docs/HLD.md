@@ -40,15 +40,22 @@ JobTrackr is a distributed, event-driven microservices application. Each service
 
 ---
 
-### 3.2 API Gateway (Spring Cloud Gateway)
+### 3.2 API Gateway (Spring Cloud Gateway — MVC variant)
 
-**Responsibilities:**
+Built on `spring-cloud-starter-gateway-server-webmvc`, not the reactive/WebFlux gateway — kept consistent with the rest of the stack, which is blocking Spring MVC throughout.
+
+**Currently implemented:**
 - Single entry point for all client traffic
-- Route requests to correct downstream service
-- Validate JWT on every protected route (delegates to User Service via Redis cache)
+- Routes defined as `RouterFunction` beans, split by profile: `GatewayRoutesConfig` (`@Profile("!prod")`) resolves services via Eureka `lb()` locally/Docker; `GatewayRoutesProdConfig` (`@Profile("prod")`) points directly at hardcoded Render URLs from env vars, since Render instances don't share a registry
+- JWT validation on every protected route — the Gateway verifies the signature itself using the shared secret (`jjwt`); it does **not** call User Service per request
+- Redis lookup for a logout blacklist (`blacklist:<token>`) before letting a validated token through
+- Forwards trusted identity downstream as `X-User-Id`, `X-User-Email`, `X-User-Role` headers (extracted from JWT claims) — downstream services trust these headers and never parse JWTs themselves
+- CORS handling for the Angular origin
+
+**Planned, not yet implemented:**
 - Rate limiting per user (Redis)
-- Request logging and tracing header injection (`X-Correlation-Id`)
-- SSL termination (in production)
+- Request logging / tracing header injection (`X-Correlation-Id`)
+- SSL termination — currently handled by Render's platform load balancer in production, not application code
 
 **Routing rules (examples):**
 ```
@@ -58,18 +65,19 @@ JobTrackr is a distributed, event-driven microservices application. Each service
 /api/reminders/**    → Reminder Service
 /api/documents/**    → Document Service
 /api/contacts/**     → Contact Service
-/api/notifications/**→ Notification Service
-/api/analytics/**    → Analytics Service
+/api/notifications/→ Notification Service
+/api/analytics/    → Analytics Service
 ```
+> Only the first two rows are live. The rest are defined ahead of time with no service behind them yet.
 
 ---
 
 ### 3.3 Service Registry (Netflix Eureka)
 
-- All services register themselves on startup
-- API Gateway discovers service instances dynamically
-- Enables multiple instances of the same service (horizontal scaling)
-- Health checks every 30 seconds
+- Used in local dev and Docker Compose only. Every running service registers on startup; the Gateway resolves `lb://service-name` URIs against it
+- Enables multiple instances of the same service (horizontal scaling) — supported by the pattern, not exercised yet
+- **Fully disabled in production**, not just routed around: `eureka.client.enabled=false` alone didn't stop it from initializing (boot logs still showed `DiscoveryClientOptionalArgsConfiguration` running). The actual fix excludes the autoconfiguration classes directly (`EurekaClientAutoConfiguration`, `DiscoveryClientOptionalArgsConfiguration`, `AutoServiceRegistrationAutoConfiguration`) on each `@SpringBootApplication` in the prod profile
+- Default lease renewal interval is 30s; local eviction timer is tightened to 5s for faster feedback during development
 
 ---
 
@@ -88,7 +96,7 @@ JobTrackr is a distributed, event-driven microservices application. Each service
 {
   "sub": "user-uuid",
   "email": "rahul@example.com",
-  "name": "Rahul Sharma",
+  "role": "USER",
   "iat": 1705312800,
   "exp": 1705316400
 }
@@ -252,7 +260,8 @@ Reminder Service scheduler (every 60s)
 | Token storage (client) | HttpOnly cookies or memory (avoid localStorage) |
 | Token expiry | Access: 15 min, Refresh: 7 days |
 | Token revocation | Redis blacklist on logout |
-| Inter-service auth | Shared internal API key header (`X-Internal-Key`) |
+| Gateway → downstream trust | Gateway forwards `X-User-Id`, `X-User-Email`, `X-User-Role` headers after validating the JWT itself; downstream services trust these and skip JWT handling entirely |
+| Service-to-service auth (OpenFeign) | Not implemented yet — no service currently calls another directly; planned once Document/Contact services exist and Application Service needs to reach them |
 | Resource ownership | Every service checks `userId` from JWT matches resource owner |
 | HTTPS | Enforced at API Gateway in production |
 | Password hashing | BCrypt (cost factor 12) |
@@ -273,31 +282,30 @@ Reminder Service scheduler (every 60s)
 
 ## 8. Local Development Architecture
 
-All services run in Docker containers managed by Docker Compose:
+Target architecture once all phases are built. What's actually defined in today's `docker-compose.yml` is marked below:
 
-```
 Infrastructure containers:
-  - postgres        (port 5432)
-  - mongodb         (port 27017)
-  - redis           (port 6379)
-  - kafka           (port 9092)
-  - zookeeper       (port 2181)
-  - minio           (port 9000, console 9001)
-  - mailhog         (SMTP 1025, UI 8025)
+- postgres        (port 5432)   ✅ running today
+- redis           (port 6379)   ✅ running today
+- mongodb         (port 27017)  ⬜ Phase 2 (Contact Service)
+- kafka           (port 9092)   ⬜ Phase 3
+- zookeeper       (port 2181)   ⬜ Phase 3
+- minio           (port 9000, console 9001)  ⬜ Phase 2 (Document Service)
+- mailhog         (SMTP 1025, UI 8025)        ⬜ Phase 3 (Notification Service)
 
 Application containers:
-  - eureka-server   (port 8761)
-  - api-gateway     (port 8080)
-  - user-service    (port 8081)
-  - application-service (port 8082)
-  - reminder-service    (port 8083)
-  - document-service    (port 8084)
-  - contact-service     (port 8085)
-  - notification-service (port 8086)
-  - analytics-service   (port 8087)
+- eureka-server        (port 8761)  ✅ running today
+- api-gateway          (port 8080)  ✅ running today
+- user-service         (port 8081)  ✅ running today
+- application-service  (port 8082)  ✅ running today
+- reminder-service     (port 8083)  ⬜ Phase 2
+- document-service     (port 8084)  ⬜ Phase 2
+- contact-service      (port 8085)  ⬜ Phase 2
+- notification-service (port 8086)  ⬜ Phase 3
+- analytics-service    (port 8087)  ⬜ Phase 4
 
 Frontend:
-  - angular dev server  (port 4200)
+- angular dev server  (port 4200)  ✅ running today
 ```
 
 ---

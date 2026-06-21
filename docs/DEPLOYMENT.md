@@ -8,14 +8,14 @@
 
 | Environment | How it runs                                                                                   |
 |---|-----------------------------------------------------------------------------------------------|
-| **Local dev** | All 9 services + infrastructure via Docker Compose                                            |
+| **Local dev** | Eureka, Gateway, User Service, Application Service + Postgres/Redis via Docker Compose — the other 5 services don't exist yet |
 | **Production** | Three Phase 1 services on Render + Angular on Vercel + managed cloud services (Neon, Upstash) |
 
 ---
 
 ## What Gets Deployed vs Stays Local
 
-All 8 backend services are fully built and run locally. Only 4 are deployed live — constrained by Render's free tier (4 free web services). This is documented transparently and is a deliberate decision, not a gap in the architecture.
+Eureka, User Service, Application Service, and API Gateway are fully built and run locally. All three backend services (Gateway, User, Application) are also deployed live on Render — comfortably within the 4-service free tier limit today. That ceiling becomes a real constraint only once Reminder, Document, Contact, and Notification exist in Phase 2–3, at which point some will stay local-only by deliberate choice.
 
 | Service | Local | Deployed | Notes |
 |---|---|---|---|
