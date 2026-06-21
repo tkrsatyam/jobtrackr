@@ -30,7 +30,7 @@ Built as a **microservices system** using **Angular + Spring Boot**, this projec
 | Frontend | Angular 17+ dev server | **Vercel** |
 | Backend Services | Spring Boot 3.x (Docker) | **Render** (free web services) |
 | API Gateway | Spring Cloud Gateway | Render |
-| Service Discovery | Netflix Eureka | Render internal URLs (Eureka optional in prod) |
+| Service Discovery | Netflix Eureka | Disabled in prod — Gateway routes via hardcoded Render URLs |
 | Message Broker | Apache Kafka (Docker) | **Upstash Kafka** (free tier) |
 | Relational DB | PostgreSQL (Docker) | **Neon** (free tier, 512MB) |
 | Document DB | MongoDB (Docker) | **MongoDB Atlas** (free tier, 512MB) |
@@ -40,7 +40,7 @@ Built as a **microservices system** using **Angular + Spring Boot**, this projec
 | Auth | JWT + Spring Security + OAuth2 (Google) | Same |
 | Containerization | Docker + Docker Compose | Docker (Render builds from Dockerfile) |
 | Email | MailHog (local SMTP UI) | **Resend** (free 3000/month) |
-| CI/CD | — | **GitHub Actions** (free for public repos) |
+| CI/CD | — | **GitHub Actions** — builds, pushes to Docker Hub, triggers Render deploy hooks per service |
 
 ---
 
@@ -161,14 +161,12 @@ This project is deployed at zero cost using free tiers across multiple platforms
 | API Gateway | ✅ Render | Entry point — must be live |
 | User Service | ✅ Render | Auth — must be live |
 | Application Service | ✅ Render | Core feature — must be live |
-| Analytics Service | ✅ Render | Showcases MongoDB + charts |
-| Reminder Service | 🖥️ Local only | Render free tier limit |
-| Document Service | 🖥️ Local only | Render free tier limit |
-| Contact Service | 🖥️ Local only | Render free tier limit |
-| Notification Service | 🖥️ Local only | Render free tier limit |
+| Reminder, Document, Contact, Notification, Analytics | 🖥️ Local only | Not built yet (Phase 2+) or pending Render's free tier slot |
 
-> All 8 services run fully in local dev. Deployment is scoped to the 4 most demo-worthy services to stay within free tier limits. This is documented transparently in the README and is a deliberate architectural decision, not a limitation of the design.
+> Phase 1 services (Gateway, User, Application) are deployed and live. Analytics Service doesn't exist yet — it's Phase 4. All 8 services run fully in local dev; deployment will expand as later phases are built, scoped to stay within Render's free tier (4 web services max).
+
+> Render free services sleep after 15 min of inactivity. A GitHub Actions workflow pings all three services every 10 minutes on weekdays, 10:30 AM–5:00 PM IST, to keep them warm during active hours — outside that window, expect a cold start (~2–3 minutes) on the first request.
 
 **Live URLs:**
-- Frontend: `https://jobtrackr.vercel.app`
+- Frontend: `https://jobtrackr-portal.vercel.app`
 - API: `https://jobtrackr-gateway.onrender.com`

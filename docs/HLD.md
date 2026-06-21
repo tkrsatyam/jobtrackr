@@ -344,15 +344,16 @@ All 9 services + all infrastructure run via Docker Compose on your machine. See 
 
 This project targets a fully free deployment. The strategy is to deploy only the 4 most demo-relevant services and keep the rest local-only, transparently documented.
 
-**Deployed services (Render free web services):**
+**Deployed services (Render free web services), Phase 1 scope:**
 
-| Service | Platform | URL pattern |
-|---|---|---|
-| Angular Frontend | Vercel | `jobtrackr.vercel.app` |
-| API Gateway | Render | `jobtrackr-gateway.onrender.com` |
-| User Service | Render | `jobtrackr-user.onrender.com` |
-| Application Service | Render | `jobtrackr-app.onrender.com` |
-| Analytics Service | Render | `jobtrackr-analytics.onrender.com` |
+| Service             | Platform | URL                                          |
+|---------------------|---|----------------------------------------------|
+| Angular Frontend    | Vercel | `jobtrackr-portal.vercel.app`                 |
+| API Gateway         | Render | `jobtrackr-gateway.onrender.com`             |
+| User Service        | Render | `jobtrackr-user-service.onrender.com`        |
+| Application Service | Render | `jobtrackr-application-service.onrender.com` |
+
+Analytics doesn't exist yet (Phase 4). Reminder/Document/Contact/Notification are built locally only, pending later phases.
 
 **Managed infrastructure (all free tiers):**
 
@@ -367,7 +368,7 @@ This project targets a fully free deployment. The strategy is to deploy only the
 | CI/CD | GitHub Actions | Free for public repos |
 
 **Render free tier behaviour:**
-Render free services spin down after 15 minutes of inactivity and cold-start in ~30 seconds on the next request. Acceptable for a portfolio project. The frontend on Vercel is always instant.
+Render free services spin down after 15 minutes of inactivity. Measured cold-start on this stack is 145–166 seconds (heavier than typical, likely free-tier CPU throttling against this many initializing Spring beans), not the ~30s often reported for lighter apps. A GitHub Actions cron pings all three services every 10 min on weekdays during active hours to avoid this in practice; gateway timeouts are set to 180s as a fallback for genuinely cold requests outside that window.
 
 **Kafka in production:**
 The deployed services use **Upstash Kafka** which is HTTP-based. Spring Boot connects via the standard Kafka client — only the bootstrap server URL and credentials change between local and prod (environment variables). No code changes needed.
@@ -402,7 +403,9 @@ Key variables per service:
 ```
 # Shared across all services
 EUREKA_URI=http://eureka:8761/eureka          # local
-# (Eureka replaced by hardcoded Render URLs in prod)
+# Eureka fully disabled in prod (autoconfiguration excluded, not just
+# eureka.client.enabled=false, which didn't fully suppress it) —
+# Gateway routes via hardcoded Render URLs instead
 
 # User / Application / Reminder / Document services
 POSTGRES_URL=jdbc:postgresql://...
