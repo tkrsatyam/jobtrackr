@@ -13,18 +13,21 @@ Register a new user.
 **Request:**
 ```json
 {
-  "name": "Rahul Sharma",
+  "fullName": "Rahul Sharma",
   "email": "rahul@example.com",
   "password": "SecurePass@123"
 }
 ```
-**Response `201`:**
+**Response `200`:**
 ```json
 {
+  "accessToken": "eyJhbGc...",
+  "refreshToken": "uuid-string",
+  "tokenType": "Bearer",
   "userId": "uuid",
-  "name": "Rahul Sharma",
   "email": "rahul@example.com",
-  "createdAt": "2024-01-15T10:00:00Z"
+  "fullName": "Rahul Sharma",
+  "role": "USER"
 }
 ```
 
@@ -44,35 +47,46 @@ Login and receive tokens.
 ```json
 {
   "accessToken": "eyJhbGc...",
-  "refreshToken": "eyJhbGc...",
-  "expiresIn": 3600,
-  "user": {
-    "userId": "uuid",
-    "name": "Rahul Sharma",
-    "email": "rahul@example.com"
-  }
+  "refreshToken": "uuid-string",
+  "tokenType": "Bearer",
+  "userId": "uuid",
+  "email": "rahul@example.com",
+  "fullName": "Rahul Sharma",
+  "role": "USER"
 }
 ```
 
 ---
 
 ### POST `/api/auth/refresh`
-Refresh an access token.
+Refresh an access token. The old refresh token is rotated — a new one is issued and the old one is revoked.
 
 **Request:**
 ```json
-{ "refreshToken": "eyJhbGc..." }
+{ "refreshToken": "uuid-string" }
 ```
 **Response `200`:**
 ```json
-{ "accessToken": "eyJhbGc...", "expiresIn": 3600 }
+{
+  "accessToken": "eyJhbGc...",
+  "refreshToken": "new-uuid-string",
+  "tokenType": "Bearer",
+  "userId": "uuid",
+  "email": "rahul@example.com",
+  "fullName": "Rahul Sharma",
+  "role": "USER"
+}
 ```
 
 ---
 
 ### POST `/api/auth/logout` 🔒
-Invalidate current token.
+Invalidate the current session. Blacklists the access token in Redis and revokes the current session's refresh token. Other active sessions on other devices are unaffected.
 
+**Request:**
+```json
+{ "refreshToken": "uuid-string" }
+```
 **Response `204`:** No content.
 
 ---
@@ -85,41 +99,32 @@ Get current user profile.
 **Response `200`:**
 ```json
 {
-  "userId": "uuid",
-  "name": "Rahul Sharma",
+  "id": "uuid",
   "email": "rahul@example.com",
-  "avatarUrl": "https://minio.../avatar.jpg",
-  "preferences": {
-    "targetRole": "Full Stack Developer",
-    "targetSalaryMin": 800000,
-    "targetSalaryMax": 1200000,
-    "currency": "INR",
-    "preferredLocations": ["Pune", "Bangalore", "Remote"],
-    "preferredWorkMode": "HYBRID"
-  },
-  "createdAt": "2024-01-15T10:00:00Z"
+  "fullName": "Rahul Sharma",
+  "avatarUrl": "https://r2.../avatar.jpg",
+  "role": "USER",
+  "provider": "LOCAL"
 }
 ```
+
+> `provider` is either `LOCAL` (email/password) or `GOOGLE` (OAuth2). Use this on the frontend to conditionally show/hide the password change section.
 
 ---
 
 ### PUT `/api/users/me` 🔒
-Update profile.
+Update profile. Only `fullName` and `avatarUrl` are editable. Email, role, and provider are not updatable via this endpoint.
 
 **Request:**
 ```json
 {
-  "name": "Rahul Sharma",
-  "preferences": {
-    "targetRole": "Backend Developer",
-    "targetSalaryMin": 900000,
-    "targetSalaryMax": 1400000,
-    "preferredLocations": ["Remote"],
-    "preferredWorkMode": "REMOTE"
-  }
+  "fullName": "Rahul Sharma",
+  "avatarUrl": "https://r2.../avatar.jpg"
 }
 ```
-**Response `200`:** Updated user object.
+**Response `200`:** Updated profile object (same shape as `GET /api/users/me`).
+
+> Avatar file upload is handled by the Document Service. Angular uploads the file there first, receives a URL back, then sends that URL here to save it on the user profile.
 
 ---
 
@@ -543,8 +548,22 @@ Update notification preferences.
 
 ## ⚠️ Error Response Format
 
-All errors follow this standard shape:
+**Current implementation** (User Service — `GlobalExceptionHandler`):
 
+Runtime errors:
+```json
+{ "error": "Descriptive error message" }
+```
+
+Validation errors return a map of field names to messages:
+```json
+{
+  "email": "must be a well-formed email address",
+  "password": "Password must be at least 8 characters"
+}
+```
+
+**Planned standardised format** (to be implemented across all services in a later phase):
 ```json
 {
   "timestamp": "2024-01-15T10:00:00Z",
@@ -558,13 +577,15 @@ All errors follow this standard shape:
 }
 ```
 
+> Other services may use a different error shape until standardisation is done.
+
 **Common HTTP Status Codes:**
 - `200` OK
 - `201` Created
 - `204` No Content
-- `400` Bad Request (validation errors)
-- `401` Unauthorized (missing/invalid JWT)
-- `403` Forbidden (accessing another user's resource)
+- `400` Bad Request — validation errors, invalid credentials, duplicate email, business rule violations
+- `401` Unauthorized — missing or invalid JWT (rejected by Gateway before reaching User Service)
+- `403` Forbidden — accessing another user's resource *(enforced per service once ownership checks are added)*
 - `404` Not Found
-- `409` Conflict (e.g. duplicate email on register)
+- `409` Conflict — planned for duplicate resource cases (e.g. duplicate email on register); currently returns `400`
 - `500` Internal Server Error

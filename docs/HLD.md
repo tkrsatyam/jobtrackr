@@ -86,21 +86,36 @@ Built on `spring-cloud-starter-gateway-server-webmvc`, not the reactive/WebFlux 
 **Owns:** User accounts, authentication, profiles, preferences
 
 **Key flows:**
-- Registration → hash password → save user → publish `user.registered` Kafka event
-- Login → validate credentials → issue JWT (15min) + Refresh Token (7 days) → store refresh token hash in DB + Redis
-- Token refresh → validate refresh token → issue new access token → rotate refresh token
-- Logout → blacklist JWT in Redis until expiry
+- Registration → hash password (BCrypt cost 12) → save user → return token pair
+  *(publishing `user.registered` Kafka event is planned for Phase 3 — not yet implemented)*
+- Login → validate credentials → issue JWT access token + refresh token → store refresh token in PostgreSQL
+- Token refresh → validate refresh token → rotate (old revoked, new issued) → return new token pair
+- Logout → blacklist access token in Redis until natural expiry → revoke current session's refresh token in PostgreSQL only (other sessions unaffected)
+- Account deletion → hard-delete all refresh tokens first (FK constraint) → delete user
 
 **JWT payload:**
 ```json
 {
   "sub": "user-uuid",
-  "email": "rahul@example.com",
+  "email": "user@example.com",
   "role": "USER",
   "iat": 1705312800,
   "exp": 1705316400
 }
 ```
+
+**Token storage:**
+- Access token: 15 minutes (production), 24 hours (development). On logout, blacklisted in Redis as `blacklist:{token}` with TTL = remaining token lifetime.
+- Refresh token: 7 days. Stored as a plain UUID string in PostgreSQL with a `revoked` boolean. **Not hashed, not stored in Redis.** Rotated on every use — old token revoked, new one issued.
+- Per-session logout only — logout does not affect other active sessions.
+
+**Prod profile (`application-prod.properties`):**
+- Eureka fully disabled via properties (`eureka.client.enabled=false`, `eureka.client.register-with-eureka=false`, `eureka.client.fetch-registry=false`, `spring.cloud.discovery.enabled=false`)
+- Redis configured via `spring.data.redis.url=${REDIS_URL}` (Upstash `rediss://` URL format)
+- SQL logging disabled (`spring.jpa.show-sql=false`)
+- Access token TTL restored to 900000ms (15 min) — overrides the dev value in `application.properties`
+
+**`/ping` endpoint:** exposed for Render keep-warm pings (`GET /ping` → `200 "User service: pong"`)
 
 ---
 
@@ -257,7 +272,7 @@ Reminder Service scheduler (every 60s)
 | Concern | Approach |
 |---|---|
 | Authentication | JWT Bearer tokens |
-| Token storage (client) | HttpOnly cookies or memory (avoid localStorage) |
+| Token storage (client) | `localStorage` — access token and refresh token stored after login. HttpOnly cookies are the more secure alternative (immune to XSS) but require backend changes to set/read cookies; noted as a future hardening item |
 | Token expiry | Access: 15 min, Refresh: 7 days |
 | Token revocation | Redis blacklist on logout |
 | Gateway → downstream trust | Gateway forwards `X-User-Id`, `X-User-Email`, `X-User-Role` headers after validating the JWT itself; downstream services trust these and skip JWT handling entirely |

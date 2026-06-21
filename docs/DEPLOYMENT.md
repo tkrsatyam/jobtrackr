@@ -171,11 +171,14 @@ ALLOWED_ORIGINS=http://localhost:4200,https://<your-vercel-domain>
 ```env
 SPRING_PROFILES_ACTIVE=prod
 DB_URL=jdbc:postgresql://<neon-host>/jobtrackr_users?sslmode=require
-DB_USERNAME=...
+DB_USERNAME=neondb_owner
 DB_PASSWORD=...
 JWT_SECRET=your-256-bit-secret          # Must match Gateway exactly
-REDIS_URL=rediss://default:password@upstash-host:6379
+REDIS_URL=rediss://default:<password>@<upstash-host>:6379
 ```
+
+> `REDIS_URL` uses Upstash's full `rediss://` URL format — the User Service prod profile reads it via `spring.data.redis.url` (not host/port separately).
+> `DB_URL` must not embed credentials in the URL. Neon's default connection string includes `username:password@host` — strip those out and pass them as `DB_USERNAME`/`DB_PASSWORD` separately, otherwise the JDBC driver rejects the URL.
 
 ### Application Service
 ```env
@@ -227,7 +230,7 @@ curl https://jobtrackr-application-service.onrender.com/ping
 # 2. Register a user
 curl -X POST https://jobtrackr-gateway.onrender.com/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"name":"Test","email":"test@example.com","password":"Test@1234"}'
+  -d '{"fullName":"Test","email":"test@example.com","password":"Test@1234"}'
 
 # 3. Login
 curl -X POST https://jobtrackr-gateway.onrender.com/api/auth/login \

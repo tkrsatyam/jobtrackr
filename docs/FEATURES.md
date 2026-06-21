@@ -5,18 +5,20 @@
 ## 👤 User Service Features
 
 ### Authentication & Authorization
-- [ ] Register with email + password
-- [ ] Login with JWT (access token + refresh token)
-- [ ] OAuth2 login via Google
-- [ ] Password reset via email link
-- [ ] JWT refresh token rotation
-- [ ] Logout (token invalidation via Redis blacklist)
+- [x] Register with email + password
+- [x] Login with JWT (access token + refresh token)
+- [x] JWT refresh token rotation (per-session — logout only affects current session)
+- [x] Logout (access token blacklisted in Redis, refresh token revoked in PostgreSQL)
+- [ ] OAuth2 login via Google *(Phase 5 — commented out, pending Google credentials)*
+- [ ] Password reset via email link *(not yet implemented)*
 
 ### Profile
-- [ ] View and edit profile — name, email, avatar
-- [ ] Set job search preferences — target role, target salary range, preferred locations, work mode
-- [ ] Upload profile avatar (stored in MinIO)
-- [ ] Account deletion (soft delete)
+- [x] View profile — id, email, fullName, avatarUrl, role, provider
+- [x] Edit profile — fullName and avatarUrl only (email, role, provider are not editable)
+- [x] Change password (LOCAL accounts only — Google OAuth2 users have no password)
+- [x] Delete account (hard delete — removes refresh tokens first, then user record)
+- [ ] Set job search preferences — target role, salary range, preferred locations, work mode *(not yet implemented)*
+- [ ] Upload profile avatar via file upload *(avatarUrl is currently a plain string URL; file upload handled by Document Service in Phase 2)*
 
 ---
 
