@@ -1,4 +1,4 @@
-name: Keep Services Warm
+name: BE - Keep Services Warm
 
 on:
   schedule:
