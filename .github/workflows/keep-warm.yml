@@ -7,8 +7,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  ping:
+  check-window:
     runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.window.outputs.skip }}
     steps:
       - name: Check if within active window
         id: window
@@ -20,14 +22,26 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
+  ping-gateway:
+    needs: check-window
+    if: needs.check-window.outputs.skip == 'false'
+    runs-on: ubuntu-latest
+    steps:
       - name: Ping Gateway
-        if: steps.window.outputs.skip == 'false'
         run: curl -sf -o /dev/null -w "%{http_code}" https://jobtrackr-gateway.onrender.com/ping || echo "Gateway ping failed"
 
+  ping-user-service:
+    needs: check-window
+    if: needs.check-window.outputs.skip == 'false'
+    runs-on: ubuntu-latest
+    steps:
       - name: Ping User Service
-        if: steps.window.outputs.skip == 'false'
         run: curl -sf -o /dev/null -w "%{http_code}" https://jobtrackr-user-service.onrender.com/ping || echo "User service ping failed"
 
+  ping-application-service:
+    needs: check-window
+    if: needs.check-window.outputs.skip == 'false'
+    runs-on: ubuntu-latest
+    steps:
       - name: Ping Application Service
-        if: steps.window.outputs.skip == 'false'
         run: curl -sf -o /dev/null -w "%{http_code}" https://jobtrackr-application-service.onrender.com/ping || echo "Application service ping failed"
