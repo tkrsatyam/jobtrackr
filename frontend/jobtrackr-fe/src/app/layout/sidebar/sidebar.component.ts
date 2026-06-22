@@ -22,10 +22,12 @@ interface NavItem {
   styleUrl: './sidebar.component.scss',
 })
 export class SidebarComponent {
+
   navItems: NavItem[] = [
     { label: 'Dashboard', icon: 'dashboard', route:'/dashboard', exact: true },
     { label: 'Applications', icon: 'work_outline', route: '/applications', exact: true },
     { label: 'Board', icon: 'view_kanban', route: '/applications/board', exact: true },
     { label: 'Settings', icon: 'settings', route: '/settings', exact: true }
   ];
+
 }
