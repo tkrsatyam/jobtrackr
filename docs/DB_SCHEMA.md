@@ -142,7 +142,7 @@ CREATE INDEX idx_applications_user_status ON applications(user_id, status);
 CREATE INDEX idx_status_history_app ON application_status_history(application_id);
 ```
 
-> **Note:** The custom PostgreSQL enum types below reflect the original design intent.
+> **Note:** The custom PostgreSQL enum types above reflect the original design intent.
 > In practice, `ddl-auto=update` with `@Enumerated(EnumType.STRING)` means Hibernate
 > stores all enum fields as `VARCHAR` columns — the custom PG enum types are not created.
 > The table structure and column names are accurate; only the column types differ.

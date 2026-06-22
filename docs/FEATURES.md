@@ -60,14 +60,6 @@
 - [x] Bulk status change (invalid transitions silently skipped per item)
 - [ ] Bulk tag assignment — not yet implemented
 
-### Application Detail View
-- [ ] Full detail page per application
-- [ ] Linked documents (resumes, cover letters)
-- [ ] Linked contacts (recruiter, hiring manager)
-- [ ] Linked reminders
-- [ ] Activity timeline (all events in one view)
-- [ ] Edit all fields inline
-
 ### Document Integration
 - [x] DocumentServiceClient (Feign) with fallback returning empty list
 - [ ] Document Service not yet built — documents always empty (Phase 2)
@@ -225,6 +217,7 @@
 - [ ] Linked documents section — Phase 2
 - [ ] Linked contacts section — Phase 2
 - [ ] Linked reminders section — Phase 2
+- [ ] Activity timeline (all events in one view) — future work
 
 **Edit Application (`/applications/:id/edit`)**
 - [x] Edit form pre-populated with existing values

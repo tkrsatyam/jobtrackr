@@ -128,6 +128,27 @@ Update profile. Only `fullName` and `avatarUrl` are editable. Email, role, and p
 
 ---
 
+### DELETE `/api/users/me` 🔒
+Delete account. Hard-deletes all refresh tokens first (FK constraint), then the user record. Irreversible.
+
+**Response `204`:** No content.
+
+---
+
+### PUT `/api/users/me/password` 🔒
+Change password. Only available for `LOCAL` provider accounts — Google OAuth2 users have no password.
+
+**Request:**
+```json
+{
+  "currentPassword": "OldPass@123",
+  "newPassword": "NewPass@456"
+}
+```
+**Response `200`:** `{ "message": "Password updated successfully" }` *(or similar — verify exact response shape from UserService)*
+
+---
+
 ### GET `/ping`
 Health check endpoint for Render keep-warm pings. No auth required.
 
@@ -697,7 +718,7 @@ Validation errors return a flat map of field names to messages:
 - `204` No Content
 - `400` Bad Request — validation errors, invalid credentials, duplicate email, business rule violations
 - `401` Unauthorized — missing or invalid JWT (rejected by Gateway before reaching User Service)
-- `403` Forbidden — accessing another user's resource *(enforced per service once ownership checks are added)*
+- `403` Forbidden — missing `X-User-Id` header, accessing another user's resource
 - `404` Not Found
 - `409` Conflict — planned for duplicate resource cases (e.g. duplicate email on register); currently returns `400`
 - `500` Internal Server Error

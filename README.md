@@ -104,6 +104,7 @@ jobtrackr/
 │   ├── notification-service/
 │   └── analytics-service/
 ├── frontend/
+│   └── jobtrackr-fe/
 └── docs/
     ├── FEATURES.md
     ├── API_CONTRACTS.md
