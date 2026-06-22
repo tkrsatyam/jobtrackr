@@ -6,43 +6,37 @@
 
 ## Overview
 
-| Environment | How it runs |
-|---|---|
-| **Local dev** | All 9 services + infrastructure via Docker Compose |
-| **Production** | 4 core services on Render + Angular on Vercel + managed cloud services |
+| Environment | How it runs                                                                                   |
+|---|-----------------------------------------------------------------------------------------------|
+| **Local dev** | Eureka, Gateway, User Service, Application Service + Postgres/Redis via Docker Compose — the other 5 services don't exist yet |
+| **Production** | Three Phase 1 services on Render + Angular on Vercel + managed cloud services (Neon, Upstash) |
 
 ---
 
 ## What Gets Deployed vs Stays Local
 
-All 8 backend services are fully built and run locally. Only 4 are deployed live — constrained by Render's free tier (4 free web services). This is documented transparently and is a deliberate decision, not a gap in the architecture.
+Eureka, User Service, Application Service, and API Gateway are fully built and run locally. All three backend services (Gateway, User, Application) are also deployed live on Render — comfortably within the 4-service free tier limit today. That ceiling becomes a real constraint only once Reminder, Document, Contact, and Notification exist in Phase 2–3, at which point some will stay local-only by deliberate choice.
 
 | Service | Local | Deployed | Notes |
 |---|---|---|---|
 | API Gateway | ✅ | ✅ | Must be live — single entry point |
 | User Service | ✅ | ✅ | Must be live — handles auth |
 | Application Service | ✅ | ✅ | Core feature |
-| Analytics Service | ✅ | ✅ | Showcases MongoDB + Kafka + charts |
-| Reminder Service | ✅ | ❌ | Fully built, free tier limit |
-| Document Service | ✅ | ❌ | Fully built, free tier limit |
-| Contact Service | ✅ | ❌ | Fully built, free tier limit |
-| Notification Service | ✅ | ❌ | Fully built, free tier limit |
-
+| Reminder, Document, Contact, Notification, Analytics | ❌ not built yet | ❌ | Phase 2–4, not built |
 ---
 
 ## Platform Accounts to Create
 
 Sign up for these before starting deployment (all free, no credit card except Render):
 
-- [ ] [Vercel](https://vercel.com) — Angular frontend
-- [ ] [Render](https://render.com) — Spring Boot services *(free tier, no credit card needed)*
-- [ ] [Neon](https://neon.tech) — PostgreSQL
-- [ ] [MongoDB Atlas](https://cloud.mongodb.com) — MongoDB
-- [ ] [Upstash](https://upstash.com) — Redis + Kafka
-- [ ] [Cloudflare](https://cloudflare.com) — R2 file storage *(requires free account, no card for R2)*
-- [ ] [Resend](https://resend.com) — Email delivery
-- [ ] [Docker Hub](https://hub.docker.com) — Docker image registry
-- [ ] [GitHub](https://github.com) — Source + CI/CD via Actions
+- [x] [Vercel](https://vercel.com) — Angular frontend
+- [x] [Render](https://render.com) — Spring Boot services *(free tier, no credit card needed)*
+- [x] [Neon](https://neon.tech) — PostgreSQL
+- [x] [Upstash](https://upstash.com) — Redis (Kafka not provisioned yet — Phase 3)
+- [x] [Docker Hub](https://hub.docker.com) — Docker image registry
+- [x] [GitHub](https://github.com) — Source + CI/CD via Actions
+
+MongoDB Atlas, Cloudflare R2, and Resend are needed for Contact/Document/Notification services — not set up yet since those services aren't built.
 
 ---
 
@@ -51,183 +45,98 @@ Sign up for these before starting deployment (all free, no credit card except Re
 ### Step 1 — Set Up Managed Infrastructure
 
 **PostgreSQL on Neon**
-1. Create a Neon project → create a database named `jobtrackr`
-2. Copy the connection string: `postgresql://user:pass@host/jobtrackr?sslmode=require`
-3. Run schema migrations for User, Application, Reminder, Document services
-
-**MongoDB on Atlas**
-1. Create a free M0 cluster (512MB)
-2. Create a database user with read/write access
-3. Whitelist all IPs (`0.0.0.0/0`) for Render's dynamic IPs
-4. Copy connection string: `mongodb+srv://user:pass@cluster.mongodb.net/jobtrackr`
+1. Create a Neon project
+2. Create two databases inside it: `jobtrackr_users`, `jobtrackr_applications`
+3. Copy each database's connection string (they differ only in the database name at the end of the URL)
 
 **Redis on Upstash**
 1. Create a Redis database (free tier)
-2. Copy the REST URL and token, or the Redis connection URL
-
-**Kafka on Upstash**
-1. Create a Kafka cluster (free tier)
-2. Create topics: `application.created`, `application.status.updated`, `application.deleted`, `reminder.triggered`, `document.uploaded`, `user.registered`
-3. Copy bootstrap server URL, username, and password
-
-**File Storage on Cloudflare R2**
-1. Create an R2 bucket named `jobtrackr-documents`
-2. Create an API token with read/write access
-3. Note your Account ID, Access Key, and Secret Key
-4. R2 is S3-compatible — the Document Service uses the S3 SDK pointed at `https://<account-id>.r2.cloudflarestorage.com`
-
-**Email on Resend**
-1. Create a Resend account
-2. Add and verify a sending domain (or use their sandbox for testing)
-3. Copy your API key
+2. Copy the `rediss://` connection URL — note the double-s, it's TLS
+3. Same Redis instance is shared by Gateway, User Service, and Application Service
 
 ---
 
-### Step 2 — Prepare Docker Images
+### Step 2 — Deploy to Render
 
-Each Spring Boot service needs a `Dockerfile`. Example for any service:
+Create 3 Render web services — Gateway, User Service, Application Service — deploying from Docker Hub images. Create User Service and Application Service first; Gateway needs their URLs as env vars, which don't exist until those two are live.
 
-```dockerfile
-FROM eclipse-temurin:21-jre-alpine
-WORKDIR /app
-COPY target/*.jar app.jar
-EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
-```
-
-Build and push to Docker Hub:
-```bash
-# From each service directory
-mvn clean package -DskipTests
-docker build -t youruser/jobtrackr-gateway:latest .
-docker push youruser/jobtrackr-gateway:latest
-
-# Repeat for user-service, application-service, analytics-service
-```
-
----
-
-### Step 3 — Deploy to Render
-
-Create a **Web Service** on Render for each of the 4 deployed services. For each:
-
-1. Connect your GitHub repo (or use Docker Hub image directly)
-2. Set **Environment** to Docker
-3. Set the **Docker image** to `youruser/jobtrackr-{service}:latest`
-4. Add all environment variables (see Environment Variables section below)
-5. Set **Instance type** to Free
+For each service:
+1. Connect to the Docker Hub image (`youruser/jobtrackr-{service}:latest`)
+2. Set **Instance type** to Free
+3. Add `SPRING_PROFILES_ACTIVE=prod` plus the service's env vars (see Environment Variables Reference below)
+4. Deploy and copy the assigned `.onrender.com` URL
 
 **Service URLs after deploy (save these):**
 ```
-jobtrackr-gateway     → https://jobtrackr-gateway.onrender.com
-jobtrackr-user        → https://jobtrackr-user.onrender.com
-jobtrackr-app         → https://jobtrackr-app.onrender.com
-jobtrackr-analytics   → https://jobtrackr-analytics.onrender.com
+jobtrackr-gateway              → https://jobtrackr-gateway.onrender.com
+jobtrackr-user-service         → https://jobtrackr-user-service.onrender.com
+jobtrackr-application-service  → https://jobtrackr-application-service.onrender.com
 ```
-
-> ⚠️ Render free services sleep after 15 min of inactivity. First request after sleep takes ~30 seconds to cold-start. This is expected and acceptable for a portfolio project.
 
 **Eureka in production:**
-Render services can't discover each other via Eureka the same way Docker containers can. In production, replace Eureka-based discovery in the API Gateway with hardcoded Render URLs as environment variables. The Gateway routing config becomes:
 
-```yaml
-# application-prod.yml
-spring:
-  cloud:
-    gateway:
-      routes:
-        - id: user-service
-          uri: ${USER_SERVICE_URL:http://localhost:8081}
-          predicates:
-            - Path=/api/auth/**, /api/users/**
-        - id: application-service
-          uri: ${APPLICATION_SERVICE_URL:http://localhost:8082}
-          predicates:
-            - Path=/api/applications/**
+Eureka is fully disabled in prod, not just routed around. `eureka.client.enabled=false` alone did **not** suppress it — confirmed by boot logs still showing `DiscoveryClientOptionalArgsConfiguration` and LoadBalancer initialization. The actual fix is excluding the autoconfiguration classes directly on each `@SpringBootApplication`:
+
+```java
+@SpringBootApplication(exclude = {
+    UserDetailsServiceAutoConfiguration.class,
+    EurekaClientAutoConfiguration.class,
+    DiscoveryClientOptionalArgsConfiguration.class,
+    AutoServiceRegistrationAutoConfiguration.class
+})
 ```
 
-Set `USER_SERVICE_URL`, `APPLICATION_SERVICE_URL`, `ANALYTICS_SERVICE_URL` as environment variables on Render pointing to the respective Render URLs.
+The Gateway's routing is split into two profile-scoped `RouterFunction` config classes instead of one property-based config:
+1. `GatewayRoutesConfig` (`@Profile("!prod")`) — original Eureka + `lb("service-name")` routing, used locally and in Docker
+2. `GatewayRoutesProdConfig` (`@Profile("prod")`) — uses `HandlerFunctions.https()` + `.before(BeforeFilterFunctions.uri(...))` pointed directly at the Render URLs read from env vars
+
+> ⚠️ Render free services sleep after 15 min of inactivity. **Measured cold-start on this stack is 145–166 seconds** — much higher than the ~30s typically reported for lighter apps, likely due to free-tier CPU throttling against this many Spring beans (JPA, Security, LoadBalancer) initializing. Gateway timeouts (`socket-timeout=180s`) are sized to that measured number. A `keep-warm.yml` GitHub Actions workflow pings all three services every 10 minutes, weekdays 10:30 AM–5:00 PM IST, to avoid hitting this during active hours — trigger it manually via `workflow_dispatch` before anything time-sensitive, like an interview.
 
 ---
 
-### Step 4 — Deploy Angular to Vercel
+### Step 3 — Deploy Angular to Vercel
 
 1. Push your Angular repo to GitHub
 2. Import the repo on Vercel
-3. Set **Framework Preset** to Angular
-4. Set **Build Command** to `ng build --configuration production`
-5. Set **Output Directory** to `dist/frontend/browser`
-6. Add environment variable:
-   ```
-   NG_APP_API_BASE_URL=https://jobtrackr-gateway.onrender.com
-   ```
-7. Deploy — Vercel assigns `jobtrackr.vercel.app` automatically
+3. Set **Root Directory** to `frontend/jobtrackr-fe` — the repo root isn't the Angular project root
+4. Set **Framework Preset** to Angular (should auto-detect once Root Directory is set)
+5. Set **Build Command** to `npm run build` (already builds in production mode — `production` is the default configuration)
+6. Set **Output Directory** to `dist/jobtrackr-fe/browser` — note the extra `/browser` nesting; the newer esbuild-based Angular builder outputs one level deeper than older Angular CLI versions
+   > This extra `/browser` nesting is the Angular 21 esbuild builder output structure — if this build fails to serve correctly on Vercel, verify the dist output locally with `npm run build` and confirm the path.
+7. No environment variables needed — the prod API URL is baked in at build time, not read from a Vercel env var
+8. Deploy — Vercel assigns a `*.vercel.app` domain
+9. Set **Ignored Build Step** to "Only build if there are changes in a folder," pointed at `frontend/jobtrackr-fe`, so backend/workflow-only commits don't trigger a frontend rebuild
+10. Add the new Vercel domain to the Gateway's `ALLOWED_ORIGINS` env var and redeploy the Gateway — skipping this causes CORS failures, not auth failures, which looks like a different bug than it is
 
 In `environment.prod.ts`:
 ```typescript
 export const environment = {
   production: true,
-  apiBaseUrl: process.env['NG_APP_API_BASE_URL'] || ''
+  apiUrl: 'https://jobtrackr-gateway.onrender.com'
 };
 ```
 
+In `angular.json`, under the `production` build configuration:
+```json
+"fileReplacements": [
+  {
+    "replace": "src/environments/environment.ts",
+    "with": "src/environments/environment.prod.ts"
+  }
+]
+```
+
+Without this, the prod build silently keeps using `environment.ts` (`localhost:8080`) regardless of the build configuration flag — verify the swap actually worked by grepping the built JS for the real URL before trusting it.
+
 ---
 
-### Step 5 — Set Up CI/CD with GitHub Actions
+### Step 4 — Set Up CI/CD with GitHub Actions
 
 Create `.github/workflows/deploy.yml`:
 
-```yaml
-name: Build and Deploy
-
-on:
-  push:
-    branches: [main]
-
-jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service: [api-gateway, user-service, application-service, analytics-service]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-
-      - name: Build ${{ matrix.service }}
-        run: |
-          cd ${{ matrix.service }}
-          mvn clean package -DskipTests
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./${{ matrix.service }}
-          push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/jobtrackr-${{ matrix.service }}:latest
-
-  deploy-render:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Render deploys
-        run: |
-          curl -X POST ${{ secrets.RENDER_GATEWAY_HOOK }}
-          curl -X POST ${{ secrets.RENDER_USER_HOOK }}
-          curl -X POST ${{ secrets.RENDER_APP_HOOK }}
-          curl -X POST ${{ secrets.RENDER_ANALYTICS_HOOK }}
-```
+1. A `detect-changes` job runs `dorny/paths-filter` against `services/api-gateway/**`, `services/user-service/**`, `services/application-service/**`, producing a true/false output per service
+2. Three independent jobs (`build-gateway`, `build-user-service`, `build-application-service`) each declare `needs: detect-changes` and `if: needs.detect-changes.outputs.<service> == 'true'` — only services that actually changed rebuild
+3. Each job: checks out code, builds the jar with Maven, sets up Docker Buildx (`docker/setup-buildx-action` — **required** before using `cache-from/to: type=gha`, since the default `docker` driver doesn't support that cache backend and fails the build), logs into Docker Hub, builds + pushes the image, then curls that service's Render deploy hook
 
 **GitHub Secrets to add:**
 ```
@@ -236,10 +145,14 @@ DOCKERHUB_TOKEN
 RENDER_GATEWAY_HOOK      ← Deploy hook URL from Render dashboard
 RENDER_USER_HOOK
 RENDER_APP_HOOK
-RENDER_ANALYTICS_HOOK
 ```
 
-Vercel auto-deploys on push with no extra config needed.
+Create `.github/workflows/keep-warm.yml`:
+1. Same `needs`-based fan-out pattern — a `check-window` job determines if the current time is inside the active window, then three independent ping jobs run in parallel (not sequentially) if so
+2. Scheduled via cron for weekday business hours (10:30 AM–5:00 PM IST), plus `workflow_dispatch` for manual triggering
+3. Pings each service's own `/ping` endpoint directly — bypasses the Gateway, since each service has its own independent 15-minute sleep timer
+
+Vercel auto-deploys on push with no extra config needed, aside from the Ignored Build Step folder filter set up in Step 3.
 
 ---
 
@@ -247,32 +160,36 @@ Vercel auto-deploys on push with no extra config needed.
 
 ### API Gateway
 ```env
-USER_SERVICE_URL=https://jobtrackr-user.onrender.com
-APPLICATION_SERVICE_URL=https://jobtrackr-app.onrender.com
-ANALYTICS_SERVICE_URL=https://jobtrackr-analytics.onrender.com
+SPRING_PROFILES_ACTIVE=prod
+USER_SERVICE_URL=https://jobtrackr-user-service.onrender.com
+APPLICATION_SERVICE_URL=https://jobtrackr-application-service.onrender.com
 JWT_SECRET=your-256-bit-secret
 REDIS_URL=rediss://default:password@upstash-host:6379
-ALLOWED_ORIGINS=https://jobtrackr.vercel.app
+ALLOWED_ORIGINS=http://localhost:4200,https://<your-vercel-domain>
 ```
 
 ### User Service
 ```env
-POSTGRES_URL=postgresql://user:pass@neon-host/jobtrackr?sslmode=require
-JWT_SECRET=your-256-bit-secret          # Must match Gateway
-JWT_EXPIRY_MS=900000                    # 15 minutes
-REFRESH_TOKEN_EXPIRY_DAYS=7
-REDIS_URL=rediss://default:password@upstash-host:6379
-GOOGLE_CLIENT_ID=...                    # OAuth2
-GOOGLE_CLIENT_SECRET=...
+SPRING_PROFILES_ACTIVE=prod
+DB_URL=jdbc:postgresql://<neon-host>/jobtrackr_users?sslmode=require
+DB_USERNAME=neondb_owner
+DB_PASSWORD=...
+JWT_SECRET=your-256-bit-secret          # Must match Gateway exactly
+REDIS_URL=rediss://default:<password>@<upstash-host>:6379
 ```
+
+> `REDIS_URL` uses Upstash's full `rediss://` URL format — the User Service prod profile reads it via `spring.data.redis.url` (not host/port separately).
+> `DB_URL` must not embed credentials in the URL. Neon's default connection string includes `username:password@host` — strip those out and pass them as `DB_USERNAME`/`DB_PASSWORD` separately, otherwise the JDBC driver rejects the URL.
 
 ### Application Service
 ```env
-POSTGRES_URL=postgresql://user:pass@neon-host/jobtrackr?sslmode=require
-KAFKA_BOOTSTRAP_SERVERS=pkc-xxx.upstash.io:9092
-KAFKA_SASL_USERNAME=...
-KAFKA_SASL_PASSWORD=...
+SPRING_PROFILES_ACTIVE=prod
+DB_URL=jdbc:postgresql://<neon-host>/jobtrackr_applications?sslmode=require
+DB_USERNAME=...
+DB_PASSWORD=...
+REDIS_URL=rediss://default:password@upstash-host:6379
 ```
+Kafka intentionally omitted — not provisioned yet (Phase 3). `KafkaProducerConfig` is `@Profile("!prod")`; the event producer logs only, doesn't publish.
 
 ### Analytics Service
 ```env
@@ -291,9 +208,9 @@ Use Spring profiles to switch between local and prod config cleanly:
 
 ```
 src/main/resources/
-  application.yml          ← shared config
-  application-local.yml    ← local overrides (Docker URLs)
-  application-prod.yml     ← prod overrides (managed service URLs)
+  application.properties           ← shared/local config (uses .properties, not .yml, across this project)
+  application-docker.properties    ← Docker Compose overrides
+  application-prod.properties      ← prod overrides (Neon, Upstash, hardcoded Render URLs)
 ```
 
 Run locally with: `--spring.profiles.active=local`
@@ -306,13 +223,15 @@ Render sets: `SPRING_PROFILES_ACTIVE=prod`
 After all services are up, verify end-to-end:
 
 ```bash
-# 1. Health check gateway
-curl https://jobtrackr-gateway.onrender.com/actuator/health
+# 1. Health check gateway (and the other two services)
+curl https://jobtrackr-gateway.onrender.com/ping
+curl https://jobtrackr-user-service.onrender.com/ping
+curl https://jobtrackr-application-service.onrender.com/ping
 
 # 2. Register a user
 curl -X POST https://jobtrackr-gateway.onrender.com/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"name":"Test","email":"test@example.com","password":"Test@1234"}'
+  -d '{"fullName":"Test","email":"test@example.com","password":"Test@1234"}'
 
 # 3. Login
 curl -X POST https://jobtrackr-gateway.onrender.com/api/auth/login \
@@ -330,7 +249,7 @@ curl -X POST https://jobtrackr-gateway.onrender.com/api/applications \
 
 ## Demo Tips for Resume / Interviews
 
-Since Render free services cold-start in ~30s, do this before a demo or sharing the link:
+Since Render free services on this stack cold-start in 2–3 minutes (not the ~30s typical of lighter apps), do this before a demo or sharing the link:
 
 1. Hit the health check endpoint to wake all services up
 2. Have a pre-seeded demo account ready with 20–30 applications across different statuses so the analytics charts look good

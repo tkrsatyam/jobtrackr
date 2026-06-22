@@ -5,52 +5,60 @@
 ## 👤 User Service Features
 
 ### Authentication & Authorization
-- [ ] Register with email + password
-- [ ] Login with JWT (access token + refresh token)
-- [ ] OAuth2 login via Google
-- [ ] Password reset via email link
-- [ ] JWT refresh token rotation
-- [ ] Logout (token invalidation via Redis blacklist)
+- [x] Register with email + password
+- [x] Login with JWT (access token + refresh token)
+- [x] JWT refresh token rotation (per-session — logout only affects current session)
+- [x] Logout (access token blacklisted in Redis, refresh token revoked in PostgreSQL)
+- [ ] OAuth2 login via Google *(Phase 5 — commented out, pending Google credentials)*
+- [ ] Password reset via email link *(not yet implemented)*
 
 ### Profile
-- [ ] View and edit profile — name, email, avatar
-- [ ] Set job search preferences — target role, target salary range, preferred locations, work mode
-- [ ] Upload profile avatar (stored in MinIO)
-- [ ] Account deletion (soft delete)
+- [x] View profile — id, email, fullName, avatarUrl, role, provider
+- [x] Edit profile — fullName and avatarUrl only (email, role, provider are not editable)
+- [x] Change password (LOCAL accounts only — Google OAuth2 users have no password)
+- [x] Delete account (hard delete — removes refresh tokens first, then user record)
+- [ ] Set job search preferences — target role, salary range, preferred locations, work mode *(not yet implemented)*
+- [ ] Upload profile avatar via file upload *(avatarUrl is currently a plain string URL; file upload handled by Document Service in Phase 2)*
 
 ---
 
 ## 📁 Application Service Features
 
 ### Core Application CRUD
-- [ ] Create a job application with fields:
-  - Company name, role/title, job URL
-  - Salary range (min/max + currency)
-  - Location, work mode (Remote / Hybrid / On-site)
-  - Application source (LinkedIn, Naukri, Referral, Company Website, etc.)
-  - Date applied
-  - Priority flag (Low / Medium / High / Dream Job)
-  - Tags/labels (custom, e.g. "startup", "product company", "stretch role")
-  - Notes (rich text)
-- [ ] View all applications with list view and Kanban board view
-- [ ] Search applications by company name, role, tags
-- [ ] Filter by status, priority, location, work mode, date range
-- [ ] Sort by date applied, company name, last updated
-- [ ] Pagination and infinite scroll
+- [x] Create application — companyName (required), role (required), and all optional fields
+- [x] Get application by ID (ownership verified)
+- [x] Update application fields — partial update, status not updatable here
+- [x] Soft delete — sets `is_deleted = true`
+- [x] Archive / unarchive toggle
+- [x] Get all applications with filtering and pagination
+- [x] Invalid enum values return 400 with accepted values listed
+
+### Filtering (GET /api/applications)
+- [x] Filter by status, priority, workMode, isArchived
+- [x] Partial case-insensitive keyword match on company and role
+- [x] Date range (appliedAfter, appliedBefore)
+- [x] Pagination with sortBy and sortDir
+- [ ] Tag-based filtering — not yet implemented
+- [ ] Full-text search — not yet implemented
 
 ### Status Pipeline
-- [ ] Full pipeline: `Saved → Applied → Phone Screen → Interview → Technical Round → HR Round → Offer → Accepted / Rejected / Ghosted / Withdrawn`
-- [ ] Change status with optional notes per transition
-- [ ] Timeline view — every status change logged with timestamp and note
-- [ ] Color-coded status badges
-- [ ] Kanban drag-and-drop to change status
+- [x] Full pipeline with validated transitions enforced by StatusTransitionValidator
+- [x] Status change with optional note
+- [x] Status history tracked via cascade on every change
+- [x] Terminal states enforced — no further transitions
+- [x] Invalid transitions return 400 with descriptive message
+
+### Tags
+- [x] Add tag (stored lowercase, duplicates silently ignored)
+- [x] Remove tag by value
+- [ ] Tag-based filtering — not yet implemented
+- [ ] Bulk tag assignment — not yet implemented
 
 ### Bulk Actions
-- [ ] Select multiple applications
-- [ ] Bulk status change
-- [ ] Bulk archive
-- [ ] Bulk delete (soft delete)
-- [ ] Bulk tag assignment
+- [x] Bulk delete
+- [x] Bulk archive (sets isArchived = true)
+- [x] Bulk status change (invalid transitions silently skipped per item)
+- [ ] Bulk tag assignment — not yet implemented
 
 ### Application Detail View
 - [ ] Full detail page per application
@@ -59,6 +67,16 @@
 - [ ] Linked reminders
 - [ ] Activity timeline (all events in one view)
 - [ ] Edit all fields inline
+
+### Document Integration
+- [x] DocumentServiceClient (Feign) with fallback returning empty list
+- [ ] Document Service not yet built — documents always empty (Phase 2)
+
+### Infrastructure
+- [x] /ping endpoint for Render keep-warm
+- [x] Kafka producer stubbed — events logged, send calls commented out
+- [x] KafkaProducerConfig excluded in prod via @Profile("!prod")
+- [x] Prod profile — Neon DB, Upstash Redis, Eureka disabled, SQL logging off
 
 ---
 
@@ -145,39 +163,105 @@
 ## 🖥️ Frontend (Angular) Features
 
 ### Shell & Navigation
-- [ ] Auth pages — Login, Register, Forgot Password
-- [ ] Persistent sidebar navigation
-- [ ] Responsive layout (desktop-first, mobile-friendly)
-- [ ] Dark mode toggle
-- [ ] Global search bar (search across applications and contacts)
+- [x] Auth guard — redirects unauthenticated users to `/login`
+- [x] Auth interceptor — attaches Bearer token to every request, handles 401 with automatic token refresh and retry
+- [x] Token storage — `localStorage` with signals for reactive auth state
+- [x] Shell layout with persistent sidebar and topbar
+- [x] Lazy-loaded routes for all feature modules
+- [x] Redirect unknown routes to dashboard
+- [ ] Dark mode toggle — not yet implemented
+- [ ] Global search bar — not yet implemented
 
-### Dashboard
-- [ ] Summary stat cards
-- [ ] Recent applications list
-- [ ] Upcoming reminders widget
-- [ ] Quick-add application button
-- [ ] Weekly activity chart
+### Auth Pages
+- [x] Login page (`/login`)
+- [x] Register page (`/register`)
+- [x] Show/hide password toggle on password field (login and register)
+- [ ] Forgot password page — not yet implemented
+
+### Dashboard (`/dashboard`)
+- [x] Stat cards — Total, Active, Offers, Accepted counts
+- [x] Recent applications list (last 5 by updatedAt)
+- [x] Status badges on recent list
+- [x] Add Application button linking to `/applications/new`
+- [ ] Upcoming reminders widget — Phase 2 (Reminder Service)
+- [ ] Weekly activity chart — Phase 4 (Analytics Service)
 
 ### Applications Module
-- [ ] List view with filters and sorting
-- [ ] Kanban board view with drag-and-drop columns
-- [ ] Application detail page with tabs (Overview, Documents, Contacts, Reminders, Timeline)
-- [ ] Create/edit application modal or page
-- [ ] Status change with confirmation and note
 
-### Calendar View
-- [ ] Monthly calendar showing interviews and reminder due dates
-- [ ] Click a date to see that day's events
-- [ ] Quick-create reminder from calendar
+**List View (`/applications`)**
+- [x] Paginated table with Material table
+- [x] Filter bar — status, priority, workMode, company (text), role (text), appliedAfter (date), appliedBefore (date), isArchived (toggle)
+- [x] Filters apply immediately on change, reset button clears all
+- [x] Columns — company, role, status badge, priority badge, applied date, tags, actions
+- [x] Row actions — view detail, archive toggle, delete with confirmation dialog
+- [x] Bulk selection with select-all checkbox
+- [x] Bulk action toolbar — bulk delete (with confirmation), bulk archive, bulk status change
+- [x] Snackbar feedback on all operations
+- [ ] Sort by column header — not yet implemented (fixed to createdAt desc)
 
-### Analytics Module
-- [ ] Full analytics page with all charts
-- [ ] Date range picker filter
-- [ ] Export report as PDF
+**Kanban Board (`/applications/board`)**
+- [x] Columns for all active statuses — SAVED, APPLIED, PHONE_SCREEN, INTERVIEW, TECHNICAL_ROUND, HR_ROUND, OFFER
+- [x] Drag-and-drop between columns using Angular CDK
+- [x] Transition validation on drop — invalid drops show snackbar error and are rejected
+- [x] Valid columns highlighted, invalid columns dimmed during drag
+- [x] Optimistic UI update on drop — column updates immediately, API called in background, reverts on error
+- [x] Archive and delete actions per card
+- [x] Terminal statuses (ACCEPTED, REJECTED, GHOSTED, WITHDRAWN) shown as compact drop zones in a dedicated terminal section on the right of the board — cards can be dragged there to reach a terminal state; they disappear from the board on drop
 
-### Settings
-- [ ] Profile edit
-- [ ] Notification preferences
-- [ ] Password change
-- [ ] Connected accounts (Google OAuth)
-- [ ] Danger zone — delete account
+**Create Application (`/applications/new`)**
+- [x] Form with all fields — companyName, role, jobUrl, status, priority, workMode, location, salaryMin, salaryMax, currency, appliedDate, source, notes, tags
+- [x] companyName and role required with inline validation
+- [x] Tag input component — add on enter, remove on click
+
+**Application Detail (`/applications/:id`)**
+- [x] Full detail view — all fields displayed
+- [x] Status change panel — shows allowed next statuses only, optional note input
+- [x] Status history timeline — ordered newest first
+- [x] Tag management inline — add new tag, remove existing tags
+- [x] Archive toggle
+- [x] Archived applications shown with reduced opacity and dashed border in list rows and kanban cards; detail page shows an archived banner
+- [x] Delete with confirmation dialog
+- [x] Salary formatted with `SalaryFormatPipe` (₹ symbol, en-IN locale)
+- [ ] Linked documents section — Phase 2
+- [ ] Linked contacts section — Phase 2
+- [ ] Linked reminders section — Phase 2
+
+**Edit Application (`/applications/:id/edit`)**
+- [x] Edit form pre-populated with existing values
+
+### Settings (`/settings`)
+- [x] View current profile (fullName, email, avatarUrl, provider, role)
+- [x] Edit profile — fullName and avatarUrl
+- [x] Show/hide password toggle on current password and new password fields
+- [x] Change password (shown only for LOCAL provider users)
+- [x] Delete account with confirmation dialog
+- [ ] Notification preferences — Phase 3
+- [ ] Connected accounts (Google OAuth) — Phase 5
+
+### Shared Components
+- [x] `StatusBadgeComponent` — color-coded chip per status
+- [x] `PriorityBadgeComponent` — color-coded badge per priority level
+- [x] `TagChipComponent` — displays tag in title case, removable in edit context
+- [x] `TagInputComponent` — chip-based tag entry using `TagChipComponent` internally; exposes `getCurrentTags()` for parent form access via `@ViewChild`
+- [x] `StatusTimelineComponent` — vertical timeline of status history
+- [x] `ConfirmDialogComponent` — reusable confirmation modal with destructive styling
+- [x] `ApplicationCardComponent` — card used in kanban board
+- [x] `ApplicationFormComponent` — shared form used by create and edit views
+- [x] `BulkActionToolbarComponent` — appears when items selected, shows bulk action buttons
+- [x] `StatusChangePanelComponent` — status change UI with allowed transitions and note input
+
+### Pipes
+- [x] `TitleCaseTagPipe` — converts `spring boot` → `Spring Boot` for tag display
+- [x] `SalaryFormatPipe` — formats salary with currency symbol and locale formatting
+
+### Constants
+- [x] `STATUS_TRANSITIONS` — frontend mirror of backend transition map, used to guard UI
+- [x] `TERMINAL_STATUSES` — list of terminal states, used to disable status change UI
+- [x] `isTerminal()` / `getAllowedTransitions()` — utility functions
+- [x] `STATUS_LABELS`, `PRIORITY_LABELS`, `WORK_MODE_LABELS`, `SOURCE_LABELS` — display label maps
+- [x] `ALL_STATUSES`, `ACTIVE_STATUSES`, `ALL_PRIORITIES`, `ALL_WORK_MODES`, `ALL_SOURCES` — enum arrays for dropdowns
+- [x] `status-colors.ts` — `getStatusColor()` and `getPriorityColor()` functions that read CSS variables at runtime via `getComputedStyle` — used by Phase 4 charts so colors stay in sync with the theme without hardcoding hex values
+
+### Environment Config
+- [x] `environment.ts` — `apiUrl: http://localhost:8080` (local dev via Gateway)
+- [x] `environment.prod.ts` — `apiUrl: https://jobtrackr-gateway.onrender.com` (production)

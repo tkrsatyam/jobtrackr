@@ -12,7 +12,7 @@ export class TokenStorageService {
   );
 
   readonly accessToken = this.accessTokenSignal.asReadonly();
-  readonly isLoggedIn = computed(() => !!this.accessTokenSignal);
+  readonly isLoggedIn = computed(() => !!this.accessTokenSignal();
 
   getAccessToken(): string | null {
     return localStorage.getItem(ACCESS_TOKEN_KEY);
