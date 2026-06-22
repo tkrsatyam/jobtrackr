@@ -145,7 +145,7 @@ jobtrackr/
 ![Kafka Event Flow](./docs/diagrams/kafka-event-flow.svg)
 
 ---
-
+ 
 ## 🏗️ Build Phases
 
 | Phase | Focus | Status |
