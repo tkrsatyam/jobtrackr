@@ -32,9 +32,10 @@ JobTrackr is a distributed, event-driven microservices application. Each service
 ### 3.1 Client Layer
 
 **Angular SPA** (`frontend/jobtrackr-fe`)
-- Built with Angular 17+ standalone components, lazy-loaded routes
+- Built with Angular 21 standalone components, lazy-loaded routes
 - Angular Material for UI components
 - Angular CDK for drag-and-drop (kanban board)
+- Kanban board with JIRA-style column highlighting on drag; terminal statuses exposed as compact drop zones rather than full columns
 - `authInterceptor` attaches JWT to every request; handles 401 by silently refreshing the token and retrying the original request
 - `authGuard` protects all authenticated routes, redirects to `/login`
 - `TokenStorageService` stores tokens in `localStorage`, exposes reactive signals
@@ -202,7 +203,7 @@ documents/{userId}/{documentType}/{documentId}/{fileName}
 
 **Email delivery:**
 - Development: JavaMailSender with local MailHog SMTP
-- Production: SendGrid API
+- Production: SendGrid API/Resend API
 
 **Real-time delivery:**
 - WebSocket endpoint: `/ws/notifications`
@@ -260,14 +261,14 @@ Angular → POST /api/applications → API Gateway
 
 ### 5.2 Status Changes to "Interview"
 ```
-Angular → PATCH /api/applications/{id}/status → API Gateway
+Angular → PUT /api/applications/{id}/status → API Gateway
     → Application Service
         → appends status_history record
         → publishes to Kafka: application.status.updated
             → Notification Service consumes
                 → checks user preferences
                 → saves notification to MongoDB
-                → sends email via SendGrid
+                → sends email via SendGrid/Resend
                 → pushes via WebSocket to connected client
             → Analytics Service consumes
                 → updates event store

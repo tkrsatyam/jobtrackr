@@ -27,8 +27,8 @@ Built as a **microservices system** using **Angular + Spring Boot**, this projec
 
 | Layer | Local Dev | Production (Free) |
 |---|---|---|
-| Frontend | Angular 17+ dev server | **Vercel** |
-| Backend Services | Spring Boot 4.0.6 (Docker) | **Render** (free web services) |
+| Frontend | Angular 21 dev server | **Vercel** |
+| Backend Services | Spring Boot 3.x (Docker) | **Render** (free web services) |
 | API Gateway | Spring Cloud Gateway | Render |
 | Service Discovery | Netflix Eureka | Disabled in prod — Gateway routes via hardcoded Render URLs |
 | Message Broker | Apache Kafka (Docker) | **Upstash Kafka** (free tier) |

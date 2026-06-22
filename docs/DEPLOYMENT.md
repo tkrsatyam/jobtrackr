@@ -102,6 +102,7 @@ The Gateway's routing is split into two profile-scoped `RouterFunction` config c
 4. Set **Framework Preset** to Angular (should auto-detect once Root Directory is set)
 5. Set **Build Command** to `npm run build` (already builds in production mode — `production` is the default configuration)
 6. Set **Output Directory** to `dist/jobtrackr-fe/browser` — note the extra `/browser` nesting; the newer esbuild-based Angular builder outputs one level deeper than older Angular CLI versions
+   > This extra `/browser` nesting is the Angular 21 esbuild builder output structure — if this build fails to serve correctly on Vercel, verify the dist output locally with `npm run build` and confirm the path.
 7. No environment variables needed — the prod API URL is baked in at build time, not read from a Vercel env var
 8. Deploy — Vercel assigns a `*.vercel.app` domain
 9. Set **Ignored Build Step** to "Only build if there are changes in a folder," pointed at `frontend/jobtrackr-fe`, so backend/workflow-only commits don't trigger a frontend rebuild

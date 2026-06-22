@@ -175,15 +175,16 @@
 ### Auth Pages
 - [x] Login page (`/login`)
 - [x] Register page (`/register`)
+- [x] Show/hide password toggle on password field (login and register)
 - [ ] Forgot password page — not yet implemented
 
 ### Dashboard (`/dashboard`)
 - [x] Stat cards — Total, Active, Offers, Accepted counts
 - [x] Recent applications list (last 5 by updatedAt)
 - [x] Status badges on recent list
+- [x] Add Application button linking to `/applications/new`
 - [ ] Upcoming reminders widget — Phase 2 (Reminder Service)
 - [ ] Weekly activity chart — Phase 4 (Analytics Service)
-- [ ] Quick-add application button — not yet implemented
 
 ### Applications Module
 
@@ -205,7 +206,7 @@
 - [x] Valid columns highlighted, invalid columns dimmed during drag
 - [x] Optimistic UI update on drop — column updates immediately, API called in background, reverts on error
 - [x] Archive and delete actions per card
-- [x] Terminal status cards (ACCEPTED, REJECTED, GHOSTED, WITHDRAWN) not shown as columns — handled in list view
+- [x] Terminal statuses (ACCEPTED, REJECTED, GHOSTED, WITHDRAWN) shown as compact drop zones in a dedicated terminal section on the right of the board — cards can be dragged there to reach a terminal state; they disappear from the board on drop
 
 **Create Application (`/applications/new`)**
 - [x] Form with all fields — companyName, role, jobUrl, status, priority, workMode, location, salaryMin, salaryMax, currency, appliedDate, source, notes, tags
@@ -218,6 +219,7 @@
 - [x] Status history timeline — ordered newest first
 - [x] Tag management inline — add new tag, remove existing tags
 - [x] Archive toggle
+- [x] Archived applications shown with reduced opacity and dashed border in list rows and kanban cards; detail page shows an archived banner
 - [x] Delete with confirmation dialog
 - [x] Salary formatted with `SalaryFormatPipe` (₹ symbol, en-IN locale)
 - [ ] Linked documents section — Phase 2
@@ -230,6 +232,7 @@
 ### Settings (`/settings`)
 - [x] View current profile (fullName, email, avatarUrl, provider, role)
 - [x] Edit profile — fullName and avatarUrl
+- [x] Show/hide password toggle on current password and new password fields
 - [x] Change password (shown only for LOCAL provider users)
 - [x] Delete account with confirmation dialog
 - [ ] Notification preferences — Phase 3
@@ -239,6 +242,7 @@
 - [x] `StatusBadgeComponent` — color-coded chip per status
 - [x] `PriorityBadgeComponent` — color-coded badge per priority level
 - [x] `TagChipComponent` — displays tag in title case, removable in edit context
+- [x] `TagInputComponent` — chip-based tag entry using `TagChipComponent` internally; exposes `getCurrentTags()` for parent form access via `@ViewChild`
 - [x] `StatusTimelineComponent` — vertical timeline of status history
 - [x] `ConfirmDialogComponent` — reusable confirmation modal with destructive styling
 - [x] `ApplicationCardComponent` — card used in kanban board
@@ -256,6 +260,7 @@
 - [x] `isTerminal()` / `getAllowedTransitions()` — utility functions
 - [x] `STATUS_LABELS`, `PRIORITY_LABELS`, `WORK_MODE_LABELS`, `SOURCE_LABELS` — display label maps
 - [x] `ALL_STATUSES`, `ACTIVE_STATUSES`, `ALL_PRIORITIES`, `ALL_WORK_MODES`, `ALL_SOURCES` — enum arrays for dropdowns
+- [x] `status-colors.ts` — `getStatusColor()` and `getPriorityColor()` functions that read CSS variables at runtime via `getComputedStyle` — used by Phase 4 charts so colors stay in sync with the theme without hardcoding hex values
 
 ### Environment Config
 - [x] `environment.ts` — `apiUrl: http://localhost:8080` (local dev via Gateway)
