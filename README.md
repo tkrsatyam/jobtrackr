@@ -110,6 +110,7 @@ jobtrackr/
     ├── DB_SCHEMA.md
     ├── HLD.md
     ├── DEPLOYMENT.md
+    ├── JIRA_GITHUB.md
     └── diagrams/
         ├── system-architecture.svg
         ├── deployment-architecture.svg
@@ -125,6 +126,7 @@ jobtrackr/
 - [Database Schema](./docs/DB_SCHEMA.md)
 - [High Level Design](./docs/HLD.md)
 - [Deployment Guide](./docs/DEPLOYMENT.md)
+- [JIRA + GitHub Integration](./docs/JIRA_GITHUB.md) — branch/commit/PR naming conventions, Smart Commits, and troubleshooting when development info isn't showing up in JIRA
 - [System Architecture](./docs/diagrams/system-architecture.svg) — all 9 services, Kafka bus, and storage layers
 - [Deployment Architecture](./docs/diagrams/deployment-architecture.svg) — free-tier deployment across Vercel, Render, and managed services
 - [Kafka Event Flow](./docs/diagrams/kafka-event-flow.svg) — producers, topics, and consumers
