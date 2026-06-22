@@ -4,12 +4,23 @@ import org.springframework.cloud.gateway.server.mvc.filter.LoadBalancerFilterFun
 import org.springframework.cloud.gateway.server.mvc.handler.HandlerFunctions;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.servlet.function.RequestPredicates;
 import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.RouterFunctions;
 import org.springframework.web.servlet.function.ServerResponse;
 
+/**
+ * Eureka/load-balanced routing — used for local dev and Docker Compose,
+ * where every service registers itself in the shared Eureka server and
+ * lb("service-name") can resolve a real instance.
+ *
+ * NOT active in prod — Render services don't share a Eureka registry,
+ * so lb(...) would fail with "Unable to find instance for <service>".
+ * See GatewayRoutesProdConfig for the prod equivalent.
+ */
 @Configuration
+@Profile("!prod")
 public class GatewayRoutesConfig {
 
     @Bean

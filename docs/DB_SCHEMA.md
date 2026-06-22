@@ -18,26 +18,42 @@
 
 ## PostgreSQL Schemas
 
-### User Service — `userservice` database
+### User Service — `jobtrackr_users` database
+
+> Schema is auto-managed by Hibernate (`ddl-auto=update`). The SQL below reflects what Hibernate generates from the entity classes.
 
 ```sql
 CREATE TABLE users (
-    user_id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name            VARCHAR(100) NOT NULL,
+    id              UUID PRIMARY KEY,
     email           VARCHAR(255) NOT NULL UNIQUE,
-    password_hash   VARCHAR(255),                    -- NULL for OAuth-only accounts
-    avatar_url      VARCHAR(500),
-    provider        VARCHAR(20) DEFAULT 'LOCAL',      -- LOCAL | GOOGLE
+    password        VARCHAR(255),                    -- NULL for OAuth2 accounts
+    full_name       VARCHAR(255),
+    avatar_url      VARCHAR(255),
+    provider        VARCHAR(255) NOT NULL,           -- LOCAL | GOOGLE
     provider_id     VARCHAR(255),                    -- Google subject ID
-    is_active       BOOLEAN DEFAULT TRUE,
-    is_deleted      BOOLEAN DEFAULT FALSE,
-    created_at      TIMESTAMPTZ DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ DEFAULT NOW()
+    role            VARCHAR(255) NOT NULL,           -- USER | ADMIN
+    created_at      TIMESTAMP,
+    updated_at      TIMESTAMP
 );
 
+CREATE TABLE refresh_tokens (
+    id          UUID PRIMARY KEY,
+    token       VARCHAR(255) NOT NULL UNIQUE,        -- Plain UUID string, not hashed
+    user_id     UUID NOT NULL REFERENCES users(id),
+    expires_at  TIMESTAMP NOT NULL,
+    revoked     BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_refresh_tokens_user ON refresh_tokens(user_id);
+```
+
+**Not yet implemented — planned for a later phase:**
+```sql
+-- User preferences (target role, salary range, work mode)
 CREATE TABLE user_preferences (
     preference_id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id             UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    user_id             UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     target_role         VARCHAR(150),
     target_salary_min   BIGINT,
     target_salary_max   BIGINT,
@@ -47,28 +63,19 @@ CREATE TABLE user_preferences (
     updated_at          TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Preferred locations (one row per location per user)
 CREATE TABLE user_preferred_locations (
     id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id     UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     location    VARCHAR(100) NOT NULL
 );
-
-CREATE TABLE refresh_tokens (
-    token_id    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id     UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    token_hash  VARCHAR(255) NOT NULL UNIQUE,
-    expires_at  TIMESTAMPTZ NOT NULL,
-    is_revoked  BOOLEAN DEFAULT FALSE,
-    created_at  TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_refresh_tokens_user ON refresh_tokens(user_id);
 ```
+
+> Account deletion is currently a hard delete. Soft delete (`is_deleted`, `is_active` flags) is a future hardening item.
 
 ---
 
-### Application Service — `applicationservice` database
+### Application Service — `jobtrackr_applications` database
 
 ```sql
 CREATE TYPE application_status AS ENUM (
@@ -134,6 +141,13 @@ CREATE INDEX idx_applications_status ON applications(status);
 CREATE INDEX idx_applications_user_status ON applications(user_id, status);
 CREATE INDEX idx_status_history_app ON application_status_history(application_id);
 ```
+
+> **Note:** The custom PostgreSQL enum types below reflect the original design intent.
+> In practice, `ddl-auto=update` with `@Enumerated(EnumType.STRING)` means Hibernate
+> stores all enum fields as `VARCHAR` columns — the custom PG enum types are not created.
+> The table structure and column names are accurate; only the column types differ.
+
+> **Timestamp types:** Entities use `LocalDateTime` with `@CreationTimestamp`/`@UpdateTimestamp`. Hibernate maps this to `TIMESTAMP WITHOUT TIME ZONE` — not `TIMESTAMPTZ`. Timestamps in API responses have no timezone offset.
 
 ---
 
@@ -321,10 +335,11 @@ db.application_events.createIndex({ userId: 1, "payload.source": 1 })
 
 ## Redis Usage
 
-| Key Pattern | TTL | Purpose |
-|---|---|---|
-| `jwt:blacklist:{tokenId}` | Until token expiry | Revoked JWT tokens |
-| `refresh:{userId}` | 7 days | Active refresh token reference |
-| `user:profile:{userId}` | 5 min | Cached user profile |
-| `analytics:summary:{userId}` | 10 min | Cached dashboard summary |
-| `rate:limit:{userId}:{endpoint}` | 1 min | Rate limiting per user per endpoint |
+| Key Pattern | TTL | Purpose | Status |
+|---|---|---|---|
+| `blacklist:{token}` | Remaining token lifetime | Access token invalidated on logout | ✅ Implemented |
+| `user:profile:{userId}` | 5 min | Cached user profile | ⬜ Planned |
+| `analytics:summary:{userId}` | 10 min | Cached dashboard summary | ⬜ Phase 4 |
+| `rate:limit:{userId}:{endpoint}` | 1 min | Rate limiting per user per endpoint | ⬜ Planned |
+
+> Only the blacklist key is active today. The refresh token is stored in PostgreSQL only — there is no Redis entry for active refresh tokens.

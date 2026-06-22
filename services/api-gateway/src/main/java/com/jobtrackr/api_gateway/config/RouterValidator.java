@@ -12,10 +12,15 @@ public class RouterValidator {
             "/api/auth/register",
             "/api/auth/login",
             "/api/auth/refresh",
-            "/api/auth/oauth2"
+            "/api/auth/oauth2",
+            "/ping"
     );
 
     public boolean isSecured(HttpServletRequest request) {
+        if (request.getMethod().equalsIgnoreCase("OPTIONS")) {
+            return false;
+        }
+
         return OPEN_ENDPOINTS.stream()
                 .noneMatch(uri -> request.getRequestURI().contains(uri));
     }

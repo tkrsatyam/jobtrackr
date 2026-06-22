@@ -30,7 +30,7 @@ Built as a **microservices system** using **Angular + Spring Boot**, this projec
 | Frontend | Angular 21 dev server | **Vercel** |
 | Backend Services | Spring Boot 3.x (Docker) | **Render** (free web services) |
 | API Gateway | Spring Cloud Gateway | Render |
-| Service Discovery | Netflix Eureka | Render internal URLs (Eureka optional in prod) |
+| Service Discovery | Netflix Eureka | Disabled in prod — Gateway routes via hardcoded Render URLs |
 | Message Broker | Apache Kafka (Docker) | **Upstash Kafka** (free tier) |
 | Relational DB | PostgreSQL (Docker) | **Neon** (free tier, 512MB) |
 | Document DB | MongoDB (Docker) | **MongoDB Atlas** (free tier, 512MB) |
@@ -40,7 +40,9 @@ Built as a **microservices system** using **Angular + Spring Boot**, this projec
 | Auth | JWT + Spring Security + OAuth2 (Google) | Same |
 | Containerization | Docker + Docker Compose | Docker (Render builds from Dockerfile) |
 | Email | MailHog (local SMTP UI) | **Resend** (free 3000/month) |
-| CI/CD | — | **GitHub Actions** (free for public repos) |
+| CI/CD | — | **GitHub Actions** — builds, pushes to Docker Hub, triggers Render deploy hooks per service |
+
+> Backend stack: Spring Boot 4.0.6 · Spring Cloud 2025.1.1 · Java 21
 
 ---
 
@@ -64,14 +66,14 @@ Built as a **microservices system** using **Angular + Spring Boot**, this projec
 
 ```bash
 # Clone the repo
-git clone https://github.com/yourname/jobtrackr.git
+git clone https://github.com/tkrsatyam/jobtrackr.git
 cd jobtrackr
 
 # Start all infrastructure + services
 docker compose up -d
 
 # Frontend
-cd frontend
+cd frontend/jobtrackr-fe
 npm install
 ng serve
 ```
@@ -88,15 +90,19 @@ Eureka Dashboard at `http://localhost:8761`
 jobtrackr/
 ├── README.md
 ├── docker-compose.yml
-├── api-gateway/
-├── eureka-server/
-├── user-service/
-├── application-service/
-├── reminder-service/
-├── document-service/
-├── contact-service/
-├── notification-service/
-├── analytics-service/
+├── scripts/
+│   └── init-db/
+│       └── 01-init.sql
+├── services/
+│   ├── eureka-server/
+│   ├── api-gateway/
+│   ├── user-service/
+│   ├── application-service/
+│   ├── reminder-service/
+│   ├── document-service/
+│   ├── contact-service/
+│   ├── notification-service/
+│   └── analytics-service/
 ├── frontend/
 └── docs/
     ├── FEATURES.md
@@ -140,13 +146,13 @@ jobtrackr/
 
 ## 🏗️ Build Phases
 
-| Phase | Focus | Est. Duration |
+| Phase | Focus | Status |
 |---|---|---|
-| 1 | Foundation — Gateway, User, Application services + Angular shell | 2–3 weeks |
-| 2 | Core Features — Document, Contact, Reminder services | 2 weeks |
-| 3 | Event-Driven — Kafka + Notification service | 1–2 weeks |
-| 4 | Intelligence — Analytics service + MongoDB aggregations + Charts | 1–2 weeks |
-| 5 | Polish — OAuth2, real-time notifications, deployment | 1 week |
+| 1 | Foundation — Gateway, User, Application services + Angular shell | ✅ Complete |
+| 2 | Core Features — Document, Contact, Reminder services | ⬜ Not started |
+| 3 | Event-Driven — Kafka + Notification service | ⬜ Not started |
+| 4 | Intelligence — Analytics service + MongoDB aggregations + Charts | ⬜ Not started |
+| 5 | Polish — OAuth2, real-time notifications, deployment | ⬜ Not started |
 
 ---
 
@@ -161,14 +167,12 @@ This project is deployed at zero cost using free tiers across multiple platforms
 | API Gateway | ✅ Render | Entry point — must be live |
 | User Service | ✅ Render | Auth — must be live |
 | Application Service | ✅ Render | Core feature — must be live |
-| Analytics Service | ✅ Render | Showcases MongoDB + charts |
-| Reminder Service | 🖥️ Local only | Render free tier limit |
-| Document Service | 🖥️ Local only | Render free tier limit |
-| Contact Service | 🖥️ Local only | Render free tier limit |
-| Notification Service | 🖥️ Local only | Render free tier limit |
+| Reminder, Document, Contact, Notification, Analytics | 🖥️ Local only | Not built yet (Phase 2+) or pending Render's free tier slot |
 
-> All 8 services run fully in local dev. Deployment is scoped to the 4 most demo-worthy services to stay within free tier limits. This is documented transparently in the README and is a deliberate architectural decision, not a limitation of the design.
+> Phase 1 services — Eureka, Gateway, User Service, Application Service — are fully built and run locally via Docker Compose. Gateway, User Service, and Application Service are also deployed live on Render. Reminder, Document, Contact, Notification, and Analytics don't exist yet (Phase 2–4); deployment will expand as they're built, scoped to stay within Render's free tier (4 web services max).
+
+> Render free services sleep after 15 min of inactivity. A GitHub Actions workflow pings all three services every 10 minutes on weekdays, 10:30 AM–5:00 PM IST, to keep them warm during active hours — outside that window, expect a cold start (~2–3 minutes) on the first request.
 
 **Live URLs:**
-- Frontend: `https://jobtrackr.vercel.app`
+- Frontend: `https://jobtrackr-portal.vercel.app`
 - API: `https://jobtrackr-gateway.onrender.com`

@@ -1,0 +1,47 @@
+name: BE - Keep Services Warm
+
+on:
+  schedule:
+    - cron: '0,10,20,30,40,50 5-10 * * 1-5'
+    - cron: '0,10,20,30 11 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  check-window:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.window.outputs.skip }}
+    steps:
+      - name: Check if within active window
+        id: window
+        run: |
+          current_time=$(date -u +%H%M)
+          if [[ "$current_time" > "1130" ]]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  ping-gateway:
+    needs: check-window
+    if: needs.check-window.outputs.skip == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Gateway
+        run: curl -sf -o /dev/null -w "%{http_code}" https://jobtrackr-gateway.onrender.com/ping || echo "Gateway ping failed"
+
+  ping-user-service:
+    needs: check-window
+    if: needs.check-window.outputs.skip == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping User Service
+        run: curl -sf -o /dev/null -w "%{http_code}" https://jobtrackr-user-service.onrender.com/ping || echo "User service ping failed"
+
+  ping-application-service:
+    needs: check-window
+    if: needs.check-window.outputs.skip == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Application Service
+        run: curl -sf -o /dev/null -w "%{http_code}" https://jobtrackr-application-service.onrender.com/ping || echo "Application service ping failed"
