@@ -1,3 +1,5 @@
+import { ApplicationStatus, PriorityLevel } from "../models/application.model";
+
 export function getStatusColor(status: ApplicationStatus): string {
   return getComputedStyle(document.documentElement)
     .getPropertyValue(`--color-${status.toLowerCase().replaceAll('_', '-')}`)

@@ -10,6 +10,16 @@
     <span class="topbar-spacer"></span>
 
     <div class="topbar-actions">
+        <button
+            mat-icon-button
+            role="switch"
+            [attr.aria-checked]="themeService.theme() === 'dark'"
+            [attr.aria-label]="themeService.theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+            [matTooltip]="themeService.theme() === 'dark' ? 'Light mode' : 'Dark mode'"
+            (click)="themeService.toggle()">
+            <mat-icon>{{ themeService.theme() === 'dark' ? 'light_mode' : 'dark_mode' }}</mat-icon>    
+        </button>
+
         <button mat-icon-button [matMenuTriggerFor]="userMenu">
             <mat-icon>account_circle</mat-icon>
         </button>

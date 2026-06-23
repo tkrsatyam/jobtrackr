@@ -112,3 +112,20 @@ body {
 .compact-fields {
   @include mat.form-field-density(-3);
 }
+
+html.dark-theme {
+  color-scheme: dark;
+
+  @include mat.theme((
+    color: (
+      primary: mat.$azure-palette,
+      tertiary: mat.$blue-palette,
+      theme-type: dark,
+    ),
+    typography: (
+      plain-family: 'Roboto, sans-serif',
+      brand-family: 'Roboto, sans-serif',
+    ),
+    density: 0,
+  ));
+}
