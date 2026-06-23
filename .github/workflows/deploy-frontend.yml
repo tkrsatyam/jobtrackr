@@ -1,0 +1,50 @@
+name: FE - Build & Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/jobtrackr-fe/**'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    name: Build Angular app & deploy to Vercel
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend/jobtrackr-fe
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/jobtrackr-fe/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (production)
+        run: npx ng build --configuration production
+
+      - name: Report build artifact size
+        run: |
+          echo "## 📦 Frontend Build Artifact Size" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| File | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|------|" >> $GITHUB_STEP_SUMMARY
+          find dist/jobtrackr-fe/browser -type f | sort | while read f; do
+            size=$(du -sh "$f" | cut -f1)
+            echo "| \`${f#dist/jobtrackr-fe/browser/}\` | $size |" >> $GITHUB_STEP_SUMMARY
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Total:** $(du -sh dist/jobtrackr-fe/browser | cut -f1)" >> $GITHUB_STEP_SUMMARY
+
+      - name: Trigger Vercel deploy
+        run: curl -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}"
