@@ -1,0 +1,72 @@
+name: Sync GitHub Issue → Jira
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  create-jira-bug:
+    if: github.event.label.name == 'bug'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - name: Check if Jira bug already exists
+        id: check
+        run: |
+          LABELS=$(echo '${{ toJson(github.event.issue.labels) }}' | jq -r '.[].name')
+          if echo "$LABELS" | grep -q "jira-synced"; then
+            echo "SKIP=true" >> $GITHUB_OUTPUT
+          else
+            echo "SKIP=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Jira Bug
+        id: create
+        if: steps.check.outputs.SKIP == 'false'
+        run: |
+          RESPONSE=$(curl -s -X POST \
+            "${{ secrets.JIRA_BASE_URL }}/rest/api/3/issue" \
+            -H "Authorization: Basic ${{ secrets.JIRA_AUTH_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"fields\": {
+                \"project\": { \"key\": \"${{ secrets.JIRA_PROJECT_KEY }}\" },
+                \"summary\": \"[GH#${{ github.event.issue.number }}] ${{ github.event.issue.title }}\",
+                \"description\": {
+                  \"type\": \"doc\", \"version\": 1,
+                  \"content\": [{
+                    \"type\": \"paragraph\",
+                    \"content\": [{
+                      \"type\": \"text\",
+                      \"text\": \"GitHub Issue: ${{ github.event.issue.html_url }}\"
+                    }]
+                  }]
+                },
+                \"issuetype\": { \"name\": \"Bug\" },
+                \"labels\": [\"github-sync\"],
+                \"customfield_10109\": ${{ github.event.issue.number }}
+              }
+            }")
+
+          JIRA_KEY=$(echo $RESPONSE | jq -r '.key')
+          echo "JIRA_KEY=$JIRA_KEY" >> $GITHUB_OUTPUT
+
+      - name: Comment Jira link on GitHub issue
+        if: steps.check.outputs.SKIP == 'false' && steps.create.outputs.JIRA_KEY != 'null'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `🐛 Jira Bug created: [${{ steps.create.outputs.JIRA_KEY }}](${{ secrets.JIRA_BASE_URL }}/browse/${{ steps.create.outputs.JIRA_KEY }})`
+            });
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['jira-synced']
+            });
