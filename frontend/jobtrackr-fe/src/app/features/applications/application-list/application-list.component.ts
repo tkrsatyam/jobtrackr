@@ -25,6 +25,7 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { BulkAction, BulkActionToolbarComponent } from '../components/bulk-action-toolbar/bulk-action-toolbar.component';
+import { MatSortModule, Sort } from '@angular/material/sort';
 
 type FilterType = 'select' | 'text' | 'boolean' | 'date';
 type ColumnType = 'text' | 'status' | 'priority' | 'date' | 'tags' | 'select' | 'actions';
@@ -41,6 +42,8 @@ interface ColumnConfig {
   header: string;
   type: ColumnType;
   field?: keyof ApplicationResponse;
+  sortable?: boolean;
+  sortField?: string;
 }
 
 @Component({
@@ -50,6 +53,7 @@ interface ColumnConfig {
     FormsModule,
     DatePipe,
     MatTableModule,
+    MatSortModule,
     MatPaginatorModule,
     MatCheckboxModule,
     MatButtonModule,
@@ -79,6 +83,11 @@ export class ApplicationListComponent implements OnInit {
   applications = signal<ApplicationResponse[]>([]);
   totalElements = signal(0);
   loading = signal(false);
+
+  sortState = signal<{ active: string; direction: 'asc' | 'desc' }>({
+    active: 'createdAt',
+    direction: 'desc'
+  });
 
   filterConfigs: FilterConfig[] = [
     {
@@ -145,13 +154,14 @@ export class ApplicationListComponent implements OnInit {
 
   columns: ColumnConfig[] = [
     { key: 'select', header: '', type: 'select' },
-    { key: 'company', header: 'Company' , type: 'text', field: 'companyName' },
-    { key: 'role', header: 'Role' , type: 'text', field: 'role' },
-    { key: 'status', header: 'Status' , type: 'status' },
-    { key: 'priority', header: 'Priority' , type: 'priority' },
-    { key: 'appliedDate', header: 'Applied' , type: 'date', field: 'appliedDate' },
-    { key: 'tags', header: 'Tags' , type: 'tags' },
-    { key: 'actions', header: 'Actions' , type: 'actions' }
+    { key: 'company', header: 'Company' , type: 'text', field: 'companyName', sortable: true, sortField: 'companyName' },
+    { key: 'role', header: 'Role' , type: 'text', field: 'role', sortable: true, sortField: 'role' },
+    { key: 'status', header: 'Status' , type: 'status', sortable: false },
+    { key: 'priority', header: 'Priority' , type: 'priority', sortable: false },
+    { key: 'appliedDate', header: 'Applied' , type: 'date', field: 'appliedDate', sortable: true, sortField: 'appliedDate' },
+    { key: 'createdAt', header: 'Created', type: 'date', field: 'createdAt', sortable: true, sortField: 'createdAt'},
+    { key: 'tags', header: 'Tags' , type: 'tags', sortable: false },
+    { key: 'actions', header: 'Actions' , type: 'actions', sortable: false }
   ];
 
   displayedColumns = this.columns.map(column => column.key);
@@ -162,20 +172,15 @@ export class ApplicationListComponent implements OnInit {
   priorityLabels = PRIORITY_LABELS;
   workModeLabels = WORK_MODE_LABELS;
 
-  ngOnInit(): void {
-    this.load();
-  }
-
-  load(): void {
-    this.loading.set(true);
-    this.selectedIds.set(new Set());
-
+  readonly applicationFilter = computed<ApplicationFilter>(() => {
     const values = this.filterValues();
+    const sort = this.sortState();
+
     const filter: ApplicationFilter = {
       page: this.page(),
       size: this.pageSize(),
-      sortBy: 'createdAt',
-      sortDir: 'desc'
+      sortBy: sort.active,
+      sortDir: sort.direction
     };
 
     if (values['status']) filter.status = values['status'] as ApplicationStatus;
@@ -187,7 +192,18 @@ export class ApplicationListComponent implements OnInit {
     if (values['appliedAfter']) filter.appliedAfter = values['appliedAfter'];
     if (values['appliedBefore']) filter.appliedBefore = values['appliedBefore'];
 
-    this.appService.getApplications(filter).subscribe({
+    return filter;
+  })
+
+  ngOnInit(): void {
+    this.load();
+  }
+
+  load(): void {
+    this.loading.set(true);
+    this.selectedIds.set(new Set());
+
+    this.appService.getApplications(this.applicationFilter()).subscribe({
       next: page => {
         this.applications.set(page.content);
         this.totalElements.set(page.totalElements);
@@ -195,6 +211,16 @@ export class ApplicationListComponent implements OnInit {
       },
       error: () => this.loading.set(false)
     });
+  }
+
+  onSortChange(sort: Sort): void {
+    this.sortState.set(
+      sort.direction
+        ? { active: sort.active, direction: sort.direction as 'asc' | 'desc' }
+        : { active: 'createdAt', direction: 'desc' }
+    );
+    this.page.set(0);
+    this.load();
   }
 
   getFilterValue(key: string): string {
