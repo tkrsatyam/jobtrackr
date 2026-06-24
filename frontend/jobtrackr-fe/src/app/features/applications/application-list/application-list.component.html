@@ -79,11 +79,17 @@
     }
 
     <div class="table-container mat-elevation-z2">
-        <table mat-table [dataSource]="applications()">
+        <table mat-table [dataSource]="applications()"
+            matSort
+            [matSortActive]="sortState().active"
+            [matSortDirection]="sortState().direction"
+            (matSortChange)="onSortChange($event)">
             
             @for (col of columns; track col.key) {
                 <ng-container [matColumnDef]="col.key">
-                    <th mat-header-cell *matHeaderCellDef>
+                    <th mat-header-cell *matHeaderCellDef
+                        [mat-sort-header]="col.sortable ? (col.sortField ?? col.key) : ''"
+                        [disabled]="!col.sortable">
 
                         @switch (col.type) {
                             @case ('select') {
