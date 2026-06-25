@@ -41,7 +41,7 @@ jobs:
           
           node << 'EOF'
           const { execSync } = require('child_process');
-          const { markdownToADF } = require('./node_modules/markdown-to-adf');
+          const { markdownToAdf } = require('./node_modules/markdown-to-adf');
           
           const number = process.env.ISSUE_NUMBER;
           const title = process.env.ISSUE_TITLE;
@@ -49,7 +49,7 @@ jobs:
           const body = process.env.ISSUE_BODY || '';
           
           const fullMarkdown = `GitHub Issue: ${url}\n\n${body}`;
-          const adf = markdownToADF(fullMarkdown);
+          const adf = markdownToAdf(fullMarkdown);
           
           const payload = JSON.stringify({
             fields: {
