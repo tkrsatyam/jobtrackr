@@ -37,11 +37,11 @@ jobs:
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
           JIRA_AUTH_TOKEN: ${{ secrets.JIRA_AUTH_TOKEN }}
         run: |
-          npm install -g markdown-to-adf 2>/dev/null
+          npm install markdown-to-adf
           
           node << 'EOF'
           const { execSync } = require('child_process');
-          const { markdownToADF } = require('markdown-to-adf');
+          const { markdownToADF } = require('./node_modules/markdown-to-adf');
           
           const number = process.env.ISSUE_NUMBER;
           const title = process.env.ISSUE_TITLE;
