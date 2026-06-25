@@ -39,9 +39,10 @@ jobs:
         run: |
           npm install markdown-to-adf
           
-          node << 'EOF'
-          const { execSync } = require('child_process');
-          const { markdownToAdf } = require('./node_modules/markdown-to-adf');
+          cat > create-jira-bug.mjs << 'SCRIPT'
+          import { markdownToAdf } from './node_modules/markdown-to-adf/dist/index.js';
+          import { execSync } from 'child_process';
+          import { writeFileSync } from 'fs';
           
           const number = process.env.ISSUE_NUMBER;
           const title = process.env.ISSUE_TITLE;
@@ -62,18 +63,35 @@ jobs:
             }
           });
           
+          writeFileSync('/tmp/jira-payload.json', payload);
+          
           const response = execSync(
             `curl -s -X POST "${process.env.JIRA_BASE_URL}/rest/api/3/issue" \
             -H "Authorization: Basic ${process.env.JIRA_AUTH_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d '${payload.replace(/'/g, "'\\''")}'`
+            -d @/tmp/jira-payload.json`
           ).toString();
           
-          const key = JSON.parse(response).key;
-          execSync(`echo "JIRA_KEY=${key}" >> ${process.env.GITHUB_OUTPUT}`);
-          EOF
+          console.log('Jira response:', response);
           
-          echo "JIRA_KEY=$(grep JIRA_KEY $GITHUB_OUTPUT | cut -d= -f2)" >> $GITHUB_OUTPUT
+          let key;
+          try {
+            key = JSON.parse(response).key;
+          } catch(e) {
+            console.error('Failed to parse Jira response:', response);
+            process.exit(1);
+          }
+          
+          if (!key) {
+            console.error('No key returned. Full response:', response);
+            process.exit(1);
+          }
+          
+          execSync(`echo "JIRA_KEY=${key}" >> ${process.env.GITHUB_OUTPUT}`);
+          SCRIPT
+          
+          node create-jira-bug.mjs
+          echo "JIRA_KEY=$(grep JIRA_KEY $GITHUB_OUTPUT | tail -1 | cut -d= -f2)" >> $GITHUB_OUTPUT
 
       - name: Comment Jira link on GitHub issue
         if: steps.check.outputs.SKIP == 'false' && steps.create.outputs.JIRA_KEY != 'null'
