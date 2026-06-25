@@ -24,31 +24,40 @@ jobs:
       - name: Create Jira Bug
         id: create
         if: steps.check.outputs.SKIP == 'false'
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
+          PAYLOAD=$(jq -n \
+            --arg title "[GH-Issue #${ISSUE_NUMBER}] ${ISSUE_TITLE}" \
+            --arg body "GitHub Issue: ${ISSUE_URL}\n\n${ISSUE_BODY}" \
+            --argjson num "${ISSUE_NUMBER}" \
+            '{
+              fields: {
+                project: { key: "JD" },
+                summary: $title,
+                description: {
+                  type: "doc",
+                  version: 1,
+                  content: [{
+                    type: "paragraph",
+                    content: [{ type: "text", text: $body }]
+                  }]
+                },
+                issuetype: { name: "Bug" },
+                labels: ["github-sync"],
+                customfield_10109: $num
+              }
+            }')
+          
           RESPONSE=$(curl -s -X POST \
             "${{ secrets.JIRA_BASE_URL }}/rest/api/3/issue" \
             -H "Authorization: Basic ${{ secrets.JIRA_AUTH_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d "{
-              \"fields\": {
-                \"project\": { \"key\": \"${{ secrets.JIRA_PROJECT_KEY }}\" },
-                \"summary\": \"[GH#${{ github.event.issue.number }}] ${{ github.event.issue.title }}\",
-                \"description\": {
-                  \"type\": \"doc\", \"version\": 1,
-                  \"content\": [{
-                    \"type\": \"paragraph\",
-                    \"content\": [{
-                      \"type\": \"text\",
-                      \"text\": \"GitHub Issue: ${{ github.event.issue.html_url }}\"
-                    }]
-                  }]
-                },
-                \"issuetype\": { \"name\": \"Bug\" },
-                \"labels\": [\"github-sync\"],
-                \"customfield_10109\": ${{ github.event.issue.number }}
-              }
-            }")
-
+            -d "$PAYLOAD")
+          
           JIRA_KEY=$(echo $RESPONSE | jq -r '.key')
           echo "JIRA_KEY=$JIRA_KEY" >> $GITHUB_OUTPUT
 
