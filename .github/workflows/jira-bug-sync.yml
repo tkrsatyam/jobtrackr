@@ -21,6 +21,11 @@ jobs:
             const alreadySynced = labels.includes('jira-synced');
             core.setOutput('SKIP', alreadySynced ? 'true' : 'false');
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Create Jira Bug
         id: create
         if: steps.check.outputs.SKIP == 'false'
@@ -29,37 +34,46 @@ jobs:
           ISSUE_BODY: ${{ github.event.issue.body }}
           ISSUE_URL: ${{ github.event.issue.html_url }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_AUTH_TOKEN: ${{ secrets.JIRA_AUTH_TOKEN }}
         run: |
-          PAYLOAD=$(jq -n \
-            --arg title "[GH-Issue #${ISSUE_NUMBER}] ${ISSUE_TITLE}" \
-            --arg body "GitHub Issue: ${ISSUE_URL}\n\n${ISSUE_BODY}" \
-            --argjson num "${ISSUE_NUMBER}" \
-            '{
-              fields: {
-                project: { key: "JD" },
-                summary: $title,
-                description: {
-                  type: "doc",
-                  version: 1,
-                  content: [{
-                    type: "paragraph",
-                    content: [{ type: "text", text: $body }]
-                  }]
-                },
-                issuetype: { name: "Bug" },
-                labels: ["github-sync"],
-                customfield_10109: $num
-              }
-            }')
+          npm install -g markdown-to-adf 2>/dev/null
           
-          RESPONSE=$(curl -s -X POST \
-            "${{ secrets.JIRA_BASE_URL }}/rest/api/3/issue" \
-            -H "Authorization: Basic ${{ secrets.JIRA_AUTH_TOKEN }}" \
+          node << 'EOF'
+          const { execSync } = require('child_process');
+          const { markdownToADF } = require('markdown-to-adf');
+          
+          const number = process.env.ISSUE_NUMBER;
+          const title = process.env.ISSUE_TITLE;
+          const url = process.env.ISSUE_URL;
+          const body = process.env.ISSUE_BODY || '';
+          
+          const fullMarkdown = `GitHub Issue: ${url}\n\n${body}`;
+          const adf = markdownToADF(fullMarkdown);
+          
+          const payload = JSON.stringify({
+            fields: {
+              project: { key: 'JD' },
+              summary: `[GitHub Issue #${number}] ${title}`,
+              description: adf,
+              issuetype: { name: 'Bug' },
+              labels: ['github-sync'],
+              customfield_10109: parseInt(number)
+            }
+          });
+          
+          const response = execSync(
+            `curl -s -X POST "${process.env.JIRA_BASE_URL}/rest/api/3/issue" \
+            -H "Authorization: Basic ${process.env.JIRA_AUTH_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d "$PAYLOAD")
+            -d '${payload.replace(/'/g, "'\\''")}'`
+          ).toString();
           
-          JIRA_KEY=$(echo $RESPONSE | jq -r '.key')
-          echo "JIRA_KEY=$JIRA_KEY" >> $GITHUB_OUTPUT
+          const key = JSON.parse(response).key;
+          execSync(`echo "JIRA_KEY=${key}" >> ${process.env.GITHUB_OUTPUT}`);
+          EOF
+          
+          echo "JIRA_KEY=$(grep JIRA_KEY $GITHUB_OUTPUT | cut -d= -f2)" >> $GITHUB_OUTPUT
 
       - name: Comment Jira link on GitHub issue
         if: steps.check.outputs.SKIP == 'false' && steps.create.outputs.JIRA_KEY != 'null'
