@@ -9,7 +9,7 @@
 
 .nav-list {
     list-style: none;
-    padding: var(--spacing-sm) 0;
+    padding: var(--spacing-sm) var(--spacing-sm);
     flex: 1;
     overflow-y: auto;
 }
@@ -17,13 +17,15 @@
 .nav-item {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-sm) var(--spacing-lg);
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm) var(--spacing-md);
     text-decoration: none;
     color: var(--mat-sys-on-surface-variant);
     transition: background 0.15s, padding 0.25s ease;
     font-size: 0.9rem;
     white-space: nowrap;
+    border-radius: var(--radius);
+    margin-bottom: 2px;
 
     mat-icon {
         font-size: 1.2rem;
@@ -50,27 +52,29 @@
 .sidebar.collapsed {
     .nav-item,
     .toggle-btn {
-        padding: var(--spacing-sm);
+        padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm) var(--spacing-md);
     }
 }
 
 .sidebar-footer {
     border-top: 1px solid var(--mat-sys-outline-variant);
-    padding: var(--spacing-sm) 0;
+    padding: var(--spacing-sm);
+    padding-left: var(--spacing-md);
 }
 
 .toggle-btn {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-md);
     width: 100%;
-    padding: var(--spacing-sm) var(--spacing-lg);
+    padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm) var(--spacing-md);
     background: none;
     border: none;
     cursor: pointer;
     color: var(--mat-sys-on-surface-variant);
     font-size: 0.9rem;
     white-space: nowrap;
+    border-radius: var(--radius);
     transition: background 0.15s, padding 0.25s ease;
 
     svg {
