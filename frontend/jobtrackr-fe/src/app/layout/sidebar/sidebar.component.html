@@ -1,21 +1,30 @@
-<nav class="sidebar">
-    <div class="sidebar-brand">
-        <span class="brand-text"></span>
-    </div>
+<nav class="sidebar" [class.collapsed]="sidebarService.isCollapsed()"
+     [attr.aria-expanded]="!sidebarService.isCollapsed()">
 
     <ul class="nav-list">
         @for (item of navItems; track item.route) {
-            <li> 
+            <li>
                 <a  class="nav-item"
                     [routerLink]="item.route"
                     routerLinkActive="active"
                     [routerLinkActiveOptions]="{ exact: item.exact }"
+                    [matTooltip]="item.label"
+                    [matTooltipDisabled]="!sidebarService.isCollapsed()"
+                    matTooltipPosition="right"
                     matRipple>
-
                     <mat-icon>{{ item.icon }}</mat-icon>
-                    <span>{{ item.label }}</span>
+                    <span class="nav-label">{{ item.label }}</span>
                 </a>
             </li>
         }
     </ul>
+
+    <div class="sidebar-footer">
+        <button class="toggle-btn"
+                (click)="sidebarService.toggle()"
+                [attr.aria-label]="sidebarService.isCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'">
+            <mat-icon>{{ sidebarService.isCollapsed() ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+        </button>
+    </div>
+
 </nav>

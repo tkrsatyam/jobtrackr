@@ -1,8 +1,9 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { TopbarComponent } from '../topbar/topbar.component';
 import { AuthService } from '../../features/auth/services/auth.service';
+import { SidebarService } from '../../core/services/sidebar.service';
 
 @Component({
   selector: 'app-shell',
@@ -17,15 +18,11 @@ import { AuthService } from '../../features/auth/services/auth.service';
 export class ShellComponent implements OnInit {
   private authService = inject(AuthService);
 
-  sidebarOpen = signal(true);
-
+  readonly sidebarService = inject(SidebarService);
+  
   ngOnInit(): void {
     if (!this.authService.currentUser()) {
       this.authService.getProfile().subscribe();
     }
-  }
-
-  toggleSidebar(): void {
-    this.sidebarOpen.update(v => !v);
   }
 }

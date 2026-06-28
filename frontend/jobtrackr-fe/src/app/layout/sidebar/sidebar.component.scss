@@ -7,19 +7,6 @@
     overflow-y: auto;
 }
 
-.sidebar-brand {
-    height: var(--topbar-height);
-    display: flex;
-    align-items: center;
-    padding: 0 var(--spacing-lg);
-    border-bottom: 1px solid var(--mat-sys-outline-variant);
-
-    .brand-text {
-        font-size: 1.2rem;
-        font-weight: 700;
-        color: var(--mat-sys-primary);
-    }
-}
 
 .nav-list {
     list-style: none;
@@ -27,6 +14,7 @@
     flex: 1;
 }
 
+// REPLACE the entire .nav-item block with:
 .nav-item {
     display: flex;
     align-items: center;
@@ -34,16 +22,25 @@
     padding: var(--spacing-sm) var(--spacing-lg);
     text-decoration: none;
     color: var(--mat-sys-on-surface-variant);
-    transition: background 0.15s;
+    transition: background 0.15s, padding 0.25s ease;
     font-size: 0.9rem;
+    overflow: hidden;        // prevents content spilling during transition
+    white-space: nowrap;     // keeps icon + label on one line
 
     mat-icon {
         font-size: 1.2rem;
-        width: 1.2rem;
+        min-width: 1.2rem;   // CHANGE: was width, now min-width so it never shrinks
         height: 1.2rem;
+        flex-shrink: 0;      // ADD: icon must never shrink
     }
 
-    &.hover {
+    .nav-label {
+        opacity: 1;
+        transition: opacity 0.2s ease;
+        overflow: hidden;
+    }
+
+    &:hover {                // FIX: was &.hover which never matched
         background: var(--mat-sys-surface-container);
     }
 
@@ -51,5 +48,51 @@
         color: var(--mat-sys-primary);
         background-color: var(--mat-sys-secondary-container);
         font-weight: 500;
+    }
+}
+
+.sidebar.collapsed {
+    .nav-item {
+        justify-content: center;
+        padding: var(--spacing-sm);
+
+        .nav-label {
+            opacity: 0;
+            width: 0;
+        }
+    }
+}
+
+.sidebar-footer {
+    padding: var(--spacing-sm);
+    border-top: 1px solid var(--mat-sys-outline-variant);
+    display: flex;
+    justify-content: flex-end;
+}
+
+.sidebar.collapsed .sidebar-footer {
+    justify-content: center;
+}
+
+.toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--mat-sys-on-surface-variant);
+    border-radius: var(--radius);
+    padding: var(--spacing-xs);
+    transition: background 0.15s;
+
+    &:hover {
+        background: var(--mat-sys-surface-container);
+    }
+
+    mat-icon {
+        font-size: 1.2rem;
+        min-width: 1.2rem;
+        height: 1.2rem;
     }
 }
