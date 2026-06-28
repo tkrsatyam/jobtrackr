@@ -54,6 +54,7 @@
     .nav-item {
         justify-content: center;
         padding: var(--spacing-sm);
+        gap: 0;
 
         .nav-label {
             opacity: 0;
@@ -81,12 +82,13 @@
     border: none;
     cursor: pointer;
     color: var(--mat-sys-on-surface-variant);
-    border-radius: var(--radius);
+    border-radius: 50%;
     padding: var(--spacing-xs);
-    transition: background 0.15s;
+    transition: background 0.15s, color 0.15s;
 
     &:hover {
-        background: var(--mat-sys-surface-container);
+        background: var(--mat-sys-surface-container-highest);
+        color: var(--mat-sys-on-surface);
     }
 
     mat-icon {
