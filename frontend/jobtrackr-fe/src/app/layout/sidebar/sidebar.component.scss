@@ -1,20 +1,19 @@
 .sidebar {
     background: var(--mat-sys-surface-container-low);
     border-right: 1px solid var(--mat-sys-outline-variant);
-    height: 100vh;
+    height: 100%;
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
+    overflow: hidden;
 }
-
 
 .nav-list {
     list-style: none;
     padding: var(--spacing-sm) 0;
     flex: 1;
+    overflow-y: auto;
 }
 
-// REPLACE the entire .nav-item block with:
 .nav-item {
     display: flex;
     align-items: center;
@@ -29,9 +28,9 @@
 
     mat-icon {
         font-size: 1.2rem;
-        min-width: 1.2rem;   // CHANGE: was width, now min-width so it never shrinks
+        min-width: 1.2rem;
         height: 1.2rem;
-        flex-shrink: 0;      // ADD: icon must never shrink
+        flex-shrink: 0;
     }
 
     .nav-label {
@@ -40,7 +39,7 @@
         overflow: hidden;
     }
 
-    &:hover {                // FIX: was &.hover which never matched
+    &:hover {
         background: var(--mat-sys-surface-container);
     }
 
