@@ -23,8 +23,7 @@
     color: var(--mat-sys-on-surface-variant);
     transition: background 0.15s, padding 0.25s ease;
     font-size: 0.9rem;
-    overflow: hidden;        // prevents content spilling during transition
-    white-space: nowrap;     // keeps icon + label on one line
+    white-space: nowrap;
 
     mat-icon {
         font-size: 1.2rem;
@@ -34,9 +33,7 @@
     }
 
     .nav-label {
-        opacity: 1;
-        transition: opacity 0.2s ease;
-        overflow: hidden;
+        flex-shrink: 0;
     }
 
     &:hover {
@@ -51,49 +48,42 @@
 }
 
 .sidebar.collapsed {
-    .nav-item {
-        justify-content: center;
+    .nav-item,
+    .toggle-btn {
         padding: var(--spacing-sm);
-        gap: 0;
-
-        .nav-label {
-            opacity: 0;
-            width: 0;
-        }
     }
 }
 
 .sidebar-footer {
-    padding: var(--spacing-sm);
     border-top: 1px solid var(--mat-sys-outline-variant);
-    display: flex;
-    justify-content: flex-end;
-}
-
-.sidebar.collapsed .sidebar-footer {
-    justify-content: center;
+    padding: var(--spacing-sm) 0;
 }
 
 .toggle-btn {
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: var(--spacing-sm);
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-lg);
     background: none;
     border: none;
     cursor: pointer;
     color: var(--mat-sys-on-surface-variant);
-    border-radius: 50%;
-    padding: var(--spacing-xs);
-    transition: background 0.15s, color 0.15s;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    transition: background 0.15s, padding 0.25s ease;
 
-    &:hover {
-        background: var(--mat-sys-surface-container-highest);
-        color: var(--mat-sys-on-surface);
+    svg {
+        flex-shrink: 0;
+        min-width: 16px;
     }
 
-    mat-icon {
-        font-size: 1.2rem;
-        min-width: 1.2rem;
-        height: 1.2rem;
+    .nav-label {
+        flex-shrink: 0;
+    }
+
+    &:hover {
+        background: var(--mat-sys-surface-container);
+        color: var(--mat-sys-on-surface);
     }
 }
