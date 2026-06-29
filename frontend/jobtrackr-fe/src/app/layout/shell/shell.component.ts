@@ -4,13 +4,15 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
 import { TopbarComponent } from '../topbar/topbar.component';
 import { AuthService } from '../../features/auth/services/auth.service';
 import { SidebarService } from '../../core/services/sidebar.service';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-shell',
   imports: [
     RouterOutlet,
     SidebarComponent,
-    TopbarComponent
+    TopbarComponent,
+    MatIconModule
   ],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
