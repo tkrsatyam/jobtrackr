@@ -1,4 +1,4 @@
-import { Component, inject, output } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
@@ -8,6 +8,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { ThemeService } from '../../core/services/theme.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { SidebarService } from '../../core/services/sidebar.service';
 
 @Component({
   selector: 'app-topbar',
@@ -25,9 +26,7 @@ export class TopbarComponent {
   private authService = inject(AuthService);
   private dialog = inject(MatDialog);
   readonly themeService = inject(ThemeService);
-
-  menuToggle = output<void>();
-
+  
   currentUser = this.authService.currentUser;
 
   logout(): void {

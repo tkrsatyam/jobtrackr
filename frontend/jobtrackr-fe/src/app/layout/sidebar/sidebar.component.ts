@@ -1,7 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { MatRippleModule } from '@angular/material/core';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { SidebarService } from '../../core/services/sidebar.service';
 
 interface NavItem {
   label: string;
@@ -16,12 +18,14 @@ interface NavItem {
     RouterLink,
     RouterLinkActive,
     MatIconModule,
-    MatRippleModule
+    MatRippleModule,
+    MatTooltipModule
   ],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss',
 })
 export class SidebarComponent {
+  readonly sidebarService = inject(SidebarService);
 
   navItems: NavItem[] = [
     { label: 'Dashboard', icon: 'dashboard', route:'/dashboard', exact: true },

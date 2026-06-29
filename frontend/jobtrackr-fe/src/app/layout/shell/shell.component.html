@@ -1,9 +1,13 @@
-<div class="shell-layout" [class.sidebar-collapsed]="!sidebarOpen()">
+<div class="shell-layout" [class.sidebar-collapsed]="sidebarService.isCollapsed()">
+    <app-topbar class="shell-topbar" />
+    <div class="shell-backdrop" (click)="sidebarService.toggle()"></div>
     <app-sidebar class="shell-sidebar" />
-    <div class="shell-main">
-        <app-topbar (menuToggle)="toggleSidebar()" />
-        <main class="shell-content">
-            <router-outlet />
-        </main>
-    </div>
+    <main class="shell-content">
+        <router-outlet />
+    </main>
+    <button class="mobile-toggle"
+            (click)="sidebarService.toggle()"
+            aria-label="Open navigation">
+        <mat-icon>menu</mat-icon>
+    </button>
 </div>

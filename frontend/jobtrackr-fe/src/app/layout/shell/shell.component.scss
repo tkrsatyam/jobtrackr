@@ -1,31 +1,96 @@
 .shell-layout {
     display: grid;
     grid-template-columns: var(--sidebar-width) 1fr;
+    grid-template-rows: var(--topbar-height) 1fr;
     height: 100vh;
     overflow: hidden;
     transition: grid-template-columns 0.25s ease;
 
     &.sidebar-collapsed {
-        grid-template-columns: 0 1fr;
+        grid-template-columns: var(--sidebar-collapsed-width) 1fr;
     }
+}
+
+.shell-topbar {
+    grid-column: 1 / -1;
+    grid-row: 1;
 }
 
 .shell-sidebar {
     grid-column: 1;
-    overflow: hidden;
-    height: 100vh;
-}
-
-.shell-main {
-    grid-column: 2;
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
+    grid-row: 2;
     overflow: hidden;
 }
 
 .shell-content {
-    flex: 1;
+    grid-column: 2;
+    grid-row: 2;
     padding: var(--spacing-lg);
     overflow-y: auto;
+}
+
+.mobile-toggle {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .shell-layout,
+    .shell-layout.sidebar-collapsed {
+        grid-template-columns: 0 1fr;
+    }
+
+    .shell-content {
+        grid-column: 1 / -1;
+    }
+
+    .shell-sidebar {
+        position: fixed;
+        top: var(--topbar-height);
+        left: 0;
+        z-index: 200;
+        width: var(--sidebar-width);
+        height: calc(100vh - var(--topbar-height));
+        transform: translateX(-100%);   // hidden off-screen by default
+        transition: transform 0.25s ease;
+        box-shadow: var(--shadow-md);
+    }
+
+    .shell-layout:not(.sidebar-collapsed) .shell-sidebar {
+        transform: translateX(0);
+    }
+
+    // .shell-backdrop {
+    //     display: none;
+    //     position: fixed;
+    //     inset: 0;
+    //     // background: rgba(0, 0, 0, 0.4);
+    //     z-index: 199;
+    // }
+
+    .shell-layout:not(.sidebar-collapsed) .shell-backdrop {
+        display: block;
+    }
+
+    .mobile-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        bottom: var(--spacing-md);
+        left: var(--spacing-md);
+        z-index: 199;
+        width: 44px;
+        height: 44px;
+        border-radius: var(--radius);
+        border: none;
+        cursor: pointer;
+        background: var(--mat-sys-surface-container-high);
+        color: var(--mat-sys-on-surface);
+        box-shadow: var(--shadow-md);
+        transition: background 0.15s;
+
+        &:hover {
+            background: var(--mat-sys-surface-container-highest);
+        }
+    }
 }
