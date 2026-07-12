@@ -6,8 +6,10 @@ import com.jobtrackr.user_service.dto.RefreshTokenRequest;
 import com.jobtrackr.user_service.dto.RegisterRequest;
 import com.jobtrackr.user_service.entity.RefreshToken;
 import com.jobtrackr.user_service.entity.User;
+import com.jobtrackr.user_service.exception.EmailAlreadyInUseException;
 import com.jobtrackr.user_service.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +24,7 @@ public class AuthService {
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already in use");
+            throw new EmailAlreadyInUseException("Email already in use");
         }
 
         User user = User.builder()
@@ -32,7 +34,11 @@ public class AuthService {
                 .provider(User.AuthProvider.LOCAL)
                 .build();
 
-        user = userRepository.save(user);
+        try {
+            user = userRepository.save(user);
+        } catch (DataIntegrityViolationException exception) {
+            throw new EmailAlreadyInUseException("Email already in use");
+        }
 
         String accessToken = jwtService.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name());
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);

@@ -55,7 +55,11 @@ export class RegisterComponent {
       next: () => this.router.navigate(['/dashboard']),
       error: err => {
         this.loading.set(false);
-        this.error.set(err.error?.error ?? 'Registration failed.');
+        this.error.set(
+          err.status === 409
+          ? 'This email is already registered. Try logging in.'
+          : err.error?.error ?? 'Registration failed.'
+        );
       }
     });
   }
