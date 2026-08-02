@@ -19,18 +19,22 @@ import com.jobtrackr.application_service.util.PaginationUtils;
 import com.jobtrackr.application_service.util.UserContextHolder;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
+@Slf4j
 public class ApplicationServiceImpl implements ApplicationService{
 
     private final ApplicationRepository applicationRepository;
@@ -97,11 +101,19 @@ public class ApplicationServiceImpl implements ApplicationService{
         if (filter.getAppliedBefore() != null) spec = spec.and(ApplicationSpecification.appliedBefore(filter.getAppliedBefore()));
         
         if (filter.getTags() != null && !filter.getTags().isEmpty()) {
-            if (filter.getTags().size() > MAX_TAG_FILTERS) {
-                throw new IllegalArgumentException("Cannot filter by more than " + MAX_TAG_FILTERS + " tags");
-            }
-            for (String tag: filter.getTags()) {
-                spec = spec.and(ApplicationSpecification.hasTag(tag));
+            List<String> effectiveTags = filter.getTags().stream()
+                    .filter(t -> t != null && !t.isBlank())
+                    .map(t -> t.trim().toLowerCase())
+                    .collect(Collectors.toCollection(LinkedHashSet::new))
+                    .stream().toList();
+            log.info("Effective tags: {}", effectiveTags);
+            if (!effectiveTags.isEmpty()) {
+                if (effectiveTags.size() > MAX_TAG_FILTERS) {
+                    throw new IllegalArgumentException("Cannot filter by more than " + MAX_TAG_FILTERS + " tags");
+                }
+                for (String tag: effectiveTags) {
+                    spec = spec.and(ApplicationSpecification.hasTag(tag));
+                }
             }
         }
 
