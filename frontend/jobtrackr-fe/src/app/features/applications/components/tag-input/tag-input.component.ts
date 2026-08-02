@@ -1,5 +1,5 @@
 import { COMMA, ENTER } from '@angular/cdk/keycodes';
-import { Component, input, OnInit, output, signal } from '@angular/core';
+import { Component, effect, input, OnInit, output, signal } from '@angular/core';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -19,21 +19,29 @@ import { TagChipComponent } from '../../../../shared/components/tag-chip/tag-chi
   templateUrl: './tag-input.component.html',
   styleUrl: './tag-input.component.scss',
 })
-export class TagInputComponent implements OnInit {
+export class TagInputComponent {
   
   initialTags = input<string[]>([]);
+  maxTags = input<number | null>(null);
   tagsChange = output<string[]>();
 
   tags = signal<string[]>([]);
   separatorKeysCodes = [ENTER, COMMA];
 
-  ngOnInit(): void {
-    this.tags.set([...this.initialTags()]);
+  constructor() {
+    effect(() => {
+      this.tags.set([...this.initialTags()]);
+    });
   }
 
   addTag(event: any): void {
     const value = (event.value ?? '').trim().toLowerCase();
     if (value && !this.tags().includes(value)) {
+      const limit = this.maxTags();
+      if (limit !== null && this.tags().length >= limit) {
+        event.chipInput?.clear();
+        return;
+      }
       this.tags.update(t => [...t, value]);
       this.tagsChange.emit(this.tags());
     }

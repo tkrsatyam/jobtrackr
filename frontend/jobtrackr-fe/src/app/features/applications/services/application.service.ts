@@ -14,7 +14,10 @@ export class ApplicationService {
   getApplications(filter: ApplicationFilter = {}): Observable<Page<ApplicationResponse>> {
     let params = new HttpParams();
     Object.entries(filter).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
+      if (value === undefined || value === null || value === '') return;
+      if (Array.isArray(value)) {
+        value.forEach(v => { params = params.append(key, String(v)); });
+      } else {
         params = params.set(key, String(value));
       }
     });

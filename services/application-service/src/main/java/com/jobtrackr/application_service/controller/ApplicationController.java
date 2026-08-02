@@ -18,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -48,6 +49,7 @@ public class ApplicationController {
             @RequestParam(required = false) String role,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate appliedAfter,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate appliedBefore,
+            @RequestParam(required = false) List<String> tags,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
@@ -63,6 +65,7 @@ public class ApplicationController {
                 .role(role)
                 .appliedAfter(appliedAfter)
                 .appliedBefore(appliedBefore)
+                .tags(tags)
                 .page(page)
                 .size(size)
                 .sortBy(sortBy)

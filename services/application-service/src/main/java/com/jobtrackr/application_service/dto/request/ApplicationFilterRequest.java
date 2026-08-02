@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @Builder
@@ -19,6 +20,7 @@ public class ApplicationFilterRequest {
     private String role;
     private LocalDate appliedAfter;
     private LocalDate appliedBefore;
+    private List<String> tags;
     private int page;
     private int size;
     private String sortBy;

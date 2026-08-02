@@ -32,6 +32,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleInvalidTransition(InvalidStatusTransitionException exception) {
         return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage());
     }
+    
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException exception) {
+        return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage());
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException exception) {

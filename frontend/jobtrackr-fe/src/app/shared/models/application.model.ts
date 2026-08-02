@@ -56,6 +56,7 @@ export interface ApplicationFilter {
     role?: string;
     appliedAfter?: string;
     appliedBefore?: string;
+    tags?: string[];
     page?: number;
     size?: number;
     sortBy?: string;
