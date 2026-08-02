@@ -26,6 +26,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { BulkAction, BulkActionToolbarComponent } from '../components/bulk-action-toolbar/bulk-action-toolbar.component';
 import { MatSortModule, Sort } from '@angular/material/sort';
+import { TagInputComponent } from '../components/tag-input/tag-input.component';
 
 type FilterType = 'select' | 'text' | 'boolean' | 'date';
 type ColumnType = 'text' | 'status' | 'priority' | 'date' | 'tags' | 'select' | 'actions';
@@ -69,6 +70,7 @@ interface ColumnConfig {
     StatusBadgeComponent,
     PriorityBadgeComponent,
     TagChipComponent,
+    TagInputComponent,
     BulkActionToolbarComponent
 ],
   templateUrl: './application-list.component.html',
@@ -145,6 +147,7 @@ export class ApplicationListComponent implements OnInit {
     appliedAfter: '',
     appliedBefore: ''
   });
+  tagFilters = signal<string[]>([]);
 
   page = signal(0);
   pageSize = signal(20);
@@ -191,6 +194,7 @@ export class ApplicationListComponent implements OnInit {
     if (values['isArchived'] === 'true') filter.isArchived = true;
     if (values['appliedAfter']) filter.appliedAfter = values['appliedAfter'];
     if (values['appliedBefore']) filter.appliedBefore = values['appliedBefore'];
+    if (this.tagFilters().length > 0) filter.tags = this.tagFilters();
 
     return filter;
   })
@@ -253,6 +257,11 @@ export class ApplicationListComponent implements OnInit {
     this.applyFilters();
   }
 
+  onTagFiltersChange(tags: string[]): void {
+    this.tagFilters.set(tags);
+    this.applyFilters();
+  }
+
   applyFilters(): void {
     this.page.set(0);
     this.load();
@@ -269,6 +278,7 @@ export class ApplicationListComponent implements OnInit {
       appliedAfter: '',
       appliedBefore: ''
     });
+    this.tagFilters.set([]);
     this.page.set(0);
     this.load();
   }

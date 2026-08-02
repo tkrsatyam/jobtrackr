@@ -39,6 +39,8 @@ public class ApplicationServiceImpl implements ApplicationService{
     private final ApplicationEventProducer eventProducer;
     private final StatusTransitionValidator transitionValidator;
     private final UserContextHolder userContextHolder;
+    
+    private static final int MAX_TAG_FILTERS = 10;
 
     @Override
     public ApplicationResponse createApplication(CreateApplicationRequest request, HttpServletRequest httpRequest) {
@@ -93,6 +95,15 @@ public class ApplicationServiceImpl implements ApplicationService{
         if (filter.getRole() != null) spec = spec.and(ApplicationSpecification.roleContains(filter.getRole()));
         if (filter.getAppliedAfter() != null) spec = spec.and(ApplicationSpecification.appliedAfter(filter.getAppliedAfter()));
         if (filter.getAppliedBefore() != null) spec = spec.and(ApplicationSpecification.appliedBefore(filter.getAppliedBefore()));
+        
+        if (filter.getTags() != null && !filter.getTags().isEmpty()) {
+            if (filter.getTags().size() > MAX_TAG_FILTERS) {
+                throw new IllegalArgumentException("Cannot filter by more than " + MAX_TAG_FILTERS + " tags");
+            }
+            for (String tag: filter.getTags()) {
+                spec = spec.and(ApplicationSpecification.hasTag(tag));
+            }
+        }
 
         return applicationRepository.findAll(spec, pageable)
                 .map(applicationMapper::toResponse);

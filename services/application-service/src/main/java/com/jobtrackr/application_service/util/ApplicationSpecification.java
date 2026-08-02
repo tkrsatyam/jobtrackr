@@ -1,9 +1,12 @@
 package com.jobtrackr.application_service.util;
 
 import com.jobtrackr.application_service.entity.Application;
+import com.jobtrackr.application_service.entity.ApplicationTag;
 import com.jobtrackr.application_service.entity.enums.ApplicationStatus;
 import com.jobtrackr.application_service.entity.enums.PriorityLevel;
 import com.jobtrackr.application_service.entity.enums.WorkMode;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
@@ -53,5 +56,14 @@ public class ApplicationSpecification {
 
     public static Specification<Application> appliedBefore(LocalDate date) {
         return (root, query, criteriaBuilder) -> criteriaBuilder.lessThanOrEqualTo(root.get("appliedDate"), date);
+    }
+    
+    public static Specification<Application> hasTag(String tag) {
+        String normalizedTag = tag.trim().toLowerCase();
+        return (root, query, criteriaBuilder) -> {
+            query.distinct(true);
+            Join<Application, ApplicationTag> tagJoin = root.join("tags", JoinType.INNER);
+            return criteriaBuilder.equal(criteriaBuilder.lower(tagJoin.get("tag")), normalizedTag);
+        };
     }
 }

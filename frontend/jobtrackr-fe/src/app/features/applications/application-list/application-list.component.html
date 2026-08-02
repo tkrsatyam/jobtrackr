@@ -63,6 +63,11 @@
             }
         }
 
+        <app-tag-input
+            class="filter-field"
+            [initialTags]="tagFilters()"
+            (tagsChange)="onTagFiltersChange($event)" />
+
         <button mat-stroked-button (click)="resetFilters()">
             <mat-icon>clear</mat-icon> Reset
         </button>
