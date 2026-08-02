@@ -378,6 +378,17 @@ Analytics doesn't query Application Service. Instead it maintains its own read m
 - Historical data survives even if the Application Service is down
 - Easy to rebuild analytics by replaying Kafka from offset 0
 
+### 9.4 Schema Migrations — Flyway
+
+All PostgreSQL-backed services (User, Application, Reminder, Document) moved from Hibernate's `ddl-auto=update` to **Flyway-managed migrations**. MongoDB-backed services (Contact, Notification, Analytics) are schemaless and unaffected.
+
+**Why:** `ddl-auto=update` infers schema changes from `@Entity` classes, but it can't create things that don't map to a Java field or annotation — extensions (`CREATE EXTENSION pg_trgm`), specialized index types (GIN trigram indexes), or triggers. This became a hard blocker for keyword search (needs `pg_trgm` + a GIN index), so migrations were introduced across all Postgres services together rather than as a one-off for a single service.
+
+**What changed for day-to-day development:** Hibernate no longer creates or alters tables — `ddl-auto=validate` only checks the live schema matches what the entities expect, and fails startup if it doesn't. This means:
+- Any new column, table, index, or constraint now requires a new file in that service's `src/main/resources/db/migration/`, named `V{n}__description.sql`, in addition to updating the `@Entity` class.
+- Adding a field to an entity and running the app locally will **no longer** make the column appear — the app will fail `ddl-auto=validate` until a matching migration exists.
+- Migration files are applied once, in order, and tracked by Flyway — they should never be edited after being merged; a mistake gets fixed with a new migration, not by rewriting an old one.
+
 ---
 
 ## 10. Deployment Architecture

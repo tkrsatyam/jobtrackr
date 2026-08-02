@@ -20,7 +20,7 @@
 
 ### User Service — `jobtrackr_users` database
 
-> Schema is auto-managed by Hibernate (`ddl-auto=update`). The SQL below reflects what Hibernate generates from the entity classes.
+> Schema is managed by Flyway migrations (`src/main/resources/db/migration/`), `ddl-auto=validate`. The SQL below reflects the migration-created schema, not Hibernate inference. See [HLD 9.4](./HLD.md#94-schema-migrations--flyway) for why this changed and what it means for future schema changes.
 
 ```sql
 CREATE TABLE users (
@@ -76,6 +76,8 @@ CREATE TABLE user_preferred_locations (
 ---
 
 ### Application Service — `jobtrackr_applications` database
+
+> Schema is managed by Flyway migrations (`src/main/resources/db/migration/`), `ddl-auto=validate`. See [HLD 9.4](./HLD.md#94-schema-migrations--flyway).
 
 ```sql
 CREATE TYPE application_status AS ENUM (
@@ -153,6 +155,8 @@ CREATE INDEX idx_status_history_app ON application_status_history(application_id
 
 ### Reminder Service — `reminderservice` database
 
+> Schema is managed by Flyway migrations (`src/main/resources/db/migration/`), `ddl-auto=validate`. See [HLD §9.4](./HLD.md#94-schema-migrations--flyway).
+
 ```sql
 CREATE TYPE reminder_type AS ENUM ('FOLLOW_UP', 'INTERVIEW', 'TASK', 'DEADLINE', 'CUSTOM');
 CREATE TYPE reminder_status AS ENUM ('PENDING', 'DONE', 'SNOOZED', 'CANCELLED');
@@ -180,6 +184,8 @@ CREATE INDEX idx_reminders_app ON reminders(application_id);
 ---
 
 ### Document Service — `documentservice` database
+
+> Schema is managed by Flyway migrations (`src/main/resources/db/migration/`), `ddl-auto=validate`. See [HLD 9.4](./HLD.md#94-schema-migrations--flyway).
 
 ```sql
 CREATE TYPE document_type AS ENUM ('RESUME', 'COVER_LETTER', 'OTHER');
