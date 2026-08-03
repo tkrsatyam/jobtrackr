@@ -41,7 +41,7 @@ CREATE TABLE refresh_tokens (
     token       VARCHAR(255) NOT NULL UNIQUE,        -- Plain UUID string, not hashed
     user_id     UUID NOT NULL REFERENCES users(id),
     expires_at  TIMESTAMP NOT NULL,
-    revoked     BOOLEAN NOT NULL DEFAULT FALSE
+    revoked     BOOLEAN NOT NULL
 );
 
 CREATE INDEX idx_users_email ON users(email);
@@ -80,62 +80,49 @@ CREATE TABLE user_preferred_locations (
 > Schema is managed by Flyway migrations (`src/main/resources/db/migration/`), `ddl-auto=validate`. See [HLD 9.4](./HLD.md#94-schema-migrations--flyway).
 
 ```sql
-CREATE TYPE application_status AS ENUM (
-    'SAVED', 'APPLIED', 'PHONE_SCREEN', 'INTERVIEW',
-    'TECHNICAL_ROUND', 'HR_ROUND', 'OFFER',
-    'ACCEPTED', 'REJECTED', 'GHOSTED', 'WITHDRAWN'
-);
-
-CREATE TYPE priority_level AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'DREAM');
-CREATE TYPE work_mode AS ENUM ('REMOTE', 'HYBRID', 'ON_SITE');
-CREATE TYPE application_source AS ENUM (
-    'LINKEDIN', 'NAUKRI', 'INTERNSHALA', 'COMPANY_WEBSITE',
-    'REFERRAL', 'ANGEL_LIST', 'INSTAHYRE', 'OTHER'
-);
-
 CREATE TABLE applications (
-    application_id  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    application_id  UUID PRIMARY KEY,
     user_id         UUID NOT NULL,
     company_name    VARCHAR(200) NOT NULL,
     role            VARCHAR(200) NOT NULL,
     job_url         VARCHAR(1000),
-    status          application_status NOT NULL DEFAULT 'APPLIED',
-    priority        priority_level DEFAULT 'MEDIUM',
-    work_mode       work_mode,
+    status          VARCHAR(255) NOT NULL,
+    priority        VARCHAR(255),
+    work_mode       VARCHAR(255),
     location        VARCHAR(200),
     salary_min      BIGINT,
     salary_max      BIGINT,
-    currency        VARCHAR(10) DEFAULT 'INR',
+    currency        VARCHAR(10),
     applied_date    DATE,
-    source          application_source DEFAULT 'OTHER',
+    source          VARCHAR(255),
     notes           TEXT,
-    is_archived     BOOLEAN DEFAULT FALSE,
-    is_deleted      BOOLEAN DEFAULT FALSE,
-    created_at      TIMESTAMPTZ DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ DEFAULT NOW()
+    is_archived     BOOLEAN NOT NULL,
+    is_deleted      BOOLEAN NOT NULL,
+    created_at      TIMESTAMP,
+    updated_at      TIMESTAMP
 );
 
 CREATE TABLE application_status_history (
-    history_id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    application_id  UUID NOT NULL REFERENCES applications(application_id) ON DELETE CASCADE,
-    status          application_status NOT NULL,
+    history_id      UUID PRIMARY KEY,
+    application_id  UUID NOT NULL REFERENCES applications(application_id),
+    status          VARCHAR(255) NOT NULL,
     note            TEXT,
-    changed_at      TIMESTAMPTZ DEFAULT NOW()
+    changed_at      TIMESTAMP
 );
 
 CREATE TABLE application_tags (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    application_id  UUID NOT NULL REFERENCES applications(application_id) ON DELETE CASCADE,
+    id              UUID PRIMARY KEY,
+    application_id  UUID NOT NULL REFERENCES applications(application_id),
     tag             VARCHAR(50) NOT NULL,
     UNIQUE(application_id, tag)
 );
 
 -- Cross-service reference tables (store IDs only, no FK to other services)
 CREATE TABLE application_documents (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    application_id  UUID NOT NULL REFERENCES applications(application_id) ON DELETE CASCADE,
+    id              UUID PRIMARY KEY,
+    application_id  UUID NOT NULL REFERENCES applications(application_id),
     document_id     UUID NOT NULL,
-    linked_at       TIMESTAMPTZ DEFAULT NOW()
+    linked_at       TIMESTAMP
 );
 
 CREATE INDEX idx_applications_user ON applications(user_id);
@@ -144,18 +131,15 @@ CREATE INDEX idx_applications_user_status ON applications(user_id, status);
 CREATE INDEX idx_status_history_app ON application_status_history(application_id);
 ```
 
-> **Note:** The custom PostgreSQL enum types above reflect the original design intent.
-> In practice, `ddl-auto=update` with `@Enumerated(EnumType.STRING)` means Hibernate
-> stores all enum fields as `VARCHAR` columns — the custom PG enum types are not created.
-> The table structure and column names are accurate; only the column types differ.
+> **Enum columns:** `status`, `priority`, `work_mode`, and `source` are `@Enumerated(EnumType.STRING)` on the entity side and stored as plain `VARCHAR` — there are no custom PostgreSQL enum types (`CREATE TYPE ... AS ENUM`) in this schema. An earlier version of this doc described custom PG enum types as the intended design; that was never implemented and the Flyway baseline (`V1__baseline.sql`) now reflects the actual `VARCHAR` columns as the source of truth going forward.
 
-> **Timestamp types:** Entities use `LocalDateTime` with `@CreationTimestamp`/`@UpdateTimestamp`. Hibernate maps this to `TIMESTAMP WITHOUT TIME ZONE` — not `TIMESTAMPTZ`. Timestamps in API responses have no timezone offset.
+> **Timestamp types:** Entities use `LocalDateTime` with `@CreationTimestamp`/`@UpdateTimestamp`. Hibernate maps this to `TIMESTAMP WITHOUT TIME ZONE` — not `TIMESTAMPTZ`. Timestamps in API responses have no timezone offset. `DEFAULT gen_random_uuid()` / `DEFAULT NOW()` are also not present in the actual schema — IDs are generated by Hibernate (`@UuidGenerator`) and timestamps by Hibernate's `@CreationTimestamp`/`@UpdateTimestamp`, both at the application layer rather than as DB-level defaults.
 
 ---
 
 ### Reminder Service — `reminderservice` database
 
-> Schema is managed by Flyway migrations (`src/main/resources/db/migration/`), `ddl-auto=validate`. See [HLD §9.4](./HLD.md#94-schema-migrations--flyway).
+> **Forward-looking:** this service has no entities implemented yet (Phase 2). The schema below is the intended design, not a live database state. Flyway will be set up for this service as part of its Phase 2 build-out (tracked in JD-113), with a baseline migration written to match whatever the entities actually look like at that point — not necessarily identical to the SQL below. See [HLD §9.4](./HLD.md#94-schema-migrations--flyway) for the Flyway rollout that already applies to User and Application Service.
 
 ```sql
 CREATE TYPE reminder_type AS ENUM ('FOLLOW_UP', 'INTERVIEW', 'TASK', 'DEADLINE', 'CUSTOM');
@@ -185,7 +169,7 @@ CREATE INDEX idx_reminders_app ON reminders(application_id);
 
 ### Document Service — `documentservice` database
 
-> Schema is managed by Flyway migrations (`src/main/resources/db/migration/`), `ddl-auto=validate`. See [HLD 9.4](./HLD.md#94-schema-migrations--flyway).
+> **Forward-looking:** this service has no entities implemented yet (Phase 2). The schema below is the intended design, not a live database state. Flyway will be set up for this service as part of its Phase 2 build-out (tracked in JD-114), with a baseline migration written to match whatever the entities actually look like at that point — not necessarily identical to the SQL below. See [HLD §9.4](./HLD.md#94-schema-migrations--flyway) for the Flyway rollout that already applies to User and Application Service.
 
 ```sql
 CREATE TYPE document_type AS ENUM ('RESUME', 'COVER_LETTER', 'OTHER');
