@@ -12,6 +12,9 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
+@Table(name = "application_status_history", indexes = {
+        @Index(name = "idx_status_history_app", columnList = "application_id")
+})
 @Data
 @Builder
 @NoArgsConstructor

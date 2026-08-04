@@ -378,6 +378,19 @@ Analytics doesn't query Application Service. Instead it maintains its own read m
 - Historical data survives even if the Application Service is down
 - Easy to rebuild analytics by replaying Kafka from offset 0
 
+### 9.4 Schema Migrations — Flyway
+
+User Service and Application Service — the two PostgreSQL-backed services currently live (Phase 1) — moved from Hibernate's `ddl-auto=update` to **Flyway-managed migrations** (JD-112). Reminder Service and Document Service are also PostgreSQL-backed but are Phase 2 work with no entities built yet; Flyway setup for each is deferred to its respective build-out epic (JD-113, JD-114). MongoDB-backed services (Contact, Notification, Analytics) are schemaless and unaffected.
+
+**Why:** `ddl-auto=update` infers schema changes from `@Entity` classes, but it can't create things that don't map to a Java field or annotation — extensions (`CREATE EXTENSION pg_trgm`), specialized index types (GIN trigram indexes), or triggers. This became a hard blocker for keyword search (needs `pg_trgm` + a GIN index), so migrations were introduced there — and, since the same limitation affects User Service, it was rolled into the same effort rather than done as a narrower one-off.
+
+**What changed for day-to-day development:** Hibernate no longer creates or alters tables — `ddl-auto=validate` only checks the live schema matches what the entities expect, and fails startup if it doesn't. This means:
+- Any new column, table, index, or constraint now requires a new file in that service's `src/main/resources/db/migration/`, named `V{n}__description.sql`, in addition to updating the `@Entity` class.
+- Adding a field to an entity and running the app locally will **no longer** make the column appear — the app will fail `ddl-auto=validate` until a matching migration exists.
+- Migration files are applied once, in order, and tracked by Flyway — they should never be edited after being merged; a mistake gets fixed with a new migration, not by rewriting an old one.
+
+**Dependency note (Spring Boot 4.x):** use `spring-boot-starter-flyway` + `flyway-database-postgresql` — not raw `flyway-core`. Spring Boot 4 moved Flyway's autoconfiguration out of the main `spring-boot-autoconfigure` jar into its own starter; without it, `FlywayAutoConfiguration` is never registered and Flyway silently never runs (no error, no log output — just doesn't happen). `flyway-database-postgresql` is still required separately since the starter doesn't assume which database you're using; omitting it throws `FlywayException: Unsupported Database` at startup, even though the Postgres connection itself works fine. See JD-112 for the full debugging trail.
+
 ---
 
 ## 10. Deployment Architecture

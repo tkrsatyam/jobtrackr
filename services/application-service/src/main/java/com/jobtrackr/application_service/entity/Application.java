@@ -20,7 +20,11 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "applications")
+@Table(name = "applications", indexes = {
+        @Index(name = "idx_applications_user", columnList = "user_id"),
+        @Index(name = "idx_applications_status", columnList = "status"),
+        @Index(name = "idx_applications_user_status", columnList = "user_id, status")
+})
 @Data
 @Builder
 @NoArgsConstructor
