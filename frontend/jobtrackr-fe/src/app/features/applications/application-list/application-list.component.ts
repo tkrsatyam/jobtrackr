@@ -26,17 +26,9 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { BulkAction, BulkActionToolbarComponent } from '../components/bulk-action-toolbar/bulk-action-toolbar.component';
 import { MatSortModule, Sort } from '@angular/material/sort';
-import { TagInputComponent } from '../components/tag-input/tag-input.component';
+import { FilterConfig, FilterModalComponent, FilterModalResult } from '../components/filter-modal/filter-modal.component';
 
-type FilterType = 'select' | 'text' | 'boolean' | 'date';
 type ColumnType = 'text' | 'status' | 'priority' | 'date' | 'tags' | 'select' | 'actions';
-
-interface FilterConfig {
-  key: string;
-  label: string;
-  type: FilterType;
-  options?: { value: string; label: string }[];   // only for 'select' type
-}
 
 interface ColumnConfig {
   key: string;
@@ -61,16 +53,10 @@ interface ColumnConfig {
     MatIconModule,
     MatTooltipModule,
     MatMenuModule,
-    MatSelectModule,
-    MatFormFieldModule,
-    MatInputModule,
     MatProgressBarModule,
-    MatDatepickerModule,
-    MatSlideToggleModule,
     StatusBadgeComponent,
     PriorityBadgeComponent,
     TagChipComponent,
-    TagInputComponent,
     BulkActionToolbarComponent
 ],
   templateUrl: './application-list.component.html',
@@ -227,39 +213,22 @@ export class ApplicationListComponent implements OnInit {
     this.load();
   }
 
-  getFilterValue(key: string): string {
-    return this.filterValues()[key] ?? '';
-  }
+  openFilterModal(): void {
+    const ref = this.dialog.open<FilterModalComponent, unknown, FilterModalResult>(FilterModalComponent, {
+      data: {
+        filterConfigs: this.filterConfigs,
+        filterValues: this.filterValues(),
+        tagFilters: this.tagFilters()
+      },
+      width: '520px'
+    });
 
-  getBooleanFilterValue(key: string): boolean {
-    return this.filterValues()[key] === 'true';
-  }
-
-  getDateFilterValue(key: string): Date | null {
-    const val = this.filterValues()[key];
-    return val ? new Date(val) : null;
-  }
-
-  setFilterValue(key: string, value: string): void {
-    this.filterValues.update(current => ({ ...current, [key]: value }));
-    this.applyFilters();
-  }
-
-  toggleBooleanFilter(key: string): void {
-    const current = this.filterValues()[key] === 'true';
-    this.filterValues.update(values => ({ ...values, [key]: String(!current) }));
-    this.applyFilters();
-  }
-
-  setDateFilterValue(key: string, date: Date | null): void {
-    const formatted = date ? date.toISOString().split('T')[0] : '';
-    this.filterValues.update(current => ({ ...current, [key]: formatted }));
-    this.applyFilters();
-  }
-
-  onTagFiltersChange(tags: string[]): void {
-    this.tagFilters.set(tags);
-    this.applyFilters();
+    ref.afterClosed().subscribe(result => {
+      if (!result) return;
+      this.filterValues.set(result.filterValues);
+      this.tagFilters.set(result.tagFilters);
+      this.applyFilters();
+    });
   }
 
   applyFilters(): void {
