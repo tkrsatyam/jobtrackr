@@ -85,6 +85,11 @@ export class FilterModalComponent {
     this.draftTagFilters.set(tags);
   }
 
+  reset(): void {
+    this.draftFilterValues.set({});
+    this.draftTagFilters.set([]);
+  }
+
   apply(): void {
     this.dialogRef.close({
       filterValues: this.draftFilterValues(),
