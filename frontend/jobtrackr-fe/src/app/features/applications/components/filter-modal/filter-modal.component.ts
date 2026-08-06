@@ -86,9 +86,9 @@ export class FilterModalComponent {
   }
 
   reset(): void {
-    this.draftFilterValues.set({});
-    this.draftTagFilters.set([]);
-  }
+  this.draftFilterValues.set({ isArchived: 'false' });
+  this.draftTagFilters.set([]);
+}
 
   apply(): void {
     this.dialogRef.close({
