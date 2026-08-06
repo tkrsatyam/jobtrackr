@@ -154,12 +154,6 @@ export class ApplicationListComponent implements OnInit {
   ];
 
   displayedColumns = this.columns.map(column => column.key);
-  allStatuses = ALL_STATUSES;
-  allPriorities = ALL_PRIORITIES;
-  allWorkModes = ALL_WORK_MODES;
-  statusLabels = STATUS_LABELS;
-  priorityLabels = PRIORITY_LABELS;
-  workModeLabels = WORK_MODE_LABELS;
 
   readonly applicationFilter = computed<ApplicationFilter>(() => {
     const values = this.filterValues();
