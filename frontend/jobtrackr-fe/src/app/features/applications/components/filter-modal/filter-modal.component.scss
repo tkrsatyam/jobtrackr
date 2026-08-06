@@ -1,0 +1,20 @@
+.filter-fields {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    padding-top: var(--spacing-sm);
+}
+
+.filter-field {
+    width: 100%;
+
+    ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+        display: none;
+    }
+}
+
+.filter-toggle {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-xs) 0;
+}
