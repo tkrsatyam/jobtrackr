@@ -1,1 +1,27 @@
-<p>landing works!</p>
+<header class="landing-topbar">
+    <span class="landing-brand">JobTrackr</span>
+    <a mat-stroked-button routerLink="/login">Log In</a>
+</header>
+
+<main class="landing-container">
+    <section class="hero">
+        <h1>Organize your job search, end to end.</h1>
+        <p class="tagline">
+            Track applications, visualize your pipeline, and never lose track of a follow-up again.
+        </p>
+        <div class="hero-actions">
+            <a mat-flat-button color="primary" routerLink="/register">Get Started</a>
+            <a mat-stroked-button routerLink="/login">Log In</a>
+        </div>
+    </section>
+
+    <section class="features" aria-label="Product features">
+        @for (feature of features; track feature.title) {
+            <div class="feature-card">
+                <mat-icon class="feature-icon">{{ feature.icon }}</mat-icon>
+                <h3>{{ feature.title }}</h3>
+                <p>{{ feature.description }}</p>
+            </div>
+        }
+    </section>
+</main>
