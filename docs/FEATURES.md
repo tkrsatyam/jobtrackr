@@ -156,6 +156,7 @@
 
 ### Shell & Navigation
 - [x] Auth guard — redirects unauthenticated users to `/login`
+- [x] Guest guard — redirects authenticated users away from `/`, `/login`, and `/register` to `/dashboard` (route-level, no flash of content)
 - [x] Auth interceptor — attaches Bearer token to every request, handles 401 with automatic token refresh and retry
 - [x] Token storage — `localStorage` with signals for reactive auth state
 - [x] Shell layout with persistent sidebar and topbar
@@ -163,6 +164,13 @@
 - [x] Redirect unknown routes to dashboard
 - [ ] Dark mode toggle — not yet implemented
 - [ ] Global search bar — not yet implemented
+
+### Landing Page (`/`)
+- [x] Public landing page — accessible without authentication, rendered outside `ShellComponent`
+- [x] Hero section — product name, tagline, CTA buttons ("Get Started" → `/register`, "Log In" → `/login`)
+- [x] Feature highlights — 4 cards: Track Applications, Kanban Board, Status History, Documents & Reminders
+- [x] Responsive layout — 4-column grid (desktop) → 2-column (tablet ≤900px) → 1-column (mobile ≤600px)
+- [x] Page title and meta description via Angular `Title` / `Meta` services
 
 ### Auth Pages
 - [x] Login page (`/login`)
