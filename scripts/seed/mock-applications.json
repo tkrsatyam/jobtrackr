@@ -1,0 +1,669 @@
+[
+  {
+    "companyName": "CRED",
+    "role": "Senior Backend Engineer",
+    "jobUrl": "https://cred.club/careers/job/903",
+    "status": "APPLIED",
+    "priority": "MEDIUM",
+    "workMode": "REMOTE",
+    "location": "Bangalore",
+    "salaryMin": 3000000,
+    "salaryMax": 4500000,
+    "currency": "INR",
+    "appliedDate": "2024-02-01",
+    "source": "ANGEL_LIST",
+    "notes": "Applied via AngelList. Long shot but worth trying.",
+    "tags": [
+      "java",
+      "redis",
+      "postgresql",
+      "microservices"
+    ]
+  },
+  {
+    "companyName": "Google",
+    "role": "Software Engineer II",
+    "jobUrl": "https://careers.google.com/jobs/results/12345",
+    "status": "SAVED",
+    "priority": "DREAM",
+    "workMode": "HYBRID",
+    "location": "Bangalore",
+    "salaryMin": 2000000,
+    "salaryMax": 2500000,
+    "currency": "INR",
+    "appliedDate": null,
+    "source": "LINKEDIN",
+    "notes": "Saved, haven't applied yet. Want to tailor resume first.",
+    "tags": [
+      "product-company",
+      "dream-job"
+    ]
+  },
+  {
+    "companyName": "Zepto",
+    "role": "Backend Engineer",
+    "jobUrl": "https://jobs.zepto.com/backend-123",
+    "status": "PHONE_SCREEN",
+    "priority": "HIGH",
+    "workMode": "HYBRID",
+    "location": "Mumbai",
+    "salaryMin": 1200000,
+    "salaryMax": 1800000,
+    "currency": "INR",
+    "appliedDate": "2024-01-15",
+    "source": "NAUKRI",
+    "notes": "Applied through Naukri. JD looks great, matched 90% of skills.",
+    "tags": [
+      "startup",
+      "high-growth"
+    ]
+  },
+  {
+    "companyName": "Freshworks",
+    "role": "SDE II",
+    "jobUrl": null,
+    "status": "INTERVIEW",
+    "priority": "MEDIUM",
+    "workMode": "ON_SITE",
+    "location": "Chennai",
+    "salaryMin": 1600000,
+    "salaryMax": 2200000,
+    "currency": "INR",
+    "appliedDate": "2024-01-20",
+    "source": "REFERRAL",
+    "notes": "Referred by a former colleague. Round 1 scheduled.",
+    "tags": [
+      "saas",
+      "referral"
+    ]
+  },
+  {
+    "companyName": "Razorpay",
+    "role": "Backend Engineer - Payments",
+    "jobUrl": "https://razorpay.com/jobs/backend-payments",
+    "status": "TECHNICAL_ROUND",
+    "priority": "HIGH",
+    "workMode": "HYBRID",
+    "location": "Bangalore",
+    "salaryMin": 2200000,
+    "salaryMax": 3200000,
+    "currency": "INR",
+    "appliedDate": "2024-01-05",
+    "source": "COMPANY_WEBSITE",
+    "notes": "Cleared phone screen. Technical round covers system design.",
+    "tags": [
+      "fintech",
+      "payments",
+      "kafka"
+    ]
+  },
+  {
+    "companyName": "Swiggy",
+    "role": "Engineering Manager",
+    "jobUrl": "https://careers.swiggy.com/em-role",
+    "status": "HR_ROUND",
+    "priority": "DREAM",
+    "workMode": "ON_SITE",
+    "location": "Bangalore",
+    "salaryMin": 4000000,
+    "salaryMax": 5500000,
+    "currency": "INR",
+    "appliedDate": "2023-12-10",
+    "source": "INSTAHYRE",
+    "notes": "Final round with HR. Discussing comp and joining date.",
+    "tags": [
+      "leadership",
+      "food-tech"
+    ]
+  },
+  {
+    "companyName": "Stripe",
+    "role": "Backend Engineer, Infrastructure",
+    "jobUrl": "https://stripe.com/jobs/listing/backend-infra",
+    "status": "OFFER",
+    "priority": "DREAM",
+    "workMode": "REMOTE",
+    "location": "Remote - India",
+    "salaryMin": 5000000,
+    "salaryMax": 7000000,
+    "currency": "INR",
+    "appliedDate": "2023-11-01",
+    "source": "COMPANY_WEBSITE",
+    "notes": "Offer received! Negotiating base vs equity split.",
+    "tags": [
+      "fintech",
+      "global-remote",
+      "dream-job"
+    ]
+  },
+  {
+    "companyName": "Postman",
+    "role": "Senior Software Engineer",
+    "jobUrl": "https://postman.com/careers/senior-swe",
+    "status": "ACCEPTED",
+    "priority": "HIGH",
+    "workMode": "HYBRID",
+    "location": "Bangalore",
+    "salaryMin": 3200000,
+    "salaryMax": 3200000,
+    "currency": "INR",
+    "appliedDate": "2023-10-15",
+    "source": "LINKEDIN",
+    "notes": "Accepted the offer. Joining next month.",
+    "tags": [
+      "devtools",
+      "accepted"
+    ]
+  },
+  {
+    "companyName": "Meesho",
+    "role": "Backend Engineer",
+    "jobUrl": "https://meesho.com/careers/backend-engineer",
+    "status": "REJECTED",
+    "priority": "MEDIUM",
+    "workMode": "HYBRID",
+    "location": "Bangalore",
+    "salaryMin": 1500000,
+    "salaryMax": 2000000,
+    "currency": "INR",
+    "appliedDate": "2023-12-01",
+    "source": "NAUKRI",
+    "notes": "Rejected after final round. Feedback: needed stronger system design.",
+    "tags": [
+      "ecommerce"
+    ]
+  },
+  {
+    "companyName": "Unacademy",
+    "role": "SDE I",
+    "jobUrl": "https://unacademy.com/careers/sde1",
+    "status": "GHOSTED",
+    "priority": "LOW",
+    "workMode": "REMOTE",
+    "location": "Remote",
+    "salaryMin": null,
+    "salaryMax": null,
+    "currency": "INR",
+    "appliedDate": "2023-09-15",
+    "source": "INTERNSHALA",
+    "notes": "No response after phone screen. Following up once more.",
+    "tags": [
+      "edtech"
+    ]
+  },
+  {
+    "companyName": "Local Startup Co",
+    "role": "Full Stack Developer",
+    "jobUrl": null,
+    "status": "WITHDRAWN",
+    "priority": "LOW",
+    "workMode": "ON_SITE",
+    "location": "Pune",
+    "salaryMin": 800000,
+    "salaryMax": 1100000,
+    "currency": "INR",
+    "appliedDate": "2023-08-01",
+    "source": "OTHER",
+    "notes": "Withdrew application after learning about the compensation structure.",
+    "tags": []
+  },
+  {
+    "companyName": "Amazon",
+    "role": "SDE II",
+    "jobUrl": "https://amazon.jobs/en/jobs/998877",
+    "status": "APPLIED",
+    "priority": "HIGH",
+    "workMode": "ON_SITE",
+    "location": "Hyderabad",
+    "salaryMin": 2500000,
+    "salaryMax": 3800000,
+    "currency": "INR",
+    "appliedDate": "2024-02-10",
+    "source": "COMPANY_WEBSITE",
+    "notes": null,
+    "tags": [
+      "big-tech",
+      "aws"
+    ]
+  },
+  {
+    "companyName": "Shopify",
+    "role": "Senior Developer",
+    "jobUrl": "https://shopify.com/careers/senior-developer",
+    "status": "APPLIED",
+    "priority": "MEDIUM",
+    "workMode": "REMOTE",
+    "location": "Remote - Global",
+    "salaryMin": 90000,
+    "salaryMax": 120000,
+    "currency": "USD",
+    "appliedDate": "2024-01-28",
+    "source": "LINKEDIN",
+    "notes": "Applying to international remote roles too, testing multi-currency.",
+    "tags": [
+      "ecommerce",
+      "global-remote",
+      "ruby"
+    ]
+  },
+  {
+    "companyName": "N26",
+    "role": "Backend Engineer",
+    "jobUrl": "https://n26.com/careers/backend",
+    "status": "SAVED",
+    "priority": "LOW",
+    "workMode": "HYBRID",
+    "location": "Berlin (relocation)",
+    "salaryMin": 55000,
+    "salaryMax": 70000,
+    "currency": "EUR",
+    "appliedDate": null,
+    "source": "OTHER",
+    "notes": "Would need visa sponsorship - checking if they support it before applying.",
+    "tags": [
+      "fintech",
+      "relocation"
+    ]
+  },
+  {
+    "companyName": "Bare Minimum Inc",
+    "role": "Backend Developer",
+    "status": "APPLIED",
+    "source": "OTHER",
+    "tags": []
+  },
+  {
+    "companyName": "Infosys",
+    "role": "Senior Systems Engineer",
+    "jobUrl": "https://infosys.com/careers/sse",
+    "status": "PHONE_SCREEN",
+    "priority": "MEDIUM",
+    "workMode": null,
+    "location": "Multiple Locations",
+    "salaryMin": 900000,
+    "salaryMax": 1300000,
+    "currency": "INR",
+    "appliedDate": "2024-01-12",
+    "source": "REFERRAL",
+    "notes": "Work mode not specified in JD, could be any of the three.",
+    "tags": [
+      "services",
+      "large-org"
+    ]
+  },
+  {
+    "companyName": "PhonePe",
+    "role": "SDE II - Platform",
+    "jobUrl": "https://phonepe.com/careers/sde2-platform",
+    "status": "APPLIED",
+    "priority": "HIGH",
+    "workMode": "HYBRID",
+    "location": "Bangalore",
+    "salaryMin": 2800000,
+    "salaryMax": 3800000,
+    "currency": "INR",
+    "appliedDate": "2024-02-14",
+    "source": "LINKEDIN",
+    "notes": "Strong fintech brand. Platform team builds internal infra used across all products.",
+    "tags": [
+      "fintech",
+      "platform",
+      "spring-boot"
+    ]
+  },
+  {
+    "companyName": "Groww",
+    "role": "Backend Engineer",
+    "jobUrl": "https://groww.in/careers/backend-engineer",
+    "status": "TECHNICAL_ROUND",
+    "priority": "HIGH",
+    "workMode": "HYBRID",
+    "location": "Bangalore",
+    "salaryMin": 2000000,
+    "salaryMax": 2800000,
+    "currency": "INR",
+    "appliedDate": "2024-01-22",
+    "source": "ANGEL_LIST",
+    "notes": "Technical round next week. Focus on DSA + low-latency design.",
+    "tags": [
+      "fintech",
+      "wealthtech",
+      "java"
+    ]
+  },
+  {
+    "companyName": "Atlassian",
+    "role": "Senior Software Engineer",
+    "jobUrl": "https://www.atlassian.com/company/careers/detail/12345",
+    "status": "INTERVIEW",
+    "priority": "DREAM",
+    "workMode": "REMOTE",
+    "location": "Remote - APAC",
+    "salaryMin": 130000,
+    "salaryMax": 165000,
+    "currency": "USD",
+    "appliedDate": "2024-01-08",
+    "source": "COMPANY_WEBSITE",
+    "notes": "Product-led company. Round 2 is a values interview - prep culture fit stories.",
+    "tags": [
+      "devtools",
+      "remote-first",
+      "global"
+    ]
+  },
+  {
+    "companyName": "BrowserStack",
+    "role": "Backend Engineer",
+    "jobUrl": "https://browserstack.com/careers/backend",
+    "status": "APPLIED",
+    "priority": "MEDIUM",
+    "workMode": "HYBRID",
+    "location": "Mumbai",
+    "salaryMin": 1800000,
+    "salaryMax": 2500000,
+    "currency": "INR",
+    "appliedDate": "2024-02-18",
+    "source": "INSTAHYRE",
+    "notes": "Good product. Mumbai-based but open to occasional remote.",
+    "tags": [
+      "devtools",
+      "testing"
+    ]
+  },
+  {
+    "companyName": "Juspay",
+    "role": "Haskell / Backend Developer",
+    "jobUrl": "https://juspay.in/careers/backend",
+    "status": "SAVED",
+    "priority": "LOW",
+    "workMode": "HYBRID",
+    "location": "Bangalore",
+    "salaryMin": 1500000,
+    "salaryMax": 2200000,
+    "currency": "INR",
+    "appliedDate": null,
+    "source": "OTHER",
+    "notes": "Interesting functional programming stack. Saved to revisit - need to brush up on Haskell basics first.",
+    "tags": [
+      "fintech",
+      "functional-programming",
+      "haskell"
+    ]
+  },
+  {
+    "companyName": "Coinbase",
+    "role": "Software Engineer, Backend",
+    "jobUrl": "https://coinbase.com/careers/backend-swe",
+    "status": "REJECTED",
+    "priority": "HIGH",
+    "workMode": "REMOTE",
+    "location": "Remote - Global",
+    "salaryMin": 140000,
+    "salaryMax": 180000,
+    "currency": "USD",
+    "appliedDate": "2023-11-20",
+    "source": "LINKEDIN",
+    "notes": "Rejected at OA stage. Questions were Go-heavy; revisit if I pick up Go.",
+    "tags": [
+      "crypto",
+      "web3",
+      "golang"
+    ]
+  },
+  {
+    "companyName": "Ola",
+    "role": "Senior SDE",
+    "jobUrl": "https://ola.jobs/senior-sde",
+    "status": "GHOSTED",
+    "priority": "LOW",
+    "workMode": "HYBRID",
+    "location": "Bangalore",
+    "salaryMin": 2000000,
+    "salaryMax": 2800000,
+    "currency": "INR",
+    "appliedDate": "2023-10-05",
+    "source": "NAUKRI",
+    "notes": "Applied, got a call from HR, then silence for 3 months. Not pursuing.",
+    "tags": [
+      "mobility",
+      "ride-tech"
+    ]
+  },
+  {
+    "companyName": "Setu",
+    "role": "Backend Engineer",
+    "jobUrl": "https://setu.co/careers/backend",
+    "status": "HR_ROUND",
+    "priority": "HIGH",
+    "workMode": "REMOTE",
+    "location": "Remote",
+    "salaryMin": 1800000,
+    "salaryMax": 2400000,
+    "currency": "INR",
+    "appliedDate": "2024-01-30",
+    "source": "ANGEL_LIST",
+    "notes": "Small team building API infra for financial data. Great culture vibes from interviews.",
+    "tags": [
+      "fintech",
+      "api",
+      "open-banking"
+    ]
+  },
+  {
+    "companyName": "Gojek",
+    "role": "Software Engineer - Backend",
+    "jobUrl": "https://gojek.com/careers/backend-swe",
+    "status": "APPLIED",
+    "priority": "MEDIUM",
+    "workMode": "HYBRID",
+    "location": "Bangalore",
+    "salaryMin": 2200000,
+    "salaryMax": 3000000,
+    "currency": "INR",
+    "appliedDate": "2024-02-05",
+    "source": "LINKEDIN",
+    "notes": "Solid super-app with great eng blog. Applied to their India backend team.",
+    "tags": [
+      "super-app",
+      "go",
+      "microservices"
+    ]
+  },
+  {
+    "companyName": "Hasura",
+    "role": "Backend Engineer",
+    "jobUrl": "https://hasura.io/careers/backend",
+    "status": "WITHDRAWN",
+    "priority": "MEDIUM",
+    "workMode": "REMOTE",
+    "location": "Remote",
+    "salaryMin": 2000000,
+    "salaryMax": 2800000,
+    "currency": "INR",
+    "appliedDate": "2023-12-15",
+    "source": "OTHER",
+    "notes": "Withdrew - accepted a conflicting offer timeline. Would reapply in the future.",
+    "tags": [
+      "graphql",
+      "open-source"
+    ]
+  },
+  {
+    "companyName": "Microsoft",
+    "role": "SDE II",
+    "jobUrl": "https://careers.microsoft.com/en/us/job/12345",
+    "status": "SAVED",
+    "priority": "DREAM",
+    "workMode": "HYBRID",
+    "location": "Hyderabad",
+    "salaryMin": 2800000,
+    "salaryMax": 4000000,
+    "currency": "INR",
+    "appliedDate": null,
+    "source": "LINKEDIN",
+    "notes": "Want to apply to Azure Core team. Need a referral - reaching out to contacts.",
+    "tags": [
+      "big-tech",
+      "azure",
+      "dream-job"
+    ]
+  },
+  {
+    "companyName": "Clevertap",
+    "role": "Senior Backend Engineer",
+    "jobUrl": "https://clevertap.com/careers/senior-backend",
+    "status": "INTERVIEW",
+    "priority": "MEDIUM",
+    "workMode": "HYBRID",
+    "location": "Mumbai",
+    "salaryMin": 2200000,
+    "salaryMax": 3000000,
+    "currency": "INR",
+    "appliedDate": "2024-01-25",
+    "source": "INSTAHYRE",
+    "notes": "Round 2 today. High data-volume product - focus on scalability answers.",
+    "tags": [
+      "martech",
+      "analytics",
+      "kafka"
+    ]
+  },
+  {
+    "companyName": "Testbook",
+    "role": "SDE I",
+    "jobUrl": "https://testbook.com/careers/sde1",
+    "status": "REJECTED",
+    "priority": "LOW",
+    "workMode": "ON_SITE",
+    "location": "Delhi",
+    "salaryMin": 700000,
+    "salaryMax": 1000000,
+    "currency": "INR",
+    "appliedDate": "2023-11-10",
+    "source": "INTERNSHALA",
+    "notes": "Rejected after OA. Comp was low anyway - was more a practice run.",
+    "tags": [
+      "edtech"
+    ]
+  },
+  {
+    "companyName": "Navi",
+    "role": "Backend Engineer",
+    "jobUrl": "https://navi.com/careers/backend",
+    "status": "APPLIED",
+    "priority": "MEDIUM",
+    "workMode": "HYBRID",
+    "location": "Bangalore",
+    "salaryMin": 1600000,
+    "salaryMax": 2200000,
+    "currency": "INR",
+    "appliedDate": "2024-02-20",
+    "source": "COMPANY_WEBSITE",
+    "notes": "Sachin Bansal's new fintech venture. Product focus on insurance and lending.",
+    "tags": [
+      "fintech",
+      "insurtech",
+      "startup"
+    ]
+  },
+  {
+    "companyName": "Dukaan",
+    "role": "Full Stack Engineer",
+    "jobUrl": null,
+    "status": "GHOSTED",
+    "priority": "LOW",
+    "workMode": "REMOTE",
+    "location": "Remote",
+    "salaryMin": 1000000,
+    "salaryMax": 1400000,
+    "currency": "INR",
+    "appliedDate": "2023-09-01",
+    "source": "ANGEL_LIST",
+    "notes": "Applied via AngelList. No reply even after follow-up email. Dropping.",
+    "tags": [
+      "d2c",
+      "ecommerce",
+      "react"
+    ]
+  },
+  {
+    "companyName": "Springworks",
+    "role": "Backend Developer",
+    "jobUrl": "https://springworks.in/careers/backend",
+    "status": "OFFER",
+    "priority": "MEDIUM",
+    "workMode": "REMOTE",
+    "location": "Remote",
+    "salaryMin": 1400000,
+    "salaryMax": 1400000,
+    "currency": "INR",
+    "appliedDate": "2024-01-10",
+    "source": "LINKEDIN",
+    "notes": "Offer in hand. Holding while waiting for Stripe response. Deadline is Feb 28.",
+    "tags": [
+      "hrtech",
+      "saas"
+    ]
+  },
+  {
+    "companyName": "Chargebee",
+    "role": "SDE II",
+    "jobUrl": "https://chargebee.com/careers/sde2",
+    "status": "TECHNICAL_ROUND",
+    "priority": "HIGH",
+    "workMode": "HYBRID",
+    "location": "Chennai",
+    "salaryMin": 2000000,
+    "salaryMax": 2800000,
+    "currency": "INR",
+    "appliedDate": "2024-01-18",
+    "source": "REFERRAL",
+    "notes": "Referred by ex-colleague. Subscription billing domain - interesting problem space.",
+    "tags": [
+      "saas",
+      "billing",
+      "fintech"
+    ]
+  },
+  {
+    "companyName": "Vercel",
+    "role": "Software Engineer, Edge Runtime",
+    "jobUrl": "https://vercel.com/careers/edge-runtime-engineer",
+    "status": "SAVED",
+    "priority": "DREAM",
+    "workMode": "REMOTE",
+    "location": "Remote - Global",
+    "salaryMin": 150000,
+    "salaryMax": 200000,
+    "currency": "USD",
+    "appliedDate": null,
+    "source": "COMPANY_WEBSITE",
+    "notes": "Dream role - edge infra + open source. Profile not strong enough yet. Revisit in 6 months.",
+    "tags": [
+      "infra",
+      "edge",
+      "typescript",
+      "dream-job"
+    ]
+  },
+  {
+    "companyName": "Darwinbox",
+    "role": "Senior Backend Engineer",
+    "jobUrl": "https://darwinbox.com/careers/senior-backend",
+    "status": "APPLIED",
+    "priority": "MEDIUM",
+    "workMode": "HYBRID",
+    "location": "Hyderabad",
+    "salaryMin": 1800000,
+    "salaryMax": 2500000,
+    "currency": "INR",
+    "appliedDate": "2024-02-22",
+    "source": "NAUKRI",
+    "notes": "Growing HRtech unicorn. Applied for their core platform team.",
+    "tags": [
+      "hrtech",
+      "saas",
+      "spring-boot"
+    ]
+  }
+]
