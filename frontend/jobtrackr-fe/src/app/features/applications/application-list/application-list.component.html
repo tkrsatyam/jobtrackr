@@ -13,65 +13,22 @@
     </div>
 
     <div class="filter-bar">
-        @for (filter of filterConfigs; track filter.key) {
-            @switch (filter.type) {
-                @case ('select') {
-                    <mat-form-field appearance="outline" class="filter-field">
-                        <mat-label>{{ filter.label }}</mat-label>
-                        <mat-select
-                            [value]="getFilterValue(filter.key)"
-                            (valueChange)="setFilterValue(filter.key, $event)">
-
-                            <mat-option value="">All</mat-option>
-                            @for (option of filter.options!; track option.value) {
-                                <mat-option [value]="option.value">{{ option.label }}</mat-option>
-                            }
-                        </mat-select>
-                    </mat-form-field>
-                }
-                @case ('text') {
-                    <mat-form-field appearance="outline" class="filter-field">
-                        <mat-label>{{ filter.label }}</mat-label>
-                        <input 
-                            matInput
-                            [value]="getFilterValue(filter.key)"
-                            (input)="setFilterValue(filter.key, $any($event.target).value)"
-                            placeholder="Search..." />
-                    </mat-form-field>
-                }
-                @case ('boolean') {
-                    <div class="filter-toggle">
-                        <mat-slide-toggle
-                            [checked]="getBooleanFilterValue(filter.key)"
-                            (change)="toggleBooleanFilter(filter.key)">
-                            {{ filter.label }}
-                        </mat-slide-toggle>
-                    </div>
-                }
-                @case ('date') {
-                    <mat-form-field appearance="outline" class="filter-field">
-                        <mat-label>{{ filter.label }}</mat-label>
-                        <input 
-                            matInput
-                            [matDatepicker]="picker"
-                            [value]="getDateFilterValue(filter.key)"
-                            (dateChange)="setDateFilterValue(filter.key, $event.value)" />
-                        <mat-datepicker-toggle matIconSuffix [for]="picker" />
-                        <mat-datepicker #picker />
-                    </mat-form-field>
-                }
-            }
-        }
-
-        <app-tag-input
-            class="filter-field"
-            [initialTags]="tagFilters()"
-            [maxTags]="10"
-            (tagsChange)="onTagFiltersChange($event)" />
-
-        <button mat-stroked-button (click)="resetFilters()">
-            <mat-icon>clear</mat-icon> Reset
+        <button mat-stroked-button (click)="openFilterModal()">
+            <mat-icon>filter_list</mat-icon> Filter By
         </button>
+
+        @if (activeFilterChips().length > 0) {
+            <mat-chip-set>
+                @for (chip of activeFilterChips(); track chip.key) {
+                    <mat-chip (removed)="removeFilterChip(chip.key)">
+                        <span class="chip-label">{{ chip.label }}:</span>&nbsp;{{ chip.displayValue }}
+                        <button matChipRemove>
+                            <mat-icon>cancel</mat-icon>
+                        </button>
+                    </mat-chip>
+                }
+            </mat-chip-set>
+        }
     </div>
 
     @if (selectedCount() > 0) {

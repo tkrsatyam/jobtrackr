@@ -3,13 +3,10 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router, RouterLink } from '@angular/router';
@@ -22,21 +19,12 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { ApplicationFilter, ApplicationResponse, ApplicationStatus, PriorityLevel, WorkMode } from '../../../shared/models/application.model';
 import { ALL_PRIORITIES, ALL_STATUSES, ALL_WORK_MODES, PRIORITY_LABELS, STATUS_LABELS, WORK_MODE_LABELS } from '../../../shared/constants/enum-labels';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { BulkAction, BulkActionToolbarComponent } from '../components/bulk-action-toolbar/bulk-action-toolbar.component';
 import { MatSortModule, Sort } from '@angular/material/sort';
-import { TagInputComponent } from '../components/tag-input/tag-input.component';
+import { FilterConfig, FilterModalComponent, FilterModalResult } from '../components/filter-modal/filter-modal.component';
+import { MatChipsModule } from "@angular/material/chips";
 
-type FilterType = 'select' | 'text' | 'boolean' | 'date';
 type ColumnType = 'text' | 'status' | 'priority' | 'date' | 'tags' | 'select' | 'actions';
-
-interface FilterConfig {
-  key: string;
-  label: string;
-  type: FilterType;
-  options?: { value: string; label: string }[];   // only for 'select' type
-}
 
 interface ColumnConfig {
   key: string;
@@ -61,17 +49,12 @@ interface ColumnConfig {
     MatIconModule,
     MatTooltipModule,
     MatMenuModule,
-    MatSelectModule,
-    MatFormFieldModule,
-    MatInputModule,
     MatProgressBarModule,
-    MatDatepickerModule,
-    MatSlideToggleModule,
     StatusBadgeComponent,
     PriorityBadgeComponent,
     TagChipComponent,
-    TagInputComponent,
-    BulkActionToolbarComponent
+    BulkActionToolbarComponent,
+    MatChipsModule
 ],
   templateUrl: './application-list.component.html',
   styleUrl: './application-list.component.scss',
@@ -155,6 +138,29 @@ export class ApplicationListComponent implements OnInit {
   selectedIds = signal<Set<string>>(new Set());
   selectedCount = computed(() => this.selectedIds().size);
 
+  activeFilterChips = computed(() => {
+    const chips: { key: string; label: string; displayValue: string }[] = [];
+    const values = this.filterValues();
+
+    for (const config of this.filterConfigs) {
+      const val = values[config.key];
+      if (!val || val === '' || (config.type === 'boolean' && val !== 'true')) continue;
+
+      let displayValue = val;
+      if (config.options) {
+        displayValue = config.options.find(o => o.value === val)?.label ?? val;
+      }
+
+      chips.push({ key: config.key, label: config.label, displayValue });
+    }
+
+    for (const tag of this.tagFilters()) {
+      chips.push({ key: `tag:${tag}`, label: 'Tag', displayValue: tag });
+    }
+
+    return chips;
+  });
+
   columns: ColumnConfig[] = [
     { key: 'select', header: '', type: 'select' },
     { key: 'company', header: 'Company' , type: 'text', field: 'companyName', sortable: true, sortField: 'companyName' },
@@ -168,12 +174,6 @@ export class ApplicationListComponent implements OnInit {
   ];
 
   displayedColumns = this.columns.map(column => column.key);
-  allStatuses = ALL_STATUSES;
-  allPriorities = ALL_PRIORITIES;
-  allWorkModes = ALL_WORK_MODES;
-  statusLabels = STATUS_LABELS;
-  priorityLabels = PRIORITY_LABELS;
-  workModeLabels = WORK_MODE_LABELS;
 
   readonly applicationFilter = computed<ApplicationFilter>(() => {
     const values = this.filterValues();
@@ -227,58 +227,36 @@ export class ApplicationListComponent implements OnInit {
     this.load();
   }
 
-  getFilterValue(key: string): string {
-    return this.filterValues()[key] ?? '';
+  openFilterModal(): void {
+    const ref = this.dialog.open<FilterModalComponent, unknown, FilterModalResult>(FilterModalComponent, {
+      data: {
+        filterConfigs: this.filterConfigs,
+        filterValues: this.filterValues(),
+        tagFilters: this.tagFilters()
+      },
+      width: '520px'
+    });
+
+    ref.afterClosed().subscribe(result => {
+      if (!result) return;
+      this.filterValues.set(result.filterValues);
+      this.tagFilters.set(result.tagFilters);
+      this.applyFilters();
+    });
   }
 
-  getBooleanFilterValue(key: string): boolean {
-    return this.filterValues()[key] === 'true';
-  }
-
-  getDateFilterValue(key: string): Date | null {
-    const val = this.filterValues()[key];
-    return val ? new Date(val) : null;
-  }
-
-  setFilterValue(key: string, value: string): void {
-    this.filterValues.update(current => ({ ...current, [key]: value }));
-    this.applyFilters();
-  }
-
-  toggleBooleanFilter(key: string): void {
-    const current = this.filterValues()[key] === 'true';
-    this.filterValues.update(values => ({ ...values, [key]: String(!current) }));
-    this.applyFilters();
-  }
-
-  setDateFilterValue(key: string, date: Date | null): void {
-    const formatted = date ? date.toISOString().split('T')[0] : '';
-    this.filterValues.update(current => ({ ...current, [key]: formatted }));
-    this.applyFilters();
-  }
-
-  onTagFiltersChange(tags: string[]): void {
-    this.tagFilters.set(tags);
+  removeFilterChip(key: string): void {
+    if (key.startsWith('tag:')) {
+      const tag = key.slice(4);
+      this.tagFilters.update(tags => tags.filter(t => t !== tag));
+    } else {
+      const isBoolean = this.filterConfigs.find(c => c.key === key)?.type === 'boolean';
+      this.filterValues.update(v => ({ ...v, [key]: isBoolean ? 'false' : '' }));
+    }
     this.applyFilters();
   }
 
   applyFilters(): void {
-    this.page.set(0);
-    this.load();
-  }
-
-  resetFilters(): void {
-    this.filterValues.set({
-      status: '',
-      priority: '',
-      workMode: '',
-      company: '',
-      role: '',
-      isArchived: 'false',
-      appliedAfter: '',
-      appliedBefore: ''
-    });
-    this.tagFilters.set([]);
     this.page.set(0);
     this.load();
   }
