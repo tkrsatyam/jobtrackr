@@ -57,7 +57,7 @@
   grid-template-rows: 1fr auto;
   align-items: center;
   gap: var(--spacing-xl);
-  height: 100vh;
+  min-height: 100vh;
   padding: calc(var(--topbar-height) + 60px) var(--spacing-xl) 40px;
   max-width: 1080px;
   margin: 0 auto;
@@ -448,7 +448,10 @@
 @media (max-width: 900px) {
   .hero {
     grid-template-columns: 1fr;
-    height: 100svh;
+    grid-template-rows: auto auto;
+    align-items: start;
+    align-content: center;
+    min-height: 100svh;
     padding-top: calc(var(--topbar-height) + 40px);
     text-align: center;
   }
@@ -461,7 +464,6 @@
 
   .hero-visual {
     height: 220px;
-    margin-top: var(--spacing-lg);
   }
 
   .mock-card {
