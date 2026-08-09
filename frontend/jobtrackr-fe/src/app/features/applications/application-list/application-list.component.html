@@ -16,6 +16,19 @@
         <button mat-stroked-button (click)="openFilterModal()">
             <mat-icon>filter_list</mat-icon> Filter By
         </button>
+
+        @if (activeFilterChips().length > 0) {
+            <mat-chip-set>
+                @for (chip of activeFilterChips(); track chip.key) {
+                    <mat-chip (removed)="removeFilterChip(chip.key)">
+                        <span class="chip-label">{{ chip.label }}:</span>&nbsp;{{ chip.displayValue }}
+                        <button matChipRemove>
+                            <mat-icon>cancel</mat-icon>
+                        </button>
+                    </mat-chip>
+                }
+            </mat-chip-set>
+        }
     </div>
 
     @if (selectedCount() > 0) {

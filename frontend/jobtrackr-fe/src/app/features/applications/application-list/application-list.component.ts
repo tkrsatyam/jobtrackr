@@ -22,6 +22,7 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
 import { BulkAction, BulkActionToolbarComponent } from '../components/bulk-action-toolbar/bulk-action-toolbar.component';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { FilterConfig, FilterModalComponent, FilterModalResult } from '../components/filter-modal/filter-modal.component';
+import { MatChipsModule } from "@angular/material/chips";
 
 type ColumnType = 'text' | 'status' | 'priority' | 'date' | 'tags' | 'select' | 'actions';
 
@@ -52,7 +53,8 @@ interface ColumnConfig {
     StatusBadgeComponent,
     PriorityBadgeComponent,
     TagChipComponent,
-    BulkActionToolbarComponent
+    BulkActionToolbarComponent,
+    MatChipsModule
 ],
   templateUrl: './application-list.component.html',
   styleUrl: './application-list.component.scss',
@@ -136,6 +138,29 @@ export class ApplicationListComponent implements OnInit {
   selectedIds = signal<Set<string>>(new Set());
   selectedCount = computed(() => this.selectedIds().size);
 
+  activeFilterChips = computed(() => {
+    const chips: { key: string; label: string; displayValue: string }[] = [];
+    const values = this.filterValues();
+
+    for (const config of this.filterConfigs) {
+      const val = values[config.key];
+      if (!val || val === '' || (config.type === 'boolean' && val !== 'true')) continue;
+
+      let displayValue = val;
+      if (config.options) {
+        displayValue = config.options.find(o => o.value === val)?.label ?? val;
+      }
+
+      chips.push({ key: config.key, label: config.label, displayValue });
+    }
+
+    for (const tag of this.tagFilters()) {
+      chips.push({ key: `tag:${tag}`, label: 'Tag', displayValue: tag });
+    }
+
+    return chips;
+  });
+
   columns: ColumnConfig[] = [
     { key: 'select', header: '', type: 'select' },
     { key: 'company', header: 'Company' , type: 'text', field: 'companyName', sortable: true, sortField: 'companyName' },
@@ -218,6 +243,17 @@ export class ApplicationListComponent implements OnInit {
       this.tagFilters.set(result.tagFilters);
       this.applyFilters();
     });
+  }
+
+  removeFilterChip(key: string): void {
+    if (key.startsWith('tag:')) {
+      const tag = key.slice(4);
+      this.tagFilters.update(tags => tags.filter(t => t !== tag));
+    } else {
+      const isBoolean = this.filterConfigs.find(c => c.key === key)?.type === 'boolean';
+      this.filterValues.update(v => ({ ...v, [key]: isBoolean ? 'false' : '' }));
+    }
+    this.applyFilters();
   }
 
   applyFilters(): void {
