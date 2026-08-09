@@ -1,27 +1,156 @@
+<!-- ─── Topbar ─────────────────────────────────────────────────────────────── -->
 <header class="landing-topbar">
-    <span class="landing-brand">JobTrackr</span>
-    <a mat-stroked-button routerLink="/login">Log In</a>
+  <span class="landing-brand">JobTrackr</span>
+  <a mat-stroked-button routerLink="/login">Log In</a>
 </header>
 
-<main class="landing-container">
-    <section class="hero">
-        <h1>Organize your job search, end to end.</h1>
-        <p class="tagline">
-            Track applications, visualize your pipeline, and never lose track of a follow-up again.
-        </p>
-        <div class="hero-actions">
-            <a mat-flat-button color="primary" routerLink="/register">Get Started</a>
-            <a mat-stroked-button routerLink="/login">Log In</a>
-        </div>
-    </section>
+<main class="landing-page">
 
-    <section class="features" aria-label="Product features">
-        @for (feature of features; track feature.title) {
-            <div class="feature-card">
-                <mat-icon class="feature-icon">{{ feature.icon }}</mat-icon>
-                <h3>{{ feature.title }}</h3>
-                <p>{{ feature.description }}</p>
-            </div>
+  <!-- ─── Hero ──────────────────────────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Organize your job search,<br>end to end.</h1>
+      <p class="tagline">
+        Track applications, visualize your pipeline, and never lose track of a
+        follow-up again — all in one free tool built for active job seekers.
+      </p>
+      <div class="hero-actions">
+        <a mat-flat-button routerLink="/register">Get Started — it's free</a>
+      </div>
+      <ul class="hero-trust" aria-label="Key facts">
+        <li><mat-icon>check_circle</mat-icon> Free forever</li>
+        <li><mat-icon>check_circle</mat-icon> No credit card required</li>
+        <li><mat-icon>check_circle</mat-icon> Built for active job seekers</li>
+      </ul>
+    </div>
+
+    <div class="hero-visual" aria-hidden="true">
+      <div class="mock-card">
+        <div class="mock-card-header">
+          <span class="mock-dot" style="background: var(--color-offer)"></span>
+          <span class="mock-company">Stripe</span>
+          <span class="mock-badge offer">Offer</span>
+        </div>
+        <div class="mock-card-role">Senior Frontend Engineer</div>
+        <div class="mock-card-meta">
+          <mat-icon>location_on</mat-icon> Remote &nbsp;·&nbsp;
+          <mat-icon>calendar_today</mat-icon> Applied 3 weeks ago
+        </div>
+      </div>
+      <div class="mock-card mock-card--mid">
+        <div class="mock-card-header">
+          <span class="mock-dot" style="background: var(--color-interview)"></span>
+          <span class="mock-company">Notion</span>
+          <span class="mock-badge interview">Interview</span>
+        </div>
+        <div class="mock-card-role">Full Stack Developer</div>
+        <div class="mock-card-meta">
+          <mat-icon>location_on</mat-icon> New York &nbsp;·&nbsp;
+          <mat-icon>calendar_today</mat-icon> Applied 2 weeks ago
+        </div>
+      </div>
+      <div class="mock-card mock-card--back">
+        <div class="mock-card-header">
+          <span class="mock-dot" style="background: var(--color-applied)"></span>
+          <span class="mock-company">Linear</span>
+          <span class="mock-badge applied">Applied</span>
+        </div>
+        <div class="mock-card-role">Software Engineer</div>
+        <div class="mock-card-meta">
+          <mat-icon>location_on</mat-icon> Remote &nbsp;·&nbsp;
+          <mat-icon>calendar_today</mat-icon> Applied 1 week ago
+        </div>
+      </div>
+    </div>
+    <div class="hero-scroll-hint" aria-hidden="true">
+      <mat-icon>keyboard_arrow_down</mat-icon>
+    </div>
+  </section>
+
+  <!-- ─── Stats ─────────────────────────────────────────────────────────────── -->
+  <section class="stats-strip" aria-label="Job search statistics">
+    @for (stat of stats; track stat.label) {
+      <div class="stat-item">
+        <span class="stat-value">{{ stat.value }}</span>
+        <span class="stat-label">{{ stat.label }}</span>
+        <span class="stat-source">{{ stat.source }}</span>
+      </div>
+    }
+  </section>
+
+  <!-- ─── How it works ──────────────────────────────────────────────────────── -->
+  <section class="section how-it-works" aria-labelledby="hiw-heading">
+    <h2 id="hiw-heading" class="section-title">How it works</h2>
+    <p class="section-subtitle">Three steps to a calmer, more focused job search.</p>
+
+    <div class="steps">
+      @for (step of steps; track step.title) {
+        <div class="step">
+          <div class="step-icon-wrap" aria-hidden="true">
+            <mat-icon>{{ step.icon }}</mat-icon>
+          </div>
+          <h3>{{ step.title }}</h3>
+          <p>{{ step.description }}</p>
+        </div>
+        @if (!$last) {
+          <div class="step-connector" aria-hidden="true">
+            <mat-icon>arrow_forward</mat-icon>
+          </div>
         }
-    </section>
+      }
+    </div>
+  </section>
+
+  <!-- ─── Pipeline ──────────────────────────────────────────────────────────── -->
+  <section class="section pipeline-section" aria-labelledby="pipeline-heading">
+    <h2 id="pipeline-heading" class="section-title">Your full pipeline, visualized</h2>
+    <p class="section-subtitle">
+      Every stage of the hiring process tracked in one place — from saving a job
+      to accepting an offer.
+    </p>
+
+    <div class="pipeline-track" role="list">
+      @for (stage of pipeline; track stage.label) {
+        <div
+          class="pipeline-chip"
+          role="listitem"
+          [style.background]="'var(' + stage.colorVar + ')'"
+          [style.color]="stage.darkText ? '#333' : '#fff'"
+        >
+          {{ stage.label }}
+        </div>
+        @if (!$last) {
+          <mat-icon class="pipeline-arrow" aria-hidden="true">chevron_right</mat-icon>
+        }
+      }
+    </div>
+    <p class="pipeline-caption">
+      Move between stages manually or from the kanban board. Every transition is
+      timestamped so you always have a full history.
+    </p>
+  </section>
+
+  <!-- ─── Features ──────────────────────────────────────────────────────────── -->
+  <section class="section" aria-labelledby="features-heading">
+    <h2 id="features-heading" class="section-title">Everything you need</h2>
+    <p class="section-subtitle">No bloat. Just the tools that actually matter during a job search.</p>
+
+    <div class="features-grid">
+      @for (feature of features; track feature.title) {
+        <div class="feature-card">
+          <mat-icon class="feature-icon">{{ feature.icon }}</mat-icon>
+          <h3>{{ feature.title }}</h3>
+          <p>{{ feature.description }}</p>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- ─── Bottom CTA ────────────────────────────────────────────────────────── -->
+  <section class="cta-footer" aria-label="Sign up call to action">
+    <h2>Ready to take control of your search?</h2>
+    <p>Free to use. No credit card required.</p>
+    <a mat-flat-button routerLink="/register">Get Started</a>
+  </section>
+
 </main>
