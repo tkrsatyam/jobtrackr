@@ -27,6 +27,11 @@
                             </div>
                             <app-status-badge [status]="result.status" />
                         </div>
+                    } @empty {
+                        <div class="search-empty">
+                            <mat-icon>search_off</mat-icon>
+                            <span>No results for "{{ searchTerm }}"</span>
+                        </div>
                     }
                 </div>
             }

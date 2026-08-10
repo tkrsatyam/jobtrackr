@@ -95,6 +95,11 @@ export class ApplicationListComponent implements OnInit {
       options: ALL_WORK_MODES.map(workMode => ({ value: workMode, label: WORK_MODE_LABELS[workMode] }))
     },
     {
+      key: 'keyword',
+      label: 'Search',
+      type: 'text'
+    },
+    {
       key: 'company',
       label: 'Company',
       type: 'text'
@@ -203,11 +208,11 @@ export class ApplicationListComponent implements OnInit {
   })
 
   ngOnInit(): void {
-    const keyword = this.route.snapshot.queryParamMap.get('keyword');
-    if (keyword) {
+    this.route.queryParamMap.subscribe(params => {
+      const keyword = params.get('keyword') ?? '';
       this.filterValues.update(v => ({ ...v, keyword }));
-    }
-    this.load();
+      this.load();
+    });
   }
 
   load(): void {
@@ -352,7 +357,7 @@ export class ApplicationListComponent implements OnInit {
         this.load();
       });
     }
-    
+
     if (action.type == 'status') {
       this.appService.bulkChangeStatus(ids, action.status).subscribe(() => {
         this.snackBar.open(`Status updated for ${ids.length} applications`, 'OK', { duration: 3000 });

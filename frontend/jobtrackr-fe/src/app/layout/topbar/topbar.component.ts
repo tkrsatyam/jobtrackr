@@ -2,7 +2,7 @@ import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
-import { Router, RouterLink } from '@angular/router';
+import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../features/auth/services/auth.service';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
@@ -12,7 +12,7 @@ import { ApplicationService } from '../../features/applications/services/applica
 import { ApplicationSearchResult } from '../../shared/models/application.model';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 import { Subject, Subscription } from 'rxjs';
-import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, filter, switchMap } from 'rxjs/operators';
 import { FormsModule } from '@angular/forms';
 
 @Component({
@@ -35,7 +35,7 @@ export class TopbarComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private appService = inject(ApplicationService);
   readonly themeService = inject(ThemeService);
-  
+
   currentUser = this.authService.currentUser;
 
   searchTerm = '';
@@ -48,8 +48,18 @@ export class TopbarComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.sub.add(
+      this.router.events.pipe(
+        filter(event => event instanceof NavigationEnd)
+      ).subscribe(() => {
+        this.searchTerm = '';
+        this.searchResults = [];
+        this.showDropdown = false;
+        this.searching = false;
+      })
+    );
+    this.sub.add(
       this.searchInput$.pipe(
-        debounceTime(300),
+        debounceTime(500),
         distinctUntilChanged(),
         switchMap(term => {
           if (!term.trim()) {
@@ -64,7 +74,7 @@ export class TopbarComponent implements OnInit, OnDestroy {
       ).subscribe({
         next: results => {
           this.searchResults = results;
-          this.showDropdown = results.length > 0;
+          this.showDropdown = true;
           this.searching = false;
         },
         error: () => {
