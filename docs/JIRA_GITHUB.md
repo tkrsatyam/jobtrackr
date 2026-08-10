@@ -44,15 +44,36 @@ JD-45-fix-eureka-health-check
 
 ### Commit Messages
 
+Two formats are supported and both are tracked by JIRA:
+
+**Format 1 — Plain key prefix (original):**
+
 ```
 git commit -m "JD-123 brief description of what changed"
 ```
+
+**Format 2 — Conventional Commits with scoped key (preferred):**
+
+```
+git commit -m "feat(JD-123): brief description of what changed"
+git commit -m "fix(JD-123): brief description of what changed"
+```
+
+Use `feat` for new features/enhancements and `fix` for bug fixes. Both formats satisfy JIRA's key-matching and will appear in the Development panel.
 
 - The key must appear **somewhere in the commit message** — beginning is recommended.
 - Every commit on the branch gets linked individually if it contains the key.
 - Commits without the key will **not** appear in the JIRA development panel.
 
-**Examples:**
+**Examples (Conventional Commits format):**
+
+```bash
+git commit -m "feat(JD-10): add refresh token rotation in UserService"
+git commit -m "feat(JD-24): configure Kafka producer for reminder events"
+git commit -m "fix(JD-10): fix token expiry edge case — closes #12"
+```
+
+**Examples (plain key format):**
 
 ```bash
 git commit -m "JD-10 add refresh token rotation in UserService"
@@ -84,15 +105,37 @@ git commit -m "JD-123 #done #time 4h complete analytics aggregation pipeline"
 
 ### Pull Requests
 
+Two formats are supported and both are tracked by JIRA:
+
+**Format 1 — Bracketed key (original):**
+
 ```
 [JD-123] Short description of what the PR does
 ```
 
-- Include the JIRA key in the **PR title** — wrap it in brackets for readability.
+**Format 2 — Conventional Commits with scoped key (preferred):**
+
+```
+feat(JD-123): short description of what the PR does
+fix(JD-123): short description of what the PR does
+```
+
+Use `feat` for feature PRs and `fix` for bug fix PRs.
+
+- Include the JIRA key in the **PR title** — either format above is recognised.
 - The PR description should reference the ticket for traceability.
 - When the PR is merged, the linked issue shows **"1 pull request"** in the JIRA Development panel.
 
-**PR title examples:**
+**PR title examples (Conventional Commits format):**
+
+```
+feat(JD-10): JWT refresh token implementation in user-service
+feat(JD-24): Kafka producer setup for reminder-service
+feat(JD-31): Angular application form with status pipeline
+fix(JD-45): fix Eureka health check registration
+```
+
+**PR title examples (bracketed key format):**
 
 ```
 [JD-10] JWT refresh token implementation in user-service
@@ -123,8 +166,10 @@ git commit -m "JD-123 #done #time 4h complete analytics aggregation pipeline"
 ```
 1. Pick a JIRA ticket → note the key (e.g. JD-42)
 2. git checkout -b JD-42-feature-name
-3. git commit -m "JD-42 description of change"   ← repeat for every commit
-4. Push branch → open PR with title "[JD-42] Feature name"
+3. git commit -m "feat(JD-42): description of change"   ← repeat for every commit
+   (or: git commit -m "JD-42 description of change" — both formats work)
+4. Push branch → open PR with title "feat(JD-42): Feature name"
+   (or: "[JD-42] Feature name" — both formats work)
 5. JIRA Development panel now shows: branch ✓ · commits ✓ · pull request ✓
 ```
 
@@ -207,8 +252,20 @@ If development information is not appearing in JIRA, work through this checklist
 
 ```
 Branch    →  git checkout -b JD-123-description
-Commit    →  git commit -m "JD-123 what you did"
-PR title  →  [JD-123] What the PR does
+
+Commit (preferred):
+  feat(JD-123): what you did        ← new feature or enhancement
+  fix(JD-123): what you fixed       ← bug fix
+
+Commit (alternative):
+  JD-123 what you did               ← also tracked by JIRA
+
+PR title (preferred):
+  feat(JD-123): What the PR does
+  fix(JD-123): What the PR fixes
+
+PR title (alternative):
+  [JD-123] What the PR does         ← also tracked by JIRA
 
 Smart commits (optional):
   #in-progress  #in-review  #done
@@ -233,4 +290,4 @@ If you run into an issue not covered here, the Atlassian documentation is the au
 
 ---
 
-*Last updated: June 2026*
+*Last updated: August 2026*
