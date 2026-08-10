@@ -2,6 +2,7 @@ package com.jobtrackr.application_service.service;
 
 import com.jobtrackr.application_service.dto.request.*;
 import com.jobtrackr.application_service.dto.response.ApplicationResponse;
+import com.jobtrackr.application_service.dto.response.ApplicationSearchResult;
 import com.jobtrackr.application_service.entity.Application;
 import com.jobtrackr.application_service.entity.ApplicationStatusHistory;
 import com.jobtrackr.application_service.entity.ApplicationTag;
@@ -95,6 +96,8 @@ public class ApplicationServiceImpl implements ApplicationService{
         if (filter.getPriority() != null) spec = spec.and(ApplicationSpecification.hasPriority(filter.getPriority()));
         if (filter.getWorkMode() != null) spec = spec.and(ApplicationSpecification.hasWorkMode(filter.getWorkMode()));
         if (filter.getIsArchived() != null) spec = spec.and(ApplicationSpecification.isArchived(filter.getIsArchived()));
+        if (filter.getKeyword() != null && !filter.getKeyword().isBlank()) 
+            spec = spec.and(ApplicationSpecification.keywordMatches(filter.getKeyword()));
         if (filter.getCompany() != null) spec = spec.and(ApplicationSpecification.companyContains(filter.getCompany()));
         if (filter.getRole() != null) spec = spec.and(ApplicationSpecification.roleContains(filter.getRole()));
         if (filter.getAppliedAfter() != null) spec = spec.and(ApplicationSpecification.appliedAfter(filter.getAppliedAfter()));
@@ -310,6 +313,15 @@ public class ApplicationServiceImpl implements ApplicationService{
 
         applicationRepository.saveAll(applications);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ApplicationSearchResult> searchApplications(String keyword, int size, HttpServletRequest httpRequest) {
+        UUID userId = userContextHolder.getUserId(httpRequest);
+        String pattern = "%" + keyword.toLowerCase() + "%";
+        return applicationRepository.searchByKeyword(userId, pattern, size);
+    }
+
 
     private Application findAndVerifyOwnership(UUID applicationId, UUID userId) {
         Application application = applicationRepository

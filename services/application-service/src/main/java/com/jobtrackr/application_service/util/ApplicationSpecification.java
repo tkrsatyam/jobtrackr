@@ -58,6 +58,14 @@ public class ApplicationSpecification {
         return (root, query, criteriaBuilder) -> criteriaBuilder.lessThanOrEqualTo(root.get("appliedDate"), date);
     }
     
+    public static Specification<Application> keywordMatches(String keyword) {
+        String pattern = "%" + keyword.toLowerCase() + "%";
+        return (root, query, criteriaBuilder) -> criteriaBuilder.or(
+                criteriaBuilder.like(criteriaBuilder.lower(root.get("companyName")), pattern),
+                criteriaBuilder.like(criteriaBuilder.lower(root.get("role")), pattern)
+        );
+    }
+    
     public static Specification<Application> hasTag(String tag) {
         String normalizedTag = tag.trim().toLowerCase();
         return (root, query, criteriaBuilder) -> {

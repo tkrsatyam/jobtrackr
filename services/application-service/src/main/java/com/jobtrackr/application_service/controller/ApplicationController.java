@@ -4,6 +4,7 @@ import com.jobtrackr.application_service.dto.request.ApplicationFilterRequest;
 import com.jobtrackr.application_service.dto.request.CreateApplicationRequest;
 import com.jobtrackr.application_service.dto.request.UpdateApplicationRequest;
 import com.jobtrackr.application_service.dto.response.ApplicationResponse;
+import com.jobtrackr.application_service.dto.response.ApplicationSearchResult;
 import com.jobtrackr.application_service.entity.enums.ApplicationStatus;
 import com.jobtrackr.application_service.entity.enums.PriorityLevel;
 import com.jobtrackr.application_service.entity.enums.WorkMode;
@@ -39,8 +40,17 @@ public class ApplicationController {
         return ResponseEntity.ok(applicationService.getApplicationById(id, httpRequest));
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<List<ApplicationSearchResult>> searchApplications(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "5") int size,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(applicationService.searchApplications(keyword, size, httpRequest));
+    }
+
     @GetMapping
     public ResponseEntity<Page<ApplicationResponse>> getAllApplications(
+            @RequestParam(required = false) String keyword,
             @RequestParam(required = false) ApplicationStatus status,
             @RequestParam(required = false) PriorityLevel priority,
             @RequestParam(required = false) WorkMode workMode,
@@ -57,6 +67,7 @@ public class ApplicationController {
             HttpServletRequest httpRequest) {
 
         ApplicationFilterRequest filter = ApplicationFilterRequest.builder()
+                .keyword(keyword)
                 .status(status)
                 .priority(priority)
                 .workMode(workMode)
