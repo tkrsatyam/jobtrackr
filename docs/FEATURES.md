@@ -38,7 +38,7 @@
 - [x] Partial case-insensitive keyword match on company and role
 - [x] Date range (appliedAfter, appliedBefore)
 - [x] Pagination with sortBy and sortDir
-- [ ] Tag-based filtering — not yet implemented
+- [x] Tag-based filtering
 - [ ] Full-text search — not yet implemented
 
 ### Status Pipeline
