@@ -129,6 +129,10 @@ CREATE INDEX idx_applications_user ON applications(user_id);
 CREATE INDEX idx_applications_status ON applications(status);
 CREATE INDEX idx_applications_user_status ON applications(user_id, status);
 CREATE INDEX idx_status_history_app ON application_status_history(application_id);
+
+-- Trigram indexes for keyword search (V2__trgm_keyword_search.sql)
+CREATE INDEX idx_applications_company_trgm ON applications USING GIN (lower(company_name) gin_trgm_ops);
+CREATE INDEX idx_applications_role_trgm    ON applications USING GIN (lower(role)         gin_trgm_ops);
 ```
 
 > **Enum columns:** `status`, `priority`, `work_mode`, and `source` are `@Enumerated(EnumType.STRING)` on the entity side and stored as plain `VARCHAR` — there are no custom PostgreSQL enum types (`CREATE TYPE ... AS ENUM`) in this schema. An earlier version of this doc described custom PG enum types as the intended design; that was never implemented and the Flyway baseline (`V1__baseline.sql`) now reflects the actual `VARCHAR` columns as the source of truth going forward.
