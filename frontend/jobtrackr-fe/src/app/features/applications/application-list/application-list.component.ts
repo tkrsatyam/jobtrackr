@@ -9,7 +9,7 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { PriorityBadgeComponent } from '../../../shared/components/priority-badge/priority-badge.component';
 import { TagChipComponent } from '../../../shared/components/tag-chip/tag-chip.component';
@@ -64,6 +64,7 @@ export class ApplicationListComponent implements OnInit {
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   applications = signal<ApplicationResponse[]>([]);
   totalElements = signal(0);
@@ -121,6 +122,7 @@ export class ApplicationListComponent implements OnInit {
   ];
 
   filterValues = signal<Record<string, string>>({
+    keyword: '',
     status: '',
     priority: '',
     workMode: '',
@@ -186,6 +188,7 @@ export class ApplicationListComponent implements OnInit {
       sortDir: sort.direction
     };
 
+    if (values['keyword']) filter.keyword = values['keyword'];
     if (values['status']) filter.status = values['status'] as ApplicationStatus;
     if (values['priority']) filter.priority = values['priority'] as PriorityLevel;
     if (values['workMode']) filter.workMode = values['workMode'] as WorkMode;
@@ -200,6 +203,10 @@ export class ApplicationListComponent implements OnInit {
   })
 
   ngOnInit(): void {
+    const keyword = this.route.snapshot.queryParamMap.get('keyword');
+    if (keyword) {
+      this.filterValues.update(v => ({ ...v, keyword }));
+    }
     this.load();
   }
 
