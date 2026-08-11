@@ -12,6 +12,7 @@ import java.util.List;
 @Data
 @Builder
 public class ApplicationFilterRequest {
+    private String keyword;
     private ApplicationStatus status;
     private PriorityLevel priority;
     private WorkMode workMode;

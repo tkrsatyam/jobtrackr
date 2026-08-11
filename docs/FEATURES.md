@@ -38,8 +38,8 @@
 - [x] Partial case-insensitive keyword match on company and role
 - [x] Date range (appliedAfter, appliedBefore)
 - [x] Pagination with sortBy and sortDir
-- [ ] Tag-based filtering — not yet implemented
-- [ ] Full-text search — not yet implemented
+- [x] Tag-based filtering
+- [x] Keyword search — partial, case-insensitive OR-match across company name and role via `pg_trgm` trigram similarity (GIN-indexed). Available as `?keyword=` on `GET /api/applications` and as a dedicated autocomplete endpoint `GET /api/applications/search`
 
 ### Status Pipeline
 - [x] Full pipeline with validated transitions enforced by StatusTransitionValidator
@@ -163,7 +163,7 @@
 - [x] Lazy-loaded routes for all feature modules
 - [x] Redirect unknown routes to dashboard
 - [ ] Dark mode toggle — not yet implemented
-- [ ] Global search bar — not yet implemented
+- [x] Global search bar — topbar autocomplete with 500ms debounce, dropdown showing up to 5 results (company, role, status badge), click navigates to detail, Enter navigates to filtered list
 
 ### Landing Page (`/`)
 - [x] Public landing page — accessible without authentication, rendered outside `ShellComponent`

@@ -165,6 +165,7 @@ Get all applications for the current user.
 
 | Param | Type | Description |
 |---|---|---|
+| `keyword` | string | Partial, case-insensitive OR-match across company name and role (trigram-indexed) |
 | `status` | string | Filter by status enum value (e.g. `APPLIED`) |
 | `priority` | string | Filter by priority (`LOW`, `MEDIUM`, `HIGH`, `DREAM`) |
 | `workMode` | string | Filter by work mode (`REMOTE`, `HYBRID`, `ON_SITE`) |
@@ -377,6 +378,30 @@ Change status for multiple applications. Invalid transitions are silently skippe
 }
 ```
 **Response `204`:** No content.
+
+---
+
+### GET `/api/applications/search` 🔒
+Autocomplete search across company name and role. Backed by `pg_trgm` GIN indexes. Intended for the topbar search dropdown — returns a lean projection, not the full application shape.
+
+**Query Params:**
+
+| Param | Type | Required | Description |
+|---|---|---|---|
+| `keyword` | string | ✅ | Term to match against company name and role (partial, case-insensitive OR) |
+| `size` | int | ❌ | Max results to return (default: `5`) |
+
+**Response `200`:**
+```json
+[
+  {
+    "applicationId": "uuid",
+    "companyName": "Google",
+    "role": "Software Engineer II",
+    "status": "INTERVIEW"
+  }
+]
+```
 
 ---
 

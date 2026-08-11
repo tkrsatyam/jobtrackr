@@ -47,7 +47,15 @@ export interface Page<T> {
     size: number;
 }
 
+export interface ApplicationSearchResult {
+    applicationId: string;
+    companyName: string;
+    role: string;
+    status: ApplicationStatus;
+}
+
 export interface ApplicationFilter {
+    keyword?: string;
     status?: ApplicationStatus;
     priority?: PriorityLevel;
     workMode?: WorkMode | null;

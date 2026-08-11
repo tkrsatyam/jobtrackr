@@ -2,6 +2,7 @@ package com.jobtrackr.application_service.service;
 
 import com.jobtrackr.application_service.dto.request.*;
 import com.jobtrackr.application_service.dto.response.ApplicationResponse;
+import com.jobtrackr.application_service.dto.response.ApplicationSearchResult;
 import com.jobtrackr.application_service.entity.enums.ApplicationStatus;
 import com.jobtrackr.application_service.entity.enums.PriorityLevel;
 import com.jobtrackr.application_service.entity.enums.WorkMode;
@@ -40,4 +41,6 @@ public interface ApplicationService {
     void bulkArchive(BulkActionRequest request, HttpServletRequest httpRequest);
 
     void bulkChangeStatus(BulkActionRequest request, HttpServletRequest httpRequest);
+    
+    List<ApplicationSearchResult> searchApplications(String keyword, int size, HttpServletRequest httpRequest);
 }

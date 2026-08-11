@@ -4,7 +4,39 @@
         <a href="" class="brand-text">JobTrackr</a>
     </div>
 
-    <span class="topbar-spacer"></span>
+    <div class="topbar-search">
+        <div class="search-wrapper">
+            <mat-icon class="search-icon">{{ searching ? 'sync' : 'search' }}</mat-icon>
+            <input
+                class="search-input"
+                type="text"
+                placeholder="Search applications..."
+                [(ngModel)]="searchTerm"
+                (input)="onSearchInput()"
+                (keydown)="onSearchKeydown($event)"
+                (blur)="onBlur()"
+                autocomplete="off"
+            />
+            @if (showDropdown) {
+                <div class="search-dropdown">
+                    @for (result of searchResults; track result.applicationId) {
+                        <div class="search-result" (mousedown)="selectResult(result)">
+                            <div class="result-main">
+                                <span class="result-company">{{ result.companyName }}</span>
+                                <span class="result-role">{{ result.role }}</span>
+                            </div>
+                            <app-status-badge [status]="result.status" />
+                        </div>
+                    } @empty {
+                        <div class="search-empty">
+                            <mat-icon>search_off</mat-icon>
+                            <span>No results for "{{ searchTerm }}"</span>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
 
     <div class="topbar-actions">
         <button
