@@ -37,6 +37,20 @@
   align-items: start;
 }
 
+@media (max-width: 768px) {
+  .detail-header {
+    flex-direction: column;
+  }
+
+  .detail-actions {
+    width: 100%;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .detail-main {
   display: flex;
   flex-direction: column;
@@ -78,6 +92,13 @@
     color: var(--mat-sys-on-surface-variant);
     margin-bottom: var(--spacing-sm);
   }
+}
+
+.status-panel-card {
+  background: var(--mat-sys-surface-container-low);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: var(--spacing-md);
 }
 
 .detail-fields {
