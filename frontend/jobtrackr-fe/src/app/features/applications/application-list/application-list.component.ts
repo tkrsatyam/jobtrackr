@@ -94,21 +94,16 @@ export class ApplicationListComponent implements OnInit {
       type: 'select',
       options: ALL_WORK_MODES.map(workMode => ({ value: workMode, label: WORK_MODE_LABELS[workMode] }))
     },
-    {
-      key: 'keyword',
-      label: 'Search',
-      type: 'text'
-    },
-    {
-      key: 'company',
-      label: 'Company',
-      type: 'text'
-    },
-    {
-      key: 'role',
-      label: 'Role',
-      type: 'text'
-    },
+//     {
+//       key: 'company',
+//       label: 'Company',
+//       type: 'text'
+//     },
+//     {
+//       key: 'role',
+//       label: 'Role',
+//       type: 'text'
+//     },
     {
       key: 'appliedAfter',
       label: 'Applied After',
@@ -148,6 +143,10 @@ export class ApplicationListComponent implements OnInit {
   activeFilterChips = computed(() => {
     const chips: { key: string; label: string; displayValue: string }[] = [];
     const values = this.filterValues();
+
+    if (values['keyword']) {
+      chips.push({ key: 'keyword', label: 'Search', displayValue: values['keyword'] });
+    }
 
     for (const config of this.filterConfigs) {
       const val = values[config.key];

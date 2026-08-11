@@ -100,10 +100,12 @@ export class TopbarComponent implements OnInit, OnDestroy {
 
   onSearchKeydown(event: KeyboardEvent): void {
     if (event.key === 'Enter' && this.searchTerm.trim()) {
+      this.searchInput$.next('');
       this.closeDropdown();
       this.router.navigate(['/applications'], { queryParams: { keyword: this.searchTerm.trim() } });
     }
     if (event.key === 'Escape') {
+      this.searchInput$.next('');
       this.closeDropdown();
     }
   }
