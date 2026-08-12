@@ -13,6 +13,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { MatIconModule } from '@angular/material/icon';
+import { confirmPasswordValidator } from '../../shared/validators/password-matches.validator';
 
 @Component({
   selector: 'app-settings',
@@ -44,6 +45,7 @@ export class SettingsComponent implements OnInit {
   showPasswordForm = signal(false);
   showCurrentPassword = signal(false);
   showNewPassword = signal(false);
+  showConfirmNewPassword = signal(false);
 
   profileSaving = signal(false);
   passwordSaving = signal(false);
@@ -55,7 +57,8 @@ export class SettingsComponent implements OnInit {
 
   passwordForm = this.fb.group({
     currentPassword: ['', Validators.required],
-    newPassword: ['', [Validators.required, Validators.minLength(8)]]
+    newPassword: ['', [Validators.required, Validators.minLength(8)]],
+    confirmNewPassword: ['', [Validators.required, confirmPasswordValidator]]
   });
 
   ngOnInit(): void {
@@ -112,7 +115,7 @@ export class SettingsComponent implements OnInit {
     if (this.passwordForm.invalid) return;
     this.passwordSaving.set(true);
     const raw = this.passwordForm.getRawValue();
-    this.authService.changePassword(raw.currentPassword, raw.newPassword).subscribe({
+    this.authService.changePassword(raw.currentPassword, raw.newPassword, raw.confirmNewPassword).subscribe({
       next: () => {
         this.passwordSaving.set(false);
         this.showPasswordForm.set(false);
