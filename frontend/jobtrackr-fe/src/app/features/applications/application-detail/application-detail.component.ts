@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { SalaryFormatPipe } from '../../../shared/pipes/salary-format/salary-format-pipe';
 import { MatButtonModule } from '@angular/material/button';
@@ -15,10 +15,12 @@ import { ApplicationService } from '../services/application.service';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ApplicationResponse, ApplicationStatus } from '../../../shared/models/application.model';
-import { SOURCE_LABELS, WORK_MODE_LABELS } from '../../../shared/constants/enum-labels';
+import { SOURCE_LABELS, STATUS_LABELS, WORK_MODE_LABELS } from '../../../shared/constants/enum-labels';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { MatTooltip } from "@angular/material/tooltip";
 import { FormsModule } from '@angular/forms';
+import { MatMenuModule } from '@angular/material/menu';
+import { isTerminal } from '../../../shared/constants/status-transitions';
 
 @Component({
   selector: 'app-application-detail',
@@ -30,14 +32,15 @@ import { FormsModule } from '@angular/forms';
     MatIconModule,
     MatDividerModule,
     MatProgressBarModule,
+    MatMenuModule,
     StatusBadgeComponent,
     PriorityBadgeComponent,
     TagChipComponent,
     StatusTimelineComponent,
     StatusChangePanelComponent,
     MatTooltip,
-    FormsModule
-],
+    FormsModule,
+  ],
   templateUrl: './application-detail.component.html',
   styleUrl: './application-detail.component.scss',
 })
@@ -55,7 +58,59 @@ export class ApplicationDetailComponent implements OnInit {
 
   workModeLabels = WORK_MODE_LABELS;
   sourceLabels = SOURCE_LABELS;
-  
+  statusLabels = STATUS_LABELS;
+
+  /** The seven active pipeline stages in order. Terminal outcomes are handled separately. */
+  readonly pipelineStages: ApplicationStatus[] = [
+    'SAVED', 'APPLIED', 'PHONE_SCREEN', 'INTERVIEW', 'TECHNICAL_ROUND', 'HR_ROUND', 'OFFER',
+  ];
+
+  /** Index of the current status within pipelineStages (-1 if terminal or unknown). */
+  pipelineStepIndex = computed(() => {
+    const app = this.application();
+    if (!app) return -1;
+    return this.pipelineStages.indexOf(app.status);
+  });
+
+  /** True when the application has reached a terminal outcome (rejected, accepted, etc.). */
+  isTerminalStatus = computed(() => {
+    const app = this.application();
+    return app ? isTerminal(app.status) : false;
+  });
+
+  /**
+   * Days elapsed since the application was first touched —
+   * uses appliedDate if set, otherwise falls back to createdAt.
+   */
+  daysSinceApplied = computed(() => {
+    const app = this.application();
+    const ref = app?.appliedDate ?? app?.createdAt;
+    if (!ref) return null;
+    return Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000);
+  });
+
+  /** Material icon to show inside the terminal outcome badge. */
+  terminalIcon = computed(() => {
+    const icons: Partial<Record<ApplicationStatus, string>> = {
+      ACCEPTED: 'check_circle',
+      REJECTED: 'cancel',
+      GHOSTED: 'visibility_off',
+      WITHDRAWN: 'logout',
+    };
+    return icons[this.application()?.status ?? 'SAVED'] ?? 'info';
+  });
+
+  /** True if stage i has been reached (dot should be filled). */
+  pipelineReached(i: number): boolean {
+    const idx = this.pipelineStepIndex();
+    return idx >= 0 && i <= idx;
+  }
+
+  /** True if stage i is the current active stage (dot gets the glow ring). */
+  pipelineActive(i: number): boolean {
+    return !this.isTerminalStatus() && i === this.pipelineStepIndex();
+  }
+
   ngOnInit(): void {
     this.load();
   }
