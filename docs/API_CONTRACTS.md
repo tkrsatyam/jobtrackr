@@ -677,73 +677,60 @@ Update notification preferences.
 
 ## ⚠️ Error Response Format
 
-### Application Service (`GlobalExceptionHandler`)
+All services (Application Service, User Service, and the API Gateway's JWT filter) return errors as
+[RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) `application/problem+json` bodies via Spring's
+`ProblemDetail`, produced by each service's `GlobalExceptionHandler` (which extends
+`ResponseEntityExceptionHandler`).
 
 Standard errors:
 ```json
-{ "error": "Descriptive error message", "timestamp": "2024-01-15T10:00:00" }
+{
+  "type": "about:blank",
+  "title": "Not Found",
+  "status": 404,
+  "detail": "Application not found with id: 3fa85f64-5717-4562-b3fc-2c963f66afa6"
+}
 ```
 
-Validation errors (`@Valid` failures):
+Validation errors (`@Valid` failures) add a `fieldErrors` extension member:
 ```json
 {
-  "error": "Validation failed",
-  "fieldErrors": { "companyName": "Company name is required", "role": "Role is required" },
-  "timestamp": "2024-01-15T10:00:00"
+  "type": "about:blank",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "Validation failed",
+  "fieldErrors": { "companyName": "Company name is required", "role": "Role is required" }
 }
 ```
 
 Invalid enum value (e.g. passing `"APPLYED"` for status):
 ```json
 {
-  "error": "Invalid value 'APPLYED' for field 'status'. Accepted values are: [SAVED, APPLIED, PHONE_SCREEN, ...]",
-  "timestamp": "2024-01-15T10:00:00"
-}
-```
-
-Note: `timestamp` is `LocalDateTime` — no timezone offset or `Z` suffix.
-
----
-
-### User Service (`GlobalExceptionHandler`)
-
-Runtime errors:
-```json
-{ "error": "Descriptive error message" }
-```
-
-Validation errors return a flat map of field names to messages:
-```json
-{
-  "email": "must be a well-formed email address",
-  "password": "Password must be at least 8 characters"
-}
-```
----
-
-**Planned standardised format** (to be implemented across all services in a later phase):
-```json
-{
-  "timestamp": "2024-01-15T10:00:00Z",
+  "type": "about:blank",
+  "title": "Bad Request",
   "status": 400,
-  "error": "Bad Request",
-  "message": "Validation failed",
-  "path": "/api/applications",
-  "details": [
-    { "field": "companyName", "message": "Company name is required" }
-  ]
+  "detail": "Invalid value 'APPLYED' for field 'status'. Accepted values are: [SAVED, APPLIED, PHONE_SCREEN, ...]"
 }
 ```
 
-> Other services may use a different error shape until standardisation is done.
+API Gateway 401s (missing/invalid/revoked token, raised in `JwtAuthenticationFilter` before the
+request reaches a service) follow the same shape:
+```json
+{ "type": "about:blank", "title": "Unauthorized", "status": 401, "detail": "Invalid or expired token" }
+```
+
+Notes:
+- `type` is `"about:blank"` unless a more specific problem type is set — clients should key off `status` and `detail`, not `type`.
+- `instance` and `timestamp` are omitted unless explicitly set; there is no `timestamp` field.
+- Frontend code should read the message from `detail`.
 
 **Common HTTP Status Codes:**
 - `200` OK
 - `201` Created
 - `204` No Content
-- `400` Bad Request — validation errors, invalid credentials, duplicate email, business rule violations
-- `401` Unauthorized — missing or invalid JWT (rejected by Gateway before reaching User Service)
+- `400` Bad Request — validation errors, business rule violations
+- `401` Unauthorized — missing/invalid/expired JWT or refresh token (rejected by Gateway before reaching a service, or by User Service for login/refresh), invalid credentials
 - `403` Forbidden — missing `X-User-Id` header, accessing another user's resource
 - `404` Not Found
-- `409` Conflict — planned for duplicate resource cases (e.g. duplicate email on register); currently returns `400`
+- `409` Conflict — duplicate resource cases (e.g. duplicate email on register)
 - `500` Internal Server Error

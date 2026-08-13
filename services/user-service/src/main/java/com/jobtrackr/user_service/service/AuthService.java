@@ -7,6 +7,7 @@ import com.jobtrackr.user_service.dto.RegisterRequest;
 import com.jobtrackr.user_service.entity.RefreshToken;
 import com.jobtrackr.user_service.entity.User;
 import com.jobtrackr.user_service.exception.EmailAlreadyInUseException;
+import com.jobtrackr.user_service.exception.InvalidCredentialsException;
 import com.jobtrackr.user_service.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -48,10 +49,10 @@ public class AuthService {
 
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
+            throw new InvalidCredentialsException("Invalid credentials");
         }
 
         String accessToken = jwtService.generateAccessToken(user.getId(), user.getEmail(), user.getRole().name());

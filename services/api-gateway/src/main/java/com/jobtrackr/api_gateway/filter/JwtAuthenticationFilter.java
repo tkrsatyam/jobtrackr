@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -37,7 +39,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            writeProblemDetail(response, "Missing or malformed Authorization header");
             return;
         }
 
@@ -51,13 +53,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     .parseSignedClaims(token)
                     .getPayload();
         } catch (JwtException e) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            writeProblemDetail(response, "Invalid or expired token");
             return;
         }
 
         Boolean isBlacklisted = redisTemplate.hasKey("blacklist:" + token);
         if (Boolean.TRUE.equals(isBlacklisted)) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            writeProblemDetail(response, "Token has been revoked");
             return;
         }
 
@@ -67,5 +69,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         mutableRequest.putHeader("X-User-Role", claims.get("role", String.class));
 
         filterChain.doFilter(mutableRequest, response);
+    }
+
+    /**
+     * Writes a minimal RFC 9457 ProblemDetail body for 401 responses raised in this filter.
+     * Built manually rather than via an injected ObjectMapper/JsonMapper bean, since this
+     * filter runs ahead of DispatcherServlet and the coexisting Jackson 2 (jjwt-jackson) and
+     * Jackson 3 (Boot 4 default) dependencies on this service's classpath make relying on
+     * an auto-configured mapper bean here brittle.
+     */
+    private void writeProblemDetail(HttpServletResponse response, String detail) throws IOException {
+        response.setStatus(HttpStatus.UNAUTHORIZED.value());
+        response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+
+        String escapedDetail = detail.replace("\\", "\\\\").replace("\"", "\\\"");
+        String body = "{\"type\":\"about:blank\",\"title\":\"Unauthorized\",\"status\":401,\"detail\":\"" + escapedDetail + "\"}";
+
+        response.getWriter().write(body);
     }
 }
