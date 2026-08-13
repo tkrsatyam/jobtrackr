@@ -46,35 +46,24 @@
             </div>
         }
 
-        <!-- ── Pipeline stepper ── -->
-        <div class="pipeline-strip">
-            <div class="pipeline-stepper" role="list" aria-label="Application pipeline progress">
-                @for (stage of pipelineStages; track stage; let i = $index, last = $last) {
-                    <div class="pipeline-step" role="listitem"
-                         [class.reached]="pipelineReached(i)"
-                         [class.active]="pipelineActive(i)">
-                        <div class="step-row">
-                            <div class="step-dot"
-                                 [attr.aria-current]="pipelineActive(i) ? 'step' : null">
-                                @if (pipelineReached(i) && !pipelineActive(i)) {
-                                    <mat-icon>check</mat-icon>
-                                }
-                            </div>
-                            @if (!last) {
-                                <div class="step-connector"
-                                     [class.filled]="pipelineReached(i)"></div>
-                            }
-                        </div>
-                        <span class="step-label">{{ statusLabels[stage] }}</span>
-                    </div>
+        <!-- ── Pipeline pill row ── -->
+        <div class="pipeline-strip" role="list" aria-label="Application pipeline progress">
+            @for (stage of pipelineStages; track stage; let i = $index, last = $last) {
+                <span class="pipeline-pill"
+                      role="listitem"
+                      [class.past]="pipelineReached(i) && !pipelineActive(i)"
+                      [class.active]="pipelineActive(i)"
+                      [attr.aria-current]="pipelineActive(i) ? 'step' : null">
+                    {{ statusLabels[stage] }}
+                </span>
+                @if (!last || isTerminalStatus()) {
+                    <span class="pill-sep" aria-hidden="true">›</span>
                 }
-            </div>
-
+            }
             @if (isTerminalStatus()) {
-                <div class="terminal-badge" [class]="'terminal-' + app.status">
-                    <mat-icon>{{ terminalIcon() }}</mat-icon>
-                    <span>{{ statusLabels[app.status] }}</span>
-                </div>
+                <span [class]="'pipeline-pill terminal-pill outcome-' + app.status">
+                    {{ statusLabels[app.status] }}
+                </span>
             }
         </div>
 
@@ -149,11 +138,6 @@
                 <section class="detail-section" aria-labelledby="application-info-heading">
                     <h3 id="application-info-heading">Application Info</h3>
                     <div class="detail-fields">
-                        <div class="field-row">
-                            <span class="field-label">Status</span>
-                            <app-status-badge [status]="app.status" />
-                        </div>
-
                         <div class="field-row">
                             <span class="field-label">Priority</span>
                             <app-priority-badge [priority]="app.priority" />

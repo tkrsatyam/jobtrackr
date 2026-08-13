@@ -38,126 +38,64 @@
   color: var(--mat-sys-error);
 }
 
-// ── Pipeline stepper ─────────────────────────────────────────────────────────
+// ── Pipeline pill row ─────────────────────────────────────────────────────────
 
 .pipeline-strip {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: var(--spacing-xs);
   background: var(--mat-sys-surface-container-low);
   border-radius: var(--radius);
-  padding: var(--spacing-md) var(--spacing-lg);
+  padding: var(--spacing-sm) var(--spacing-md);
   margin-bottom: var(--spacing-md);
-  overflow-x: auto;
 }
 
-.pipeline-stepper {
-  display: flex;
-  align-items: flex-start;
-  flex: 1;
-  min-width: 0;
-}
-
-.pipeline-step {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-  min-width: 0;
-}
-
-.step-row {
-  display: flex;
-  align-items: center;
-  width: 100%;
-}
-
-.step-dot {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 2px solid var(--mat-sys-outline-variant);
-  background: var(--mat-sys-surface);
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s, border-color 0.2s;
-  position: relative;
-  z-index: 1;
-
-  mat-icon {
-    font-size: 11px;
-    width: 11px;
-    height: 11px;
-    color: white;
-  }
-}
-
-.step-connector {
-  flex: 1;
-  height: 2px;
-  background: var(--mat-sys-outline-variant);
-  transition: background 0.3s;
-
-  &.filled {
-    background: var(--mat-sys-primary);
-  }
-}
-
-.step-label {
-  font-size: 0.6rem;
-  text-align: center;
-  margin-top: var(--spacing-xs);
-  color: var(--mat-sys-on-surface-variant);
-  line-height: 1.3;
-  max-width: 56px;
+.pipeline-pill {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 400;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+  border: 1.5px solid var(--mat-sys-outline-variant);
+  color: var(--mat-sys-on-surface-variant);
+  background: transparent;
 
-.pipeline-step.reached {
-  .step-dot {
+  &.past {
+    background: var(--mat-sys-primary-container);
+    border-color: var(--mat-sys-primary-container);
+    color: var(--mat-sys-on-primary-container);
+  }
+
+  &.active {
     background: var(--mat-sys-primary);
     border-color: var(--mat-sys-primary);
-  }
-
-  .step-label {
-    color: var(--mat-sys-on-surface);
+    color: var(--mat-sys-on-primary);
     font-weight: 500;
+    padding: 5px 14px;
   }
 }
 
-.pipeline-step.active .step-dot {
-  outline: 3px solid var(--mat-sys-primary-container);
-  outline-offset: 1px;
+.pill-sep {
+  font-size: 0.75rem;
+  color: var(--mat-sys-outline-variant);
+  user-select: none;
+  line-height: 1;
 }
 
-.terminal-badge {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--radius);
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-align: center;
+.terminal-pill {
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
   white-space: nowrap;
-
-  mat-icon {
-    font-size: 1.2rem;
-    width: 1.2rem;
-    height: 1.2rem;
-  }
-
-  &.terminal-ACCEPTED  { background: rgba(27, 94, 32, 0.12);   color: var(--color-accepted); }
-  &.terminal-REJECTED  { background: rgba(198, 40, 40, 0.12);  color: var(--color-rejected); }
-  &.terminal-GHOSTED   { background: rgba(66, 66, 66, 0.12);   color: var(--color-ghosted); }
-  &.terminal-WITHDRAWN { background: rgba(78, 52, 46, 0.12);   color: var(--color-withdrawn); }
+  border: 1.5px solid;
 }
+
+.outcome-ACCEPTED  { background: rgba(27, 94, 32, 0.12);   border-color: var(--color-accepted);  color: var(--color-accepted); }
+.outcome-REJECTED  { background: rgba(198, 40, 40, 0.12);  border-color: var(--color-rejected);  color: var(--color-rejected); }
+.outcome-GHOSTED   { background: rgba(66, 66, 66, 0.12);   border-color: var(--color-ghosted);   color: var(--color-ghosted); }
+.outcome-WITHDRAWN { background: rgba(78, 52, 46, 0.12);   border-color: var(--color-withdrawn); color: var(--color-withdrawn); }
 
 // ── Meta strip ───────────────────────────────────────────────────────────────
 
@@ -167,7 +105,6 @@
   gap: 1px;
   background: var(--mat-sys-outline-variant);
   border-radius: var(--radius);
-  border-left: 3px solid var(--mat-sys-primary);
   margin-bottom: var(--spacing-lg);
   overflow: hidden;
 }
