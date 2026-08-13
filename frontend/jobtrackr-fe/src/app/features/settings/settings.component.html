@@ -128,7 +128,8 @@
                             <input
                                 matInput
                                 formControlName="confirmNewPassword"
-                                [type]="showConfirmNewPassword() ? 'text' : 'password'">
+                                [type]="showConfirmNewPassword() ? 'text' : 'password'"
+                                [errorStateMatcher]="passwordMismatchMatcher">
                             <button
                                 mat-icon-button
                                 matSuffix

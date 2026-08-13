@@ -13,7 +13,8 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { MatIconModule } from '@angular/material/icon';
-import { confirmPasswordValidator } from '../../shared/validators/password-matches.validator';
+import { passwordsMatchValidator } from '../../shared/validators/password-matches.validator';
+import { CrossFieldErrorMatcher } from '../../shared/matchers/cross-field-error.matcher';
 
 @Component({
   selector: 'app-settings',
@@ -50,6 +51,8 @@ export class SettingsComponent implements OnInit {
   profileSaving = signal(false);
   passwordSaving = signal(false);
 
+  passwordMismatchMatcher = new CrossFieldErrorMatcher('passwordMismatch');
+
   profileForm = this.fb.group({
     fullName: ['', [Validators.required, Validators.minLength(2)]],
     avatarUrl: ['']
@@ -58,8 +61,8 @@ export class SettingsComponent implements OnInit {
   passwordForm = this.fb.group({
     currentPassword: ['', Validators.required],
     newPassword: ['', [Validators.required, Validators.minLength(8)]],
-    confirmNewPassword: ['', [Validators.required, confirmPasswordValidator]]
-  });
+    confirmNewPassword: ['', Validators.required]
+  }, { validators: passwordsMatchValidator });
 
   ngOnInit(): void {
     if (!this.currentUser()) {
