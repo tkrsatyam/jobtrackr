@@ -58,7 +58,7 @@ export class RegisterComponent {
         this.error.set(
           err.status === 409
           ? 'This email is already registered. Try logging in.'
-          : err.error?.error ?? 'Registration failed.'
+          : err.error?.detail ?? err.error?.error ?? 'Registration failed.'
         );
       }
     });

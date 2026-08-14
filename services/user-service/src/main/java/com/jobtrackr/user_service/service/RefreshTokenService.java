@@ -2,6 +2,7 @@ package com.jobtrackr.user_service.service;
 
 import com.jobtrackr.user_service.entity.RefreshToken;
 import com.jobtrackr.user_service.entity.User;
+import com.jobtrackr.user_service.exception.InvalidRefreshTokenException;
 import com.jobtrackr.user_service.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,7 +35,7 @@ public class RefreshTokenService {
         return refreshTokenRepository.findByToken(token)
                 .filter(rt -> !rt.isRevoked())
                 .filter(rt -> rt.getExpiresAt().isAfter(Instant.now()))
-                .orElseThrow(() -> new RuntimeException("Invalid or expired refresh token"));
+                .orElseThrow(() -> new InvalidRefreshTokenException("Invalid or expired refresh token"));
     }
 
     public void revokeToken(RefreshToken token) {

@@ -12,7 +12,8 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       if (error.status === 401) return throwError(() => error);
 
       let message = 'Something went wrong. Please try again.';
-      if (error.error?.error) message = error.error.error;
+      if (error.error?.detail) message = error.error.detail;
+      else if (error.error?.error) message = error.error.error;
       else if (error.error?.message) message = error.error.message;
       else if (error.status === 403) message = 'You do not have permission to do that.';
       else if (error.status === 404) message = 'Resource not found.';
