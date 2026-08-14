@@ -143,7 +143,7 @@ CREATE INDEX idx_applications_role_trgm    ON applications USING GIN (lower(role
 
 ### Reminder Service — `reminderservice` database
 
-> **Forward-looking:** this service has no entities implemented yet (Phase 2). The schema below is the intended design, not a live database state. Flyway will be set up for this service as part of its Phase 2 build-out (tracked in JD-113), with a baseline migration written to match whatever the entities actually look like at that point — not necessarily identical to the SQL below. See [HLD §9.4](./HLD.md#94-schema-migrations--flyway) for the Flyway rollout that already applies to User and Application Service.
+> **Forward-looking:** this service has no entities implemented yet (Phase 2). The schema below is the intended design, not a live database state. Flyway will be set up for this service as part of its Phase 2 build-out (tracked in JD-113), with a baseline migration written to match whatever the entities actually look like at that point — not necessarily identical to the SQL below. See [HLD 9.4](./HLD.md#94-schema-migrations--flyway) for the Flyway rollout that already applies to User and Application Service.
 
 ```sql
 CREATE TYPE reminder_type AS ENUM ('FOLLOW_UP', 'INTERVIEW', 'TASK', 'DEADLINE', 'CUSTOM');
@@ -173,7 +173,7 @@ CREATE INDEX idx_reminders_app ON reminders(application_id);
 
 ### Document Service — `documentservice` database
 
-> **Forward-looking:** this service has no entities implemented yet (Phase 2). The schema below is the intended design, not a live database state. Flyway will be set up for this service as part of its Phase 2 build-out (tracked in JD-114), with a baseline migration written to match whatever the entities actually look like at that point — not necessarily identical to the SQL below. See [HLD §9.4](./HLD.md#94-schema-migrations--flyway) for the Flyway rollout that already applies to User and Application Service.
+> **Forward-looking:** this service has no entities implemented yet (Phase 2). The schema below is the intended design, not a live database state. Flyway will be set up for this service as part of its Phase 2 build-out (tracked in JD-114), with a baseline migration written to match whatever the entities actually look like at that point — not necessarily identical to the SQL below. See [HLD 9.4](./HLD.md#94-schema-migrations--flyway) for the Flyway rollout that already applies to User and Application Service.
 
 ```sql
 CREATE TYPE document_type AS ENUM ('RESUME', 'COVER_LETTER', 'OTHER');

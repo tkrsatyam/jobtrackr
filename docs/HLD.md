@@ -59,7 +59,7 @@ Built on `spring-cloud-starter-gateway-server-webmvc`, not the reactive/WebFlux 
 
 **Planned, not yet implemented:**
 - Rate limiting per user (Redis)
-- Request logging / tracing header injection (`X-Correlation-Id`)
+- Request logging / tracing header injection (`X-Correlation-Id`) — tracked in JD-37; see HLD 6.1 below for the cross-cutting standard this establishes for all services
 - SSL termination — currently handled by Render's platform load balancer in production, not application code
 
 **Routing rules (examples):**
@@ -303,6 +303,13 @@ Reminder Service scheduler (every 60s)
 | HTTPS | Enforced at API Gateway in production |
 | Password hashing | BCrypt (cost factor 12) |
 | File uploads | Type validation, size limit (5MB), stored with opaque keys in MinIO |
+
+### 6.1 Cross-cutting service standards
+
+Every service — current and future — must implement the following before it's considered done, regardless of which epic introduces it:
+
+- **Correlation ID propagation**: read the inbound `X-Correlation-Id` header (set by API Gateway on every request), add it to MDC (`MDC.put("correlationId", value)`) via a servlet filter, include `%X{correlationId:-}` in `logging.pattern.console`, and add it to error responses as a `ProblemDetail` extension property (`problemDetail.setProperty("correlationId", value)`). Established in JD-37 (Gateway, User Service, Application Service); each later service epic (Reminder, Document, Contact, Notification, Analytics) has its own tracking story for this.
+- **Error responses**: `ProblemDetail` (RFC 9457), served as `application/problem+json`, per JD-109 — see `API_CONTRACTS.md`.
 
 ---
 
