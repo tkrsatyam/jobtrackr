@@ -62,7 +62,7 @@ export class SettingsComponent implements OnInit {
     currentPassword: ['', Validators.required],
     newPassword: ['', [Validators.required, Validators.minLength(8)]],
     confirmNewPassword: ['', Validators.required]
-  }, { validators: passwordsMatchValidator });
+  }, { validators: passwordsMatchValidator('newPassword', 'confirmNewPassword') });
 
   ngOnInit(): void {
     if (!this.currentUser()) {

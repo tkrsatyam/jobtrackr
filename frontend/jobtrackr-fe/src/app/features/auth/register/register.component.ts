@@ -9,6 +9,8 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { RegisterRequest } from '../../../shared/models/auth.model';
 import { MatIconModule } from "@angular/material/icon";
+import { passwordsMatchValidator } from '../../../shared/validators/password-matches.validator';
+import { CrossFieldErrorMatcher } from '../../../shared/matchers/cross-field-error.matcher';
 
 @Component({
   selector: 'app-register',
@@ -31,24 +33,30 @@ export class RegisterComponent {
   private router = inject(Router);
 
   showPassword = signal(false);
+  showConfirmPassword = signal(false);
   loading = signal(false);
   error = signal<string | null>(null);
+
+  passwordMismatchMatcher = new CrossFieldErrorMatcher('passwordMismatch');
 
   form = this.fb.group({
     fullName: ['', [Validators.required, Validators.minLength(2)]],
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(8)]]
-  });
+    password: ['', [Validators.required, Validators.minLength(8)]],
+    confirmPassword: ['', Validators.required]
+  }, { validators: passwordsMatchValidator('password', 'confirmPassword') });
 
   submit(): void {
     if (this.form.invalid) return;
     this.loading.set(true);
     this.error.set(null);
 
+    const raw = this.form.getRawValue();
     const request: RegisterRequest = {
-      fullName: this.form.getRawValue().fullName,
-      email: this.form.getRawValue().email,
-      password: this.form.getRawValue().password
+      fullName: raw.fullName,
+      email: raw.email,
+      password: raw.password,
+      confirmPassword: raw.confirmPassword
     };
 
     this.authService.register(request).subscribe({
