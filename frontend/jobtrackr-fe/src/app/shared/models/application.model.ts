@@ -116,3 +116,8 @@ export interface BulkStatusRequest {
     ids: string[];
     status: ApplicationStatus;
 }
+
+export interface BulkTagRequest {
+    ids: string[];
+    tag: string;
+}

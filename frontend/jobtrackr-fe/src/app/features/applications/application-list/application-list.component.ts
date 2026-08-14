@@ -23,6 +23,7 @@ import { BulkAction, BulkActionToolbarComponent } from '../components/bulk-actio
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { FilterConfig, FilterModalComponent, FilterModalResult } from '../components/filter-modal/filter-modal.component';
 import { MatChipsModule } from "@angular/material/chips";
+import { BulkTagDialogComponent } from '../components/bulk-tag-dialog/bulk-tag-dialog.component';
 
 type ColumnType = 'text' | 'status' | 'priority' | 'date' | 'tags' | 'select' | 'actions';
 
@@ -362,6 +363,19 @@ export class ApplicationListComponent implements OnInit {
         this.snackBar.open(`Status updated for ${ids.length} applications`, 'OK', { duration: 3000 });
         this.load();
       })
+    }
+
+    if (action.type === 'tag') {
+      const ref = this.dialog.open(BulkTagDialogComponent, {
+        data: { selectedCount: ids.length }
+      });
+      ref.afterClosed().subscribe((tag: string | undefined) => {
+        if (!tag) return;
+        this.appService.bulkAddTag(ids, tag).subscribe(() => {
+          this.snackBar.open(`Tag added to ${ids.length} applications`, 'OK', { duration: 3000 });
+          this.load();
+        });
+      });
     }
   }
 

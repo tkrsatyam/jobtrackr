@@ -1,0 +1,22 @@
+<h2 mat-dialog-title>Add Tag to {{ data.selectedCount }} Applications</h2>
+<mat-dialog-content>
+    <mat-form-field appearance="outline" class="tag-field">
+        <mat-label>Tag</mat-label>
+        <input
+            matInput
+            [ngModel]="tag()"
+            (ngModelChange)="tag.set($event)"
+            (keydown.enter)="confirm()"
+            autofocus />
+    </mat-form-field>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close>Cancel</button>
+    <button
+        mat-flat-button
+        color="primary"
+        [disabled]="!tag().trim()"
+        (click)="confirm()">
+        Add Tag
+    </button>
+</mat-dialog-actions>

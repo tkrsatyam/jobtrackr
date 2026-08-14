@@ -315,6 +315,56 @@ public class ApplicationServiceImpl implements ApplicationService{
     }
 
     @Override
+    public void bulkAddTag(BulkActionRequest request, HttpServletRequest httpRequest) {
+
+        UUID userId = userContextHolder.getUserId(httpRequest);
+        if (request.getTag() == null || request.getTag().isBlank()) {
+            throw new IllegalArgumentException("Tag is required for bulk tag add");
+        }
+        String normalizedTag = request.getTag().trim().toLowerCase();
+
+        List<Application> applications = applicationRepository.findAllById(request.getIds())
+                .stream()
+                .filter(application -> application.getUserId().equals(userId) && !application.getIsDeleted())
+                .toList();
+
+        applications.forEach(application -> {
+            boolean alreadyExists = application.getTags().stream()
+                    .anyMatch(t -> t.getTag().equals(normalizedTag));
+
+            if (!alreadyExists) {
+                ApplicationTag newTag = ApplicationTag.builder()
+                        .application(application)
+                        .tag(normalizedTag)
+                        .build();
+                application.getTags().add(newTag);
+            }
+        });
+
+        applicationRepository.saveAll(applications);
+    }
+
+    @Override
+    public void bulkRemoveTag(BulkActionRequest request, HttpServletRequest httpRequest) {
+
+        UUID userId = userContextHolder.getUserId(httpRequest);
+        if (request.getTag() == null || request.getTag().isBlank()) {
+            throw new IllegalArgumentException("Tag is required for bulk tag remove");
+        }
+        String normalizedTag = request.getTag().trim().toLowerCase();
+
+        List<Application> applications = applicationRepository.findAllById(request.getIds())
+                .stream()
+                .filter(application -> application.getUserId().equals(userId) && !application.getIsDeleted())
+                .toList();
+
+        applications.forEach(application ->
+                application.getTags().removeIf(t -> t.getTag().equals(normalizedTag)));
+
+        applicationRepository.saveAll(applications);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<ApplicationSearchResult> searchApplications(String keyword, int size, HttpServletRequest httpRequest) {
         UUID userId = userContextHolder.getUserId(httpRequest);
