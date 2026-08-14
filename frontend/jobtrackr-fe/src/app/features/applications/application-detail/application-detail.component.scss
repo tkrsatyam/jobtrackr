@@ -125,6 +125,63 @@
   white-space: nowrap;
 }
 
+// When the value contains an inline action button (e.g. the ⓘ for missing applied date)
+.meta-value-empty {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+$info-icon-size: 16px;
+$info-btn-size: 28px;
+
+.meta-info-btn {
+  --mdc-icon-button-state-layer-size: #{$info-btn-size};
+  width: $info-btn-size;
+  height: $info-btn-size;
+  padding: 0;
+  color: var(--mat-sys-on-surface-variant);
+
+  // Contain the 48px invisible touch target inside the button
+  // so it never reaches the strip's overflow:hidden boundary
+  .mat-mdc-button-touch-target {
+    width: $info-btn-size;
+    height: $info-btn-size;
+  }
+
+  mat-icon {
+    font-size: $info-icon-size;
+    width: $info-icon-size;
+    height: $info-icon-size;
+    // No line-height override — icon fonts need their natural
+    // optical height to render the full glyph without clipping
+  }
+}
+
+// Content inside the mat-menu popover for the missing applied date
+.meta-menu-popover {
+  padding: var(--spacing-sm) var(--spacing-md);
+  max-width: 220px;
+  cursor: default;
+}
+
+.meta-menu-message {
+  font-size: 0.8rem;
+  color: var(--mat-sys-on-surface-variant);
+  margin-bottom: var(--spacing-xs);
+  white-space: normal;
+  line-height: 1.4;
+}
+
+.meta-menu-link {
+  font-size: 0.8rem;
+  color: var(--mat-sys-primary);
+  text-decoration: none;
+  display: inline-block;
+
+  &:hover { text-decoration: underline; }
+}
+
 .meta-label {
   font-size: 0.7rem;
   color: var(--mat-sys-on-surface-variant);

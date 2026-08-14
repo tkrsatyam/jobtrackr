@@ -70,16 +70,35 @@
         <!-- ── Meta strip ── -->
         <div class="meta-strip">
             <div class="meta-item">
-                <span class="meta-value">
-                    {{ app.appliedDate ? (app.appliedDate | date:'mediumDate') : '—' }}
-                </span>
+                @if (app.appliedDate) {
+                    <span class="meta-value">{{ app.appliedDate | date:'mediumDate' }}</span>
+                } @else {
+                    <span class="meta-value meta-value-empty">
+                        —
+                        <button mat-icon-button
+                                class="meta-info-btn"
+                                [matMenuTriggerFor]="appliedDateMenu"
+                                aria-label="Applied date info">
+                            <mat-icon>info_outline</mat-icon>
+                        </button>
+                        <mat-menu #appliedDateMenu="matMenu">
+                            <div class="meta-menu-popover" (click)="$event.stopPropagation()">
+                                <p class="meta-menu-message">Applied date isn't set for this application.</p>
+                                <a class="meta-menu-link"
+                                   [routerLink]="['/applications', app.applicationId, 'edit']">
+                                    Add applied date →
+                                </a>
+                            </div>
+                        </mat-menu>
+                    </span>
+                }
                 <span class="meta-label">Applied</span>
             </div>
 
             @if (daysSinceApplied() !== null) {
                 <div class="meta-item">
-                    <span class="meta-value">{{ daysSinceApplied() }}d</span>
-                    <span class="meta-label">{{ app.appliedDate ? 'In pipeline' : 'Tracking' }}</span>
+                    <span class="meta-value">{{ daysSinceApplied() }} days</span>
+                    <span class="meta-label">{{ app.appliedDate ? 'Since applied' : 'Since added' }}</span>
                 </div>
             }
 
