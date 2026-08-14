@@ -53,7 +53,7 @@
                         <mat-form-field appearance="outline" class="full-width">
                             <mat-label>Full Name</mat-label>
                             <input matInput formControlName="fullName" />
-                            @if (profileForm.get('fullName')?.hasError('minLength') && profileForm.get('fullName')?.touched) {
+                            @if (profileForm.get('fullName')?.hasError('minlength') && profileForm.get('fullName')?.touched) {
                                 <mat-error>At least 2 characters</mat-error>
                             }
                         </mat-form-field>
@@ -118,8 +118,28 @@
                                 [attr.aria-label]="showNewPassword() ? 'Hide password' : 'Show password'">
                                 <mat-icon>{{ showNewPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
                             </button>
-                            @if (passwordForm.get('newPassword')?.hasError('minLength') && passwordForm.get('newPassword')?.touched) {
+                            @if (passwordForm.get('newPassword')?.hasError('minlength') && passwordForm.get('newPassword')?.touched) {
                                 <mat-error>At least 8 characters</mat-error>
+                            }
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" class="full-width">
+                            <mat-label>Confirm New Password</mat-label>
+                            <input
+                                matInput
+                                formControlName="confirmNewPassword"
+                                [type]="showConfirmNewPassword() ? 'text' : 'password'"
+                                [errorStateMatcher]="passwordMismatchMatcher">
+                            <button
+                                mat-icon-button
+                                matSuffix
+                                type="button"
+                                (click)="showConfirmNewPassword.update(v => !v)"
+                                [attr.aria-label]="showConfirmNewPassword() ? 'Hide password' : 'Show password'">
+                                <mat-icon>{{ showConfirmNewPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+                            </button>
+                            @if (passwordForm.hasError('passwordMismatch') && passwordForm.get('confirmNewPassword')?.touched) {
+                                <mat-error>Passwords do not match</mat-error>
                             }
                         </mat-form-field>
 

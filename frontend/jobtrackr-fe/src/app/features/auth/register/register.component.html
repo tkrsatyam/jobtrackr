@@ -46,6 +46,27 @@
                     }
                 </mat-form-field>
 
+                <mat-form-field appearance="outline" class="full-width compact-fields">
+                    <mat-label>Confirm Password</mat-label>
+                    <input
+                        matInput
+                        formControlName="confirmPassword"
+                        [type]="showConfirmPassword() ? 'text' : 'password'"
+                        autocomplete="new-password"
+                        [errorStateMatcher]="passwordMismatchMatcher">
+                    <button
+                        matIconButton
+                        matSuffix
+                        type="button"
+                        (click)="showConfirmPassword.update(v => !v)"
+                        [attr.aria-label]="showConfirmPassword() ? 'Hide password' : 'Show password'">
+                        <mat-icon>{{ showConfirmPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+                    </button>
+                    @if (form.hasError('passwordMismatch') && form.get('confirmPassword')?.touched) {
+                        <mat-error>Passwords do not match</mat-error>
+                    }
+                </mat-form-field>
+
                 @if (error()) {
                     <p class="error-text">{{ error() }}</p>
                 }

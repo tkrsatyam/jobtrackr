@@ -53,8 +53,8 @@ export class AuthService {
     );
   }
 
-  changePassword(currentPassword: string, newPassword: string): Observable<void> {
-    return this.http.put<void>(`${this.baseUrl}/users/me/password`, { currentPassword, newPassword });
+  changePassword(currentPassword: string, newPassword: string, confirmPassword: string): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/users/me/password`, { currentPassword, newPassword, confirmPassword });
   }
 
   deleteAccount(): Observable<void> {

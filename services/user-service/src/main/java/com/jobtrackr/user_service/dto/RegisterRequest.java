@@ -1,11 +1,17 @@
 package com.jobtrackr.user_service.dto;
 
+import com.jobtrackr.user_service.validation.PasswordMatches;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
+@PasswordMatches(
+        field = "password",
+        confirmField = "confirmPassword",
+        message = "Password and confirm password do not match"
+)
 public class RegisterRequest {
 
     @NotBlank
@@ -15,6 +21,9 @@ public class RegisterRequest {
     @NotBlank
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
+
+    @NotBlank
+    private String confirmPassword;
 
     @NotBlank
     private String fullName;

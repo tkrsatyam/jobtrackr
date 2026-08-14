@@ -13,6 +13,8 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { MatIconModule } from '@angular/material/icon';
+import { passwordsMatchValidator } from '../../shared/validators/password-matches.validator';
+import { CrossFieldErrorMatcher } from '../../shared/matchers/cross-field-error.matcher';
 
 @Component({
   selector: 'app-settings',
@@ -44,9 +46,12 @@ export class SettingsComponent implements OnInit {
   showPasswordForm = signal(false);
   showCurrentPassword = signal(false);
   showNewPassword = signal(false);
+  showConfirmNewPassword = signal(false);
 
   profileSaving = signal(false);
   passwordSaving = signal(false);
+
+  passwordMismatchMatcher = new CrossFieldErrorMatcher('passwordMismatch');
 
   profileForm = this.fb.group({
     fullName: ['', [Validators.required, Validators.minLength(2)]],
@@ -55,8 +60,9 @@ export class SettingsComponent implements OnInit {
 
   passwordForm = this.fb.group({
     currentPassword: ['', Validators.required],
-    newPassword: ['', [Validators.required, Validators.minLength(8)]]
-  });
+    newPassword: ['', [Validators.required, Validators.minLength(8)]],
+    confirmNewPassword: ['', Validators.required]
+  }, { validators: passwordsMatchValidator('newPassword', 'confirmNewPassword') });
 
   ngOnInit(): void {
     if (!this.currentUser()) {
@@ -112,7 +118,7 @@ export class SettingsComponent implements OnInit {
     if (this.passwordForm.invalid) return;
     this.passwordSaving.set(true);
     const raw = this.passwordForm.getRawValue();
-    this.authService.changePassword(raw.currentPassword, raw.newPassword).subscribe({
+    this.authService.changePassword(raw.currentPassword, raw.newPassword, raw.confirmNewPassword).subscribe({
       next: () => {
         this.passwordSaving.set(false);
         this.showPasswordForm.set(false);
