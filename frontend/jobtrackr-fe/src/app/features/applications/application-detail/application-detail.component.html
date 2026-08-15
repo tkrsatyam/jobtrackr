@@ -4,75 +4,131 @@
     }
 
     @if (application(); as app) {
+        <!-- ── Header ── -->
         <div class="detail-header">
             <div>
                 <a routerLink="/applications" class="back-link">
-                    ← Applications
+                    ← Back to Applications
                 </a>
-                <h1>{{ app.companyName }}</h1>
+                <div class="header-title-row">
+                    <h1>{{ app.companyName }}</h1>
+                    <app-status-badge [status]="app.status" />
+                </div>
                 <p class="detail-role">{{ app.role }}</p>
             </div>
 
             <div class="detail-actions">
-                <button mat-stroked-button [routerLink]="['/applications', app.applicationId, 'edit']">
+                <button mat-flat-button color="primary"
+                        [routerLink]="['/applications', app.applicationId, 'edit']">
                     <mat-icon>edit</mat-icon> Edit
                 </button>
-                <button mat-stroked-button (click)="toggleArchive()">
-                    <mat-icon>{{ app.isArchived ? 'unarchive' : 'archive' }}</mat-icon>
-                    {{ app.isArchived ? 'Unarchive' : 'Archive' }}
+                <button mat-stroked-button [matMenuTriggerFor]="actionsMenu">
+                    Actions <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
                 </button>
-                <button mat-stroked-button color="warn" (click)="delete()">
-                    <mat-icon>delete</mat-icon> Delete
-                </button>
+                <mat-menu #actionsMenu="matMenu">
+                    <button mat-menu-item (click)="toggleArchive()">
+                        <mat-icon>{{ app.isArchived ? 'unarchive' : 'archive' }}</mat-icon>
+                        {{ app.isArchived ? 'Unarchive' : 'Archive' }}
+                    </button>
+                    <button mat-menu-item class="delete-item" (click)="delete()">
+                        <mat-icon color="warn">delete</mat-icon>
+                        Delete
+                    </button>
+                </mat-menu>
             </div>
         </div>
 
+        <!-- ── Archived banner (full-width, above grid) ── -->
+        @if (app.isArchived) {
+            <div class="archived-banner" role="status" aria-live="polite">
+                <mat-icon aria-hidden="true">archive</mat-icon>
+                This application is archived. Unarchive it to resume tracking.
+            </div>
+        }
+
+        <!-- ── Pipeline pill row ── -->
+        <div class="pipeline-strip" role="list" aria-label="Application pipeline progress">
+            @for (stage of pipelineStages; track stage; let i = $index, last = $last) {
+                <span class="pipeline-pill"
+                      role="listitem"
+                      [class.past]="pipelineReached(i) && !pipelineActive(i)"
+                      [class.active]="pipelineActive(i)"
+                      [attr.aria-current]="pipelineActive(i) ? 'step' : null">
+                    {{ statusLabels[stage] }}
+                </span>
+                @if (!last || isTerminalStatus()) {
+                    <span class="pill-sep" aria-hidden="true">›</span>
+                }
+            }
+            @if (isTerminalStatus()) {
+                <span [class]="'pipeline-pill terminal-pill outcome-' + app.status">
+                    {{ statusLabels[app.status] }}
+                </span>
+            }
+        </div>
+
+        <!-- ── Meta strip ── -->
+        <div class="meta-strip">
+            <div class="meta-item">
+                @if (app.appliedDate) {
+                    <span class="meta-value">{{ app.appliedDate | date:'mediumDate' }}</span>
+                } @else {
+                    <div class="meta-value-row">
+                        <span class="meta-value">—</span>
+                        <button mat-icon-button
+                                class="meta-info-btn"
+                                [matMenuTriggerFor]="appliedDateMenu"
+                                aria-label="Applied date info">
+                            <mat-icon>info_outline</mat-icon>
+                        </button>
+                    </div>
+                    <mat-menu #appliedDateMenu="matMenu">
+                        <div class="meta-menu-popover" (click)="$event.stopPropagation()">
+                            <p class="meta-menu-message">Applied date isn't set for this application.</p>
+                            <a class="meta-menu-link"
+                               [routerLink]="['/applications', app.applicationId, 'edit']">
+                                Add applied date →
+                            </a>
+                        </div>
+                    </mat-menu>
+                }
+                <span class="meta-label">Applied</span>
+            </div>
+
+            @if (daysSinceApplied() !== null) {
+                <div class="meta-item">
+                    <span class="meta-value">{{ daysSinceApplied() }} days</span>
+                    <span class="meta-label">{{ app.appliedDate ? 'Since applied' : 'Since added' }}</span>
+                </div>
+            }
+
+            <div class="meta-item">
+                <span class="meta-value">{{ sourceLabels[app.source] }}</span>
+                <span class="meta-label">Source</span>
+            </div>
+
+            @if (app.workMode) {
+                <div class="meta-item">
+                    <span class="meta-value">{{ workModeLabels[app.workMode] }}</span>
+                    <span class="meta-label">Work Mode</span>
+                </div>
+            }
+        </div>
+
+        <!-- ── Two-column grid ── -->
         <div class="detail-grid">
             <div class="detail-main">
-                @if (app.isArchived) {
-                    <div class="archived-banner">
-                        <mat-icon>archive</mat-icon>
-                        This application is archived. Unarchive it to resume tracking.
-                    </div>
-                }
-                <section class="detail-section">
-                    <h3>Details</h3>
+
+                <!-- Job Details -->
+                <section class="detail-section" aria-labelledby="job-details-heading">
+                    <h3 id="job-details-heading">Job Details</h3>
                     <div class="detail-fields">
-                        <div class="field-row">
-                            <span class="field-label">Status</span>
-                            <app-status-badge [status]="app.status" />
-                        </div>
-
-                        <div class="field-row">
-                            <span class="field-label">Priority</span>
-                            <app-priority-badge [priority]="app.priority" />
-                        </div>
-
-                        @if (app.workMode) {
-                            <div class="field-row">
-                                <span class="field-label">Work Mode</span>
-                                <span>{{ workModeLabels[app.workMode] }}</span>
-                            </div>
-                        }
-
                         @if (app.location) {
                             <div class="field-row">
                                 <span class="field-label">Location</span>
                                 <span>{{ app.location }}</span>
                             </div>
                         }
-
-                        @if (app.appliedDate) {
-                            <div class="field-row">
-                                <span class="field-label">Applied Date</span>
-                                <span>{{ app.appliedDate | date: 'mediumDate' }}</span>
-                            </div>
-                        }
-
-                        <div class="field-row">
-                            <span class="field-label">Source</span>
-                            <span>{{ sourceLabels[app.source] }}</span>
-                        </div>
 
                         @if (app.salaryMin || app.salaryMax) {
                             <div class="field-row">
@@ -94,63 +150,103 @@
                                 </a>
                             </div>
                         }
-
-
                     </div>
                 </section>
 
-                @if (app.notes) {
-                    <section class="detail-section">
-                        <h3>Notes</h3>
-                        <p class="notes-text">{{ app.notes }}</p>
-                    </section>
-                }
+                <!-- Application Info -->
+                <section class="detail-section" aria-labelledby="application-info-heading">
+                    <h3 id="application-info-heading">Application Info</h3>
+                    <div class="detail-fields">
+                        <div class="field-row">
+                            <span class="field-label">Priority</span>
+                            <app-priority-badge [priority]="app.priority" />
+                        </div>
 
-                <section class="detail-section">
-                    <h3>Tags</h3>
+                        <div class="field-row">
+                            <span class="field-label">Created</span>
+                            <span>{{ app.createdAt | date:'medium' }}</span>
+                        </div>
+
+                        <div class="field-row">
+                            <span class="field-label">Last Updated</span>
+                            <span>{{ app.updatedAt | date:'medium' }}</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Notes -->
+                <section class="detail-section" aria-labelledby="notes-heading">
+                    <h3 id="notes-heading">Notes</h3>
+                    @if (app.notes) {
+                        <p class="notes-text">{{ app.notes }}</p>
+                    } @else {
+                        <p class="notes-empty">
+                            No notes yet.
+                            <a [routerLink]="['/applications', app.applicationId, 'edit']">
+                                Add some →
+                            </a>
+                        </p>
+                    }
+                </section>
+
+                <!-- Tags -->
+                <section class="detail-section" aria-labelledby="tags-heading">
+                    <div class="section-header">
+                        <h3 id="tags-heading">Tags</h3>
+                        @if (!showTagInput()) {
+                            <button mat-icon-button class="section-action-btn"
+                                    (click)="showTagInput.set(true)"
+                                    matTooltip="Add tag">
+                                <mat-icon>add</mat-icon>
+                            </button>
+                        }
+                    </div>
+
                     <div class="tag-list">
                         @for (tag of app.tags; track tag) {
-                            <app-tag-chip [tag]="tag" [removable]="true" (removed)="onTagRemoved($event)"/>
+                            <app-tag-chip [tag]="tag" [removable]="true"
+                                         (removed)="onTagRemoved($event)" />
                         }
 
                         @if (showTagInput()) {
                             <div class="inline-tag-input">
-                                <input 
+                                <input
                                     class="tag-text-input"
                                     [(ngModel)]="newTagValue"
                                     (keydown)="onTagInputKeydown($event)"
                                     placeholder="tag name..."
                                     autofocus />
-                                
-                                <button mat-icon-button (click)="onTagAdded()" matTooltip="Add tag">
+
+                                <button mat-icon-button (click)="onTagAdded()"
+                                        matTooltip="Add tag">
                                     <mat-icon>check</mat-icon>
                                 </button>
 
-                                <button mat-icon-button (click)="showTagInput.set(false)" matTooltip="Cancel">
+                                <button mat-icon-button (click)="showTagInput.set(false)"
+                                        matTooltip="Cancel">
                                     <mat-icon>close</mat-icon>
                                 </button>
                             </div>
-                        } @else {
-                            <button mat-stroked-button class="add-tag-btn" (click)="showTagInput.set(true)">
-                                <mat-icon>add</mat-icon> Add Tag
-                            </button>
                         }
                     </div>
                 </section>
             </div>
 
+            <!-- Sidebar -->
             <div class="detail-sidebar">
-                <section class="detail-section">
-                    <h3>Update Status</h3>
-                    <app-status-change-panel 
-                        [currentStatus]="app.status"
-                        (statusChange)="onStatusChange($event)"/>
+                <section class="detail-section" aria-labelledby="update-status-heading">
+                    <h3 id="update-status-heading">Update Status</h3>
+                    <div class="status-panel-card">
+                        <app-status-change-panel
+                            [currentStatus]="app.status"
+                            (statusChange)="onStatusChange($event)" />
+                    </div>
                 </section>
 
                 <mat-divider />
 
-                <section class="detail-section">
-                    <h3>Status History</h3>
+                <section class="detail-section" aria-labelledby="status-history-heading">
+                    <h3 id="status-history-heading">Status History</h3>
                     <app-status-timeline [entries]="app.statusHistory" />
                 </section>
             </div>
