@@ -10,6 +10,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpHeaders;
@@ -84,7 +85,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
 
         String escapedDetail = detail.replace("\\", "\\\\").replace("\"", "\\\"");
-        String body = "{\"type\":\"about:blank\",\"title\":\"Unauthorized\",\"status\":401,\"detail\":\"" + escapedDetail + "\"}";
+        String correlationId = MDC.get(CorrelationIdFilter.MDC_KEY);
+        String correlationIdField = correlationId != null
+                ? ",\"correlationId\":\"" + correlationId + "\""
+                : "";
+        String body = "{\"type\":\"about:blank\",\"title\":\"Unauthorized\",\"status\":401,\"detail\":\"" + escapedDetail + "\"" + correlationIdField + "}";
 
         response.getWriter().write(body);
     }

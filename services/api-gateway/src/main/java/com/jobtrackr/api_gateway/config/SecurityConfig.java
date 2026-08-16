@@ -1,5 +1,6 @@
 package com.jobtrackr.api_gateway.config;
 
+import com.jobtrackr.api_gateway.filter.CorrelationIdFilter;
 import com.jobtrackr.api_gateway.filter.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -18,6 +19,7 @@ import org.springframework.web.filter.CorsFilter;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CorrelationIdFilter correlationIdFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity, CorsFilter corsFilter) throws Exception {
@@ -28,7 +30,8 @@ public class SecurityConfig {
                         .anyRequest().permitAll()
                 )
                 .addFilterBefore(corsFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(correlationIdFilter, JwtAuthenticationFilter.class);
         return httpSecurity.build();
     }
 }
