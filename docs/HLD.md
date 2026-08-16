@@ -308,7 +308,7 @@ Reminder Service scheduler (every 60s)
 
 Every service — current and future — must implement the following before it's considered done, regardless of which epic introduces it:
 
-- **Correlation ID propagation**: read the inbound `X-Correlation-Id` header (set by API Gateway on every request), add it to MDC (`MDC.put("correlationId", value)`) via a servlet filter, include `%X{correlationId:-}` in `logging.pattern.console`, and add it to error responses as a `ProblemDetail` extension property (`problemDetail.setProperty("correlationId", value)`). Established in JD-37 (Gateway, User Service, Application Service); each later service epic (Reminder, Document, Contact, Notification, Analytics) has its own tracking story for this.
+- **Correlation ID propagation**: read the inbound `X-Correlation-Id` header (set by API Gateway on every request), add it to MDC (`MDC.put("correlationId", value)`) via a servlet filter, set `logging.pattern.correlation=[%X{correlationId:-}] ` (Spring Boot's built-in correlation slot in its default console pattern — don't hand-maintain the full `logging.pattern.console` string, it's easy to get subtly wrong), and add it to error responses as a `ProblemDetail` extension property (`problemDetail.setProperty("correlationId", value)`). Established in JD-37 (Gateway, User Service, Application Service); each later service epic (Reminder, Document, Contact, Notification, Analytics) has its own tracking story for this.
 - **Error responses**: `ProblemDetail` (RFC 9457), served as `application/problem+json`, per JD-109 — see `API_CONTRACTS.md`.
 
 ---
