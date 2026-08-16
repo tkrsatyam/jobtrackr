@@ -119,5 +119,5 @@ export interface BulkStatusRequest {
 
 export interface BulkTagRequest {
     ids: string[];
-    tag: string;
+    tags: string[];
 }

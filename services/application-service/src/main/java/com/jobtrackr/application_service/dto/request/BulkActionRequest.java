@@ -23,5 +23,5 @@ public class BulkActionRequest {
     private ApplicationStatus status;
 
     // for bulk tag add/remove
-    private String tag;
+    private List<String> tags;
 }

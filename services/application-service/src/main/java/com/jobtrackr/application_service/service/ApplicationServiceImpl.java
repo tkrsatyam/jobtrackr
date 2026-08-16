@@ -318,28 +318,35 @@ public class ApplicationServiceImpl implements ApplicationService{
     public void bulkAddTag(BulkActionRequest request, HttpServletRequest httpRequest) {
 
         UUID userId = userContextHolder.getUserId(httpRequest);
-        if (request.getTag() == null || request.getTag().isBlank()) {
-            throw new IllegalArgumentException("Tag is required for bulk tag add");
+        if (request.getTags() == null || request.getTags().isEmpty()) {
+            throw new IllegalArgumentException("At least one tag is required for bulk tag add");
         }
-        String normalizedTag = request.getTag().trim().toLowerCase();
+
+        List<String> normalizedTags = request.getTags().stream()
+                .map(t -> t.trim().toLowerCase())
+                .filter(t -> !t.isBlank())
+                .distinct()
+                .toList();
 
         List<Application> applications = applicationRepository.findAllById(request.getIds())
                 .stream()
                 .filter(application -> application.getUserId().equals(userId) && !application.getIsDeleted())
                 .toList();
 
-        applications.forEach(application -> {
-            boolean alreadyExists = application.getTags().stream()
-                    .anyMatch(t -> t.getTag().equals(normalizedTag));
+        applications.forEach(application ->
+                normalizedTags.forEach(normalizedTag -> {
+                    boolean alreadyExists = application.getTags().stream()
+                            .anyMatch(t -> t.getTag().equals(normalizedTag));
 
-            if (!alreadyExists) {
-                ApplicationTag newTag = ApplicationTag.builder()
-                        .application(application)
-                        .tag(normalizedTag)
-                        .build();
-                application.getTags().add(newTag);
-            }
-        });
+                    if (!alreadyExists) {
+                        ApplicationTag newTag = ApplicationTag.builder()
+                                .application(application)
+                                .tag(normalizedTag)
+                                .build();
+                        application.getTags().add(newTag);
+                    }
+                })
+        );
 
         applicationRepository.saveAll(applications);
     }
@@ -348,10 +355,15 @@ public class ApplicationServiceImpl implements ApplicationService{
     public void bulkRemoveTag(BulkActionRequest request, HttpServletRequest httpRequest) {
 
         UUID userId = userContextHolder.getUserId(httpRequest);
-        if (request.getTag() == null || request.getTag().isBlank()) {
-            throw new IllegalArgumentException("Tag is required for bulk tag remove");
+        if (request.getTags() == null || request.getTags().isEmpty()) {
+            throw new IllegalArgumentException("At least one tag is required for bulk tag remove");
         }
-        String normalizedTag = request.getTag().trim().toLowerCase();
+
+        List<String> normalizedTags = request.getTags().stream()
+                .map(t -> t.trim().toLowerCase())
+                .filter(t -> !t.isBlank())
+                .distinct()
+                .toList();
 
         List<Application> applications = applicationRepository.findAllById(request.getIds())
                 .stream()
@@ -359,7 +371,7 @@ public class ApplicationServiceImpl implements ApplicationService{
                 .toList();
 
         applications.forEach(application ->
-                application.getTags().removeIf(t -> t.getTag().equals(normalizedTag)));
+                application.getTags().removeIf(t -> normalizedTags.contains(t.getTag())));
 
         applicationRepository.saveAll(applications);
     }

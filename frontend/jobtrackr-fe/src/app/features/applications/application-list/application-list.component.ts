@@ -369,10 +369,10 @@ export class ApplicationListComponent implements OnInit {
       const ref = this.dialog.open(BulkTagDialogComponent, {
         data: { selectedCount: ids.length }
       });
-      ref.afterClosed().subscribe((tag: string | undefined) => {
-        if (!tag) return;
-        this.appService.bulkAddTag(ids, tag).subscribe(() => {
-          this.snackBar.open(`Tag added to ${ids.length} applications`, 'OK', { duration: 3000 });
+      ref.afterClosed().subscribe((tags: string[] | undefined) => {
+        if (!tags || tags.length === 0) return;
+        this.appService.bulkAddTag(ids, tags).subscribe(() => {
+          this.snackBar.open(`${tags.length} tag(s) added to ${ids.length} applications`, 'OK', { duration: 3000 });
           this.load();
         });
       });

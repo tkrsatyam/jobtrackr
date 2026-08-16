@@ -72,12 +72,12 @@ export class ApplicationService {
     return this.http.post<void>(`${this.baseUrl}/bulk/status`, { ids, status } as BulkStatusRequest);
   }
 
-  bulkAddTag(ids: string[], tag: string): Observable<void> {
-    return this.http.post<void>(`${this.baseUrl}/bulk/tags`, { ids, tag } as BulkTagRequest);
+  bulkAddTag(ids: string[], tags: string[]): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/bulk/tags`, { ids, tags } as BulkTagRequest);
   }
 
-  bulkRemoveTag(ids: string[], tag: string): Observable<void> {
-    return this.http.post<void>(`${this.baseUrl}/bulk/tags/remove`, { ids, tag } as BulkTagRequest);
+  bulkRemoveTag(ids: string[], tags: string[]): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/bulk/tags/remove`, { ids, tags } as BulkTagRequest);
   }
 
   search(keyword: string, size = 5): Observable<ApplicationSearchResult[]> {
