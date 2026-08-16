@@ -41,6 +41,10 @@ public interface ApplicationService {
     void bulkArchive(BulkActionRequest request, HttpServletRequest httpRequest);
 
     void bulkChangeStatus(BulkActionRequest request, HttpServletRequest httpRequest);
+
+    void bulkAddTag(BulkActionRequest request, HttpServletRequest httpRequest);
+
+    void bulkRemoveTag(BulkActionRequest request, HttpServletRequest httpRequest);
     
     List<ApplicationSearchResult> searchApplications(String keyword, int size, HttpServletRequest httpRequest);
 }

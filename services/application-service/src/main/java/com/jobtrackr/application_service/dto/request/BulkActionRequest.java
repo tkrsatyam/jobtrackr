@@ -21,4 +21,7 @@ public class BulkActionRequest {
 
     // for bulk status change
     private ApplicationStatus status;
+
+    // for bulk tag add/remove
+    private List<String> tags;
 }

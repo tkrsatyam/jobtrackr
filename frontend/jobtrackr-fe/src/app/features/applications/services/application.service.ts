@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../../environments/environment';
-import { ApplicationFilter, ApplicationResponse, ApplicationSearchResult, ApplicationStatus, BulkIdsRequest, BulkStatusRequest, ChangeStatusRequest, CreateApplicationRequest, Page, StatusHistoryEntry, UpdateApplicationRequest } from '../../../shared/models/application.model';
+import { ApplicationFilter, ApplicationResponse, ApplicationSearchResult, ApplicationStatus, BulkIdsRequest, BulkStatusRequest, BulkTagRequest, ChangeStatusRequest, CreateApplicationRequest, Page, StatusHistoryEntry, UpdateApplicationRequest } from '../../../shared/models/application.model';
 import { Observable } from 'rxjs';
 
 @Injectable({
@@ -70,6 +70,14 @@ export class ApplicationService {
 
   bulkChangeStatus(ids: string[], status: ApplicationStatus): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/bulk/status`, { ids, status } as BulkStatusRequest);
+  }
+
+  bulkAddTag(ids: string[], tags: string[]): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/bulk/tags`, { ids, tags } as BulkTagRequest);
+  }
+
+  bulkRemoveTag(ids: string[], tags: string[]): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/bulk/tags/remove`, { ids, tags } as BulkTagRequest);
   }
 
   search(keyword: string, size = 5): Observable<ApplicationSearchResult[]> {

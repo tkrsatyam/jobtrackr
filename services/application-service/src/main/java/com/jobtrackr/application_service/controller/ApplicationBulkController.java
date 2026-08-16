@@ -35,4 +35,16 @@ public class ApplicationBulkController {
         applicationService.bulkChangeStatus(request, httpRequest);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/tags")
+    public ResponseEntity<Void> bulkAddTag(@Valid @RequestBody BulkActionRequest request, HttpServletRequest httpRequest) {
+        applicationService.bulkAddTag(request, httpRequest);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/tags/remove")
+    public ResponseEntity<Void> bulkRemoveTag(@Valid @RequestBody BulkActionRequest request, HttpServletRequest httpRequest) {
+        applicationService.bulkRemoveTag(request, httpRequest);
+        return ResponseEntity.noContent().build();
+    }
 }
