@@ -1,10 +1,7 @@
 package com.jobtrackr.application_service.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
@@ -12,7 +9,9 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "application_documents")
-@Data
+@Getter
+@Setter
+@ToString(exclude = {"application"})
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -31,4 +30,16 @@ public class ApplicationDocument {
 
     @Builder.Default
     private LocalDateTime linkedAt = LocalDateTime.now();
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ApplicationDocument other)) return false;
+        return id != null && id.equals(other.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

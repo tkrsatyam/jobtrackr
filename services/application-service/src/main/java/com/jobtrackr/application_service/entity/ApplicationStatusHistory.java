@@ -2,10 +2,7 @@ package com.jobtrackr.application_service.entity;
 
 import com.jobtrackr.application_service.entity.enums.ApplicationStatus;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
@@ -15,7 +12,9 @@ import java.util.UUID;
 @Table(name = "application_status_history", indexes = {
         @Index(name = "idx_status_history_app", columnList = "application_id")
 })
-@Data
+@Getter
+@Setter
+@ToString(exclude = {"application"})
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -38,4 +37,16 @@ public class ApplicationStatusHistory {
 
     @Builder.Default
     private LocalDateTime changedAt = LocalDateTime.now();
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ApplicationStatusHistory other)) return false;
+        return historyId != null && historyId.equals(other.historyId);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

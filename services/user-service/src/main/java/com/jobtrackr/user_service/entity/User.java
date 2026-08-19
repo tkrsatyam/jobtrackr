@@ -1,10 +1,7 @@
 package com.jobtrackr.user_service.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
@@ -16,7 +13,9 @@ import java.util.UUID;
 @Table(name = "users", indexes = {
         @Index(name = "idx_users_email", columnList = "email")
 })
-@Data
+@Getter
+@Setter
+@ToString
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -54,4 +53,16 @@ public class User {
 
     public enum AuthProvider { LOCAL, GOOGLE }
     public enum Role { USER, ADMIN }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof User other)) return false;
+        return id != null && id.equals(other.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

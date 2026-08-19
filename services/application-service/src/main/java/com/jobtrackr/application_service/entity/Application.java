@@ -5,10 +5,7 @@ import com.jobtrackr.application_service.entity.enums.ApplicationStatus;
 import com.jobtrackr.application_service.entity.enums.PriorityLevel;
 import com.jobtrackr.application_service.entity.enums.WorkMode;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -26,7 +23,9 @@ import java.util.UUID;
         @Index(name = "idx_applications_status", columnList = "status"),
         @Index(name = "idx_applications_user_status", columnList = "user_id, status")
 })
-@Data
+@Getter
+@Setter
+@ToString(exclude = {"statusHistory", "tags", "documents"})
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -103,4 +102,16 @@ public class Application {
     @Builder.Default
     @OneToMany(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ApplicationDocument> documents = new ArrayList<>();
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Application other)) return false;
+        return applicationId != null && applicationId.equals(other.applicationId);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }
