@@ -357,7 +357,18 @@ Soft delete multiple applications.
 ---
 
 ### POST `/api/applications/bulk/archive` 🔒
-Archive multiple applications (sets `isArchived = true`).
+Archive multiple applications (sets `isArchived = true`). Applications already archived are silently skipped.
+
+**Request:**
+```json
+{ "ids": ["uuid1", "uuid2", "uuid3"] }
+```
+**Response `204`:** No content.
+
+---
+
+### POST `/api/applications/bulk/unarchive` 🔒
+Unarchive multiple applications (sets `isArchived = false`). Applications not currently archived are silently skipped.
 
 **Request:**
 ```json

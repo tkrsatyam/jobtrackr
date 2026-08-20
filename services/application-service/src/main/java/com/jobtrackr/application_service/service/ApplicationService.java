@@ -40,6 +40,8 @@ public interface ApplicationService {
 
     void bulkArchive(BulkActionRequest request, HttpServletRequest httpRequest);
 
+    void bulkUnarchive(BulkActionRequest request, HttpServletRequest httpRequest);
+
     void bulkChangeStatus(BulkActionRequest request, HttpServletRequest httpRequest);
 
     void bulkAddTag(BulkActionRequest request, HttpServletRequest httpRequest);

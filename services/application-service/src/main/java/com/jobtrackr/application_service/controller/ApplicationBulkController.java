@@ -30,6 +30,12 @@ public class ApplicationBulkController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/unarchive")
+    public ResponseEntity<Void> bulkUnarchive(@Valid @RequestBody BulkActionRequest request, HttpServletRequest httpRequest) {
+        applicationService.bulkUnarchive(request, httpRequest);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/status")
     public ResponseEntity<Void> bulkChangeStatus(@Valid @RequestBody BulkActionRequest request, HttpServletRequest httpRequest) {
         applicationService.bulkChangeStatus(request, httpRequest);

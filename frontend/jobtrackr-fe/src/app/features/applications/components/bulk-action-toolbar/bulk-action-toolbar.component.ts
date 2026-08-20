@@ -7,7 +7,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { ACTIVE_STATUSES, STATUS_LABELS } from '../../../../shared/constants/enum-labels';
 
-export type BulkAction = { type: 'delete' } | { type: 'archive' } | { type: 'status'; status: ApplicationStatus } | { type: 'tag' };
+export type BulkAction = { type: 'delete' } | { type: 'archive' } | { type: 'unarchive' } | { type: 'status'; status: ApplicationStatus } | { type: 'tag' };
 
 @Component({
   selector: 'app-bulk-action-toolbar',
@@ -23,6 +23,7 @@ export type BulkAction = { type: 'delete' } | { type: 'archive' } | { type: 'sta
 })
 export class BulkActionToolbarComponent {
   selectedCount = input.required<number>();
+  allArchived = input.required<boolean>();
   action = output<BulkAction>();
 
   showStatusPicker = signal(false);
@@ -33,6 +34,10 @@ export class BulkActionToolbarComponent {
 
   onArchive(): void {
     this.action.emit({ type: 'archive' });
+  }
+
+  onUnarchive(): void {
+    this.action.emit({ type: 'unarchive' });
   }
 
   onDelete(): void {

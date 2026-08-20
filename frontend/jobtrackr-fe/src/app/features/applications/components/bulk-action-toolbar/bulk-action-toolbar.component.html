@@ -11,9 +11,15 @@
                 <mat-icon>label</mat-icon> Add Tag
             </button>
 
-            <button mat-stroked-button (click)="onArchive()">
-                <mat-icon>archive</mat-icon> Archive
-            </button>
+            @if (allArchived()) {
+                <button mat-stroked-button (click)="onUnarchive()">
+                    <mat-icon>unarchive</mat-icon> Unarchive
+                </button>
+            } @else {
+                <button mat-stroked-button (click)="onArchive()">
+                    <mat-icon>archive</mat-icon> Archive
+                </button>
+            }
 
             <button mat-stroked-button (click)="onDelete()">
                 <mat-icon>delete</mat-icon> Delete
