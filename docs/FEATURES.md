@@ -157,7 +157,7 @@
 ### Shell & Navigation
 - [x] Auth guard — redirects unauthenticated users to `/login`
 - [x] Guest guard — redirects authenticated users away from `/`, `/login`, and `/register` to `/dashboard` (route-level, no flash of content)
-- [x] Auth interceptor — attaches Bearer token to every request, handles 401 with automatic token refresh and retry
+- [x] Auth interceptor — attaches Bearer token to every request, handles 401 with automatic token refresh and retry (login requests excluded)
 - [x] Token storage — `localStorage` with signals for reactive auth state
 - [x] Shell layout with persistent sidebar and topbar
 - [x] Lazy-loaded routes for all feature modules
