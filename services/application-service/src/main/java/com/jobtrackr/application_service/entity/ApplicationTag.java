@@ -1,10 +1,7 @@
 package com.jobtrackr.application_service.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.util.UUID;
@@ -14,7 +11,9 @@ import java.util.UUID;
         name = "application_tags",
         uniqueConstraints = @UniqueConstraint(columnNames = {"application_id", "tag"})
 )
-@Data
+@Getter
+@Setter
+@ToString(exclude = {"application"})
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -30,4 +29,16 @@ public class ApplicationTag {
 
     @Column(nullable = false, length = 50)
     private String tag;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ApplicationTag other)) return false;
+        return id != null && id.equals(other.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }
