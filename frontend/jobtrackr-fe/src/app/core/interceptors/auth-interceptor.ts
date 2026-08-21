@@ -26,6 +26,8 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
     catchError((error: HttpErrorResponse) => {
       if (error.status !== 401) return throwError(() => error);
 
+      if (req.url.includes('/api/auth/login')) return throwError(() => error);
+
       if (isRefreshing) {
         return refreshToken$.pipe(
           filter( token => token !== null),
@@ -39,6 +41,7 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
 
       const refreshToken = tokenStorage.getRefreshToken();
       if(!refreshToken) {
+        isRefreshing = false;
         tokenStorage.clearTokens();
         router.navigate(['/login']);
         return throwError(() => error);

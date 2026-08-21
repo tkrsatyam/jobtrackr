@@ -33,7 +33,7 @@ src/app/
 
 ## Key Notes
 
-- Auth interceptor silently refreshes expired tokens — no manual token handling needed in services
+- Auth interceptor silently refreshes expired tokens — no manual token handling needed in services (login 401s are never retried)
 - All identity headers (`X-User-Id` etc.) are injected by the Gateway — never send userId from the frontend
 - Status transitions are enforced client-side via `status-transitions.ts` before hitting the API
 - Tags are stored lowercase by the backend; displayed in title case via `TitleCaseTagPipe`

@@ -36,7 +36,7 @@ JobTrackr is a distributed, event-driven microservices application. Each service
 - Angular Material for UI components
 - Angular CDK for drag-and-drop (kanban board)
 - Kanban board with JIRA-style column highlighting on drag; terminal statuses exposed as compact drop zones rather than full columns
-- `authInterceptor` attaches JWT to every request; handles 401 by silently refreshing the token and retrying the original request
+- `authInterceptor` attaches JWT to every request; handles 401 by silently refreshing the token and retrying the original request (except login, which always surfaces the error directly)
 - `authGuard` protects all authenticated routes, redirects to `/login`
 - `TokenStorageService` stores tokens in `localStorage`, exposes reactive signals
 - Routes: `/login`, `/register`, `/dashboard`, `/applications`, `/applications/board`, `/applications/new`, `/applications/:id`, `/applications/:id/edit`, `/settings`
