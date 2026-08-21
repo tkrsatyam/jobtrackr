@@ -34,6 +34,7 @@
     @if (selectedCount() > 0) {
         <app-bulk-action-toolbar 
         [selectedCount]="selectedCount()"
+        [allArchived]="allArchived()"
         (action)="onBulkAction($event)" />
     }
 

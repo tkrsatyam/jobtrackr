@@ -268,10 +268,27 @@ public class ApplicationServiceImpl implements ApplicationService{
         UUID userId = userContextHolder.getUserId(httpRequest);
         List<Application> applications = applicationRepository.findAllById(request.getIds())
                 .stream()
-                .filter(application -> application.getUserId().equals(userId) && !application.getIsDeleted())
+                .filter(application -> application.getUserId().equals(userId)
+                        && !application.getIsDeleted()
+                        && !application.getIsArchived())
                 .toList();
 
         applications.forEach(application -> application.setIsArchived(true));
+        applicationRepository.saveAll(applications);
+    }
+
+    @Override
+    public void bulkUnarchive(BulkActionRequest request, HttpServletRequest httpRequest) {
+
+        UUID userId = userContextHolder.getUserId(httpRequest);
+        List<Application> applications = applicationRepository.findAllById(request.getIds())
+                .stream()
+                .filter(application -> application.getUserId().equals(userId)
+                        && !application.getIsDeleted()
+                        && application.getIsArchived())
+                .toList();
+
+        applications.forEach(application -> application.setIsArchived(false));
         applicationRepository.saveAll(applications);
     }
 

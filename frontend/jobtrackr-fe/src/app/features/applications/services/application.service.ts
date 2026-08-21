@@ -68,6 +68,10 @@ export class ApplicationService {
     return this.http.post<void>(`${this.baseUrl}/bulk/archive`, { ids } as BulkIdsRequest);
   }
 
+  bulkUnarchive(ids: string[]): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/bulk/unarchive`, { ids } as BulkIdsRequest);
+  }
+
   bulkChangeStatus(ids: string[], status: ApplicationStatus): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/bulk/status`, { ids, status } as BulkStatusRequest);
   }

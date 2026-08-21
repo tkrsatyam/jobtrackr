@@ -141,6 +141,15 @@ export class ApplicationListComponent implements OnInit {
   selectedIds = signal<Set<string>>(new Set());
   selectedCount = computed(() => this.selectedIds().size);
 
+  selectedApplications = computed(() =>
+    this.applications().filter(app => this.selectedIds().has(app.applicationId))
+  );
+
+  allArchived = computed(() =>
+    this.selectedApplications().length > 0 &&
+    this.selectedApplications().every(a => a.isArchived === true)
+  );
+
   activeFilterChips = computed(() => {
     const chips: { key: string; label: string; displayValue: string }[] = [];
     const values = this.filterValues();
@@ -351,10 +360,37 @@ export class ApplicationListComponent implements OnInit {
       });
     }
 
-    if (action.type == 'archive') {
-      this.appService.bulkArchive(ids).subscribe(() => {
-        this.snackBar.open(`${ids.length} applications archived`, 'OK', { duration: 3000 });
-        this.load();
+    if (action.type === 'archive') {
+      const ref = this.dialog.open(ConfirmDialogComponent, {
+        data: {
+          title: 'Archive Applications',
+          message: `Archive ${ids.length} application(s)? They will be moved out of your active list.`,
+          confirmLabel: 'Archive'
+        }
+      });
+      ref.afterClosed().subscribe(confirmed => {
+        if (!confirmed) return;
+        this.appService.bulkArchive(ids).subscribe(() => {
+          this.snackBar.open(`${ids.length} applications archived`, 'OK', { duration: 3000 });
+          this.load();
+        });
+      });
+    }
+
+    if (action.type === 'unarchive') {
+      const ref = this.dialog.open(ConfirmDialogComponent, {
+        data: {
+          title: 'Unarchive Applications',
+          message: `Unarchive ${ids.length} application(s)? They will return to your active list.`,
+          confirmLabel: 'Unarchive'
+        }
+      });
+      ref.afterClosed().subscribe(confirmed => {
+        if (!confirmed) return;
+        this.appService.bulkUnarchive(ids).subscribe(() => {
+          this.snackBar.open(`${ids.length} applications unarchived`, 'OK', { duration: 3000 });
+          this.load();
+        });
       });
     }
 
