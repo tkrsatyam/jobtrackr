@@ -32,3 +32,8 @@
 # OS
 .DS_Store
 Thumbs.db
+
+# Agent Rules & Customizations (Local only)
+GEMINI.md
+AGENTS.md
+.agents/

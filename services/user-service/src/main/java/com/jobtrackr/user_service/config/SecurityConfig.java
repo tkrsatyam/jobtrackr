@@ -9,7 +9,9 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-//import org.springframework.security.oauth2.client.OAuth2AuthorizationSuccessHandler;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -17,19 +19,42 @@ import org.springframework.security.web.SecurityFilterChain;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-//    private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    private final HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http,
+                                          ClientRegistrationRepository clientRegistrationRepository) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .anyRequest().permitAll()
+                )
+                .oauth2Login(oauth -> oauth
+                        .authorizationEndpoint(authEndpoint -> authEndpoint
+                                .baseUri("/api/auth/oauth2/authorize")
+                                .authorizationRequestRepository(cookieAuthorizationRequestRepository)
+                                .authorizationRequestResolver(authorizationRequestResolver(clientRegistrationRepository))
+                        )
+                        .redirectionEndpoint(redirectionEndpoint -> redirectionEndpoint
+                                .baseUri("/api/auth/oauth2/code/*")
+                        )
+                        .successHandler(oAuth2SuccessHandler)
                 );
-//                .oauth2Login(oAuth -> oAuth
-//                        .successHandler(oAuth2SuccessHandler)
-//                );
         return http.build();
+    }
+
+    private OAuth2AuthorizationRequestResolver authorizationRequestResolver(
+            ClientRegistrationRepository clientRegistrationRepository) {
+        DefaultOAuth2AuthorizationRequestResolver resolver =
+                new DefaultOAuth2AuthorizationRequestResolver(clientRegistrationRepository, "/api/auth/oauth2/authorize");
+        resolver.setAuthorizationRequestCustomizer(customizer ->
+                customizer.additionalParameters(params -> {
+                    params.put("access_type", "offline");
+                    params.put("prompt", "consent");
+                })
+        );
+        return resolver;
     }
 
     @Bean
