@@ -1,11 +1,11 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../services/auth.service';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { LoginRequest } from '../../../shared/models/auth.model';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatAnchor, MatButtonModule } from "@angular/material/button";
+import { MatButtonModule } from "@angular/material/button";
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
@@ -25,10 +25,11 @@ import { MatIconModule } from '@angular/material/icon';
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   private fb = inject(NonNullableFormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   showPassword = signal(false);
   loading = signal(false);
@@ -38,6 +39,13 @@ export class LoginComponent {
     email: ['', [Validators.required, Validators.email]],
     password: ['', Validators.required]
   });
+
+  ngOnInit(): void {
+    const errorParam = this.route.snapshot.queryParamMap.get('error');
+    if (errorParam) {
+      this.error.set(errorParam);
+    }
+  }
 
   submit(): void {
     if (this.form.invalid) return;
@@ -56,5 +64,9 @@ export class LoginComponent {
         this.error.set(err.error?.error ?? 'Login failed. Check your credentials.');
       }
     });
+  }
+
+  loginWithGoogle(): void {
+    window.location.href = this.authService.getGoogleAuthUrl();
   }
 }

@@ -54,3 +54,35 @@ mat-card-content {
     margin-top: var(--spacing-md);
     font-size: 0.9rem;
 }
+
+.oauth-divider {
+    display: flex;
+    align-items: center;
+    margin: var(--spacing-sm) 0 var(--spacing-md);
+
+    .divider-line {
+        flex: 1;
+        height: 1px;
+        background-color: var(--mat-sys-outline-variant);
+    }
+
+    .divider-text {
+        padding: 0 var(--spacing-sm);
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--mat-sys-on-surface-variant, #666);
+    }
+}
+
+.google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    font-weight: 500;
+
+    .google-icon {
+        vertical-align: middle;
+        margin-right: var(--spacing-xs);
+    }
+}
