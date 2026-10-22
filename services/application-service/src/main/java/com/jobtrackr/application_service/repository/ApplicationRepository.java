@@ -68,6 +68,25 @@ public interface ApplicationRepository extends JpaRepository<Application, UUID>,
     );
 
     @Query("""
+            SELECT a FROM Application a
+            WHERE a.userId = :userId
+              AND a.isDeleted = false
+              AND a.requiresReview = false
+              AND a.status NOT IN (com.jobtrackr.application_service.entity.enums.ApplicationStatus.ACCEPTED,
+                                   com.jobtrackr.application_service.entity.enums.ApplicationStatus.REJECTED,
+                                   com.jobtrackr.application_service.entity.enums.ApplicationStatus.WITHDRAWN,
+                                   com.jobtrackr.application_service.entity.enums.ApplicationStatus.GHOSTED)
+              AND lower(trim(a.companyName)) = lower(trim(:companyName))
+              AND a.appliedDate >= :sinceDate
+            ORDER BY a.appliedDate DESC
+            """)
+    List<Application> findActiveByCompany(
+            @Param("userId") UUID userId,
+            @Param("companyName") String companyName,
+            @Param("sinceDate") LocalDate sinceDate
+    );
+
+    @Query("""
             SELECT new com.jobtrackr.application_service.dto.response.ApplicationSearchResult(
                 a.applicationId, a.companyName, a.role, a.status)
             FROM Application a

@@ -195,4 +195,82 @@ class ApplicationIngestionServiceTest {
         assertThat(saved.getSource()).isEqualTo(ApplicationSource.EMAIL);
         assertThat(saved.getEmailMessageId()).isEqualTo("msg-789");
     }
+
+    @Test
+    @DisplayName("Should match single active application by company when role is generic Applicant Position")
+    void testSingleActiveCompanyFallbackForGenericRole() {
+        when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-stripe-invite")).thenReturn(false);
+        when(applicationRepository.findPotentialDuplicates(eq(userId), eq("Stripe"), eq("Applicant Position"), any()))
+                .thenReturn(Collections.emptyList());
+
+        Application activeApp = Application.builder()
+                .applicationId(UUID.randomUUID())
+                .userId(userId)
+                .companyName("Stripe")
+                .role("Backend Engineer")
+                .status(ApplicationStatus.APPLIED)
+                .appliedDate(LocalDate.now().minusDays(20))
+                .requiresReview(false)
+                .build();
+
+        when(applicationRepository.findActiveByCompany(eq(userId), eq("Stripe"), any()))
+                .thenReturn(List.of(activeApp));
+
+        ApplicationDiscoveredEvent event = new ApplicationDiscoveredEvent(
+                UUID.randomUUID(), userId, "Stripe", "Applicant Position", "INTERVIEW",
+                null, null, null, null, "Please schedule interview", 0.90,
+                "msg-stripe-invite", "Update regarding your application at Stripe", "jobs@stripe.com", Instant.now()
+        );
+
+        ingestionService.processDiscoveredApplication(event);
+
+        verify(applicationRepository).save(activeApp);
+        assertThat(activeApp.getProposedStatus()).isEqualTo(ApplicationStatus.INTERVIEW);
+        assertThat(activeApp.getStatusProposalReason()).contains("Please schedule interview");
+    }
+
+    @Test
+    @DisplayName("Should not auto-match when multiple active applications exist for company with generic role")
+    void testMultipleActiveCompanyFallbackDoesNotAutoMatch() {
+        when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-multi-stripe")).thenReturn(false);
+        when(applicationRepository.findPotentialDuplicates(eq(userId), eq("Stripe"), eq("Applicant Position"), any()))
+                .thenReturn(Collections.emptyList());
+
+        Application app1 = Application.builder()
+                .applicationId(UUID.randomUUID())
+                .userId(userId)
+                .companyName("Stripe")
+                .role("Backend Engineer")
+                .status(ApplicationStatus.APPLIED)
+                .appliedDate(LocalDate.now().minusDays(10))
+                .requiresReview(false)
+                .build();
+
+        Application app2 = Application.builder()
+                .applicationId(UUID.randomUUID())
+                .userId(userId)
+                .companyName("Stripe")
+                .role("Full Stack Engineer")
+                .status(ApplicationStatus.APPLIED)
+                .appliedDate(LocalDate.now().minusDays(15))
+                .requiresReview(false)
+                .build();
+
+        when(applicationRepository.findActiveByCompany(eq(userId), eq("Stripe"), any()))
+                .thenReturn(List.of(app1, app2));
+
+        ApplicationDiscoveredEvent event = new ApplicationDiscoveredEvent(
+                UUID.randomUUID(), userId, "Stripe", "Applicant Position", "INTERVIEW",
+                null, null, null, null, "Interview invitation", 0.90,
+                "msg-multi-stripe", "Stripe Interview", "jobs@stripe.com", Instant.now()
+        );
+
+        ingestionService.processDiscoveredApplication(event);
+
+        ArgumentCaptor<Application> captor = ArgumentCaptor.forClass(Application.class);
+        verify(applicationRepository).save(captor.capture());
+        Application saved = captor.getValue();
+        assertThat(saved.getRequiresReview()).isTrue();
+        assertThat(saved.getCompanyName()).isEqualTo("Stripe");
+    }
 }

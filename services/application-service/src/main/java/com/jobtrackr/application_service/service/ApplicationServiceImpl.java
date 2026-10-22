@@ -521,8 +521,10 @@ public class ApplicationServiceImpl implements ApplicationService {
         eventProducer.sendStatusUpdated(StatusUpdatedEvent.builder()
                 .applicationId(application.getApplicationId())
                 .userId(userId)
+                .companyName(application.getCompanyName())
                 .previousStatus(oldStatus)
                 .newStatus(newStatus)
+                .note(historyNote)
                 .build());
 
         return applicationMapper.toResponse(application);

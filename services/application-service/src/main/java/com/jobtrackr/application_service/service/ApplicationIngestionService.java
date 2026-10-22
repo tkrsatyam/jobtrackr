@@ -18,17 +18,17 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ApplicationIngestionService {
 
     private final ApplicationRepository applicationRepository;
 
     @Transactional
     public void processDiscoveredApplication(ApplicationDiscoveredEvent event) {
-        if (event == null || event.userId() == null || event.companyName() == null) {
-            log.warn("Discarding malformed ApplicationDiscoveredEvent: {}", event);
+        if (event == null || event.userId() == null || event.companyName() == null || event.companyName().isBlank()) {
+            log.warn("Invalid ApplicationDiscoveredEvent received, skipping: {}", event);
             return;
         }
 
@@ -43,18 +43,50 @@ public class ApplicationIngestionService {
                 ? LocalDate.ofInstant(event.emailReceivedAt(), ZoneId.systemDefault())
                 : LocalDate.now();
 
-        // 2. Deduplication check within last 14 days
+        // 2. Matching and Deduplication
         LocalDate fourteenDaysAgo = appliedDate.minusDays(14);
+        LocalDate ninetyDaysAgo = appliedDate.minusDays(90);
         String roleTitle = event.roleTitle() != null ? event.roleTitle().trim() : "Applicant Position";
-        List<Application> potentialDuplicates = applicationRepository.findPotentialDuplicates(
+
+        List<Application> potentialMatches = applicationRepository.findPotentialDuplicates(
                 event.userId(),
                 event.companyName().trim(),
                 roleTitle,
-                fourteenDaysAgo
+                ninetyDaysAgo
         );
 
-        if (!potentialDuplicates.isEmpty()) {
-            Application existing = potentialDuplicates.get(0);
+        Application existing = null;
+        for (Application app : potentialMatches) {
+            if (Boolean.TRUE.equals(app.getRequiresReview())) {
+                if (app.getAppliedDate() != null && !app.getAppliedDate().isBefore(fourteenDaysAgo)) {
+                    existing = app;
+                    break;
+                }
+            } else {
+                existing = app;
+                break;
+            }
+        }
+
+        // Single active application fallback for generic role titles
+        boolean isGenericRole = roleTitle.equalsIgnoreCase("Applicant Position") || roleTitle.isBlank();
+        if (existing == null && isGenericRole) {
+            List<Application> activeCompanyApps = applicationRepository.findActiveByCompany(
+                    event.userId(),
+                    event.companyName().trim(),
+                    ninetyDaysAgo
+            );
+            if (activeCompanyApps.size() == 1) {
+                existing = activeCompanyApps.get(0);
+                log.info("Matched single active application {} for company '{}' despite generic role title '{}'",
+                        existing.getApplicationId(), existing.getCompanyName(), roleTitle);
+            } else if (activeCompanyApps.size() > 1) {
+                log.info("Found {} active applications for company '{}' with generic role title '{}'. Disambiguation needed; creating candidate awaiting review.",
+                        activeCompanyApps.size(), event.companyName(), roleTitle);
+            }
+        }
+
+        if (existing != null) {
             log.info("Found existing matching application {} for company '{}' and role '{}'.",
                     existing.getApplicationId(), existing.getCompanyName(), existing.getRole());
 

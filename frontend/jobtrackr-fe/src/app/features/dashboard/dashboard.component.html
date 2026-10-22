@@ -13,6 +13,7 @@
     </div>
 
     <app-review-banner (reviewed)="loadApplications()" />
+    <app-proposal-banner [applications]="applications()" />
 
     @if (loading()) {
         <mat-progress-bar mode="indeterminate" />
