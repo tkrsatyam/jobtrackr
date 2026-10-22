@@ -13,7 +13,8 @@ public class RouterValidator {
             "/api/auth/login",
             "/api/auth/refresh",
             "/api/auth/oauth2",
-            "/ping"
+            "/ping",
+            "/api/ingestion/health"
     );
 
     public boolean isSecured(HttpServletRequest request) {
