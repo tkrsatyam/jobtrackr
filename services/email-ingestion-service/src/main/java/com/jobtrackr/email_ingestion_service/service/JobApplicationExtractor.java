@@ -372,8 +372,12 @@ public class JobApplicationExtractor {
             score += 0.40;
         }
 
-        // Rejection signals
+        // Rejection / Offer / Interview status signals
         if ("REJECTED".equals(status)) {
+            score += 0.25;
+        } else if ("OFFER".equals(status)) {
+            score += 0.30;
+        } else if ("INTERVIEW".equals(status)) {
             score += 0.25;
         }
 
@@ -406,7 +410,14 @@ public class JobApplicationExtractor {
         }
 
         // 5. Body context signals
-        if (lowerBody.contains("thank you for applying") || lowerBody.contains("thanks for applying") || lowerBody.contains("application has been received") || lowerBody.contains("review candidate for job application") || lowerBody.contains("application was sent")) {
+        if (lowerBody.contains("thank you for applying")
+                || lowerBody.contains("thanks for applying")
+                || lowerBody.contains("application has been received")
+                || lowerBody.contains("review candidate for job application")
+                || lowerBody.contains("application was sent")
+                || lowerBody.contains("schedule an interview")
+                || lowerBody.contains("invite you to interview")
+                || lowerBody.contains("invitation to interview")) {
             score += 0.15;
         }
 
