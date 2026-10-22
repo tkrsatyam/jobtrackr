@@ -1,0 +1,21 @@
+@if (hasPending()) {
+  <aside class="review-banner" role="status" aria-live="polite">
+    <div class="banner-content">
+      <div class="icon-wrap">
+        <mat-icon class="banner-icon">auto_awesome</mat-icon>
+      </div>
+      <div class="text-wrap">
+        <strong class="banner-title">New applications found</strong>
+        <p class="banner-desc">
+          JobTrackr discovered {{ count() }} application{{ count() > 1 ? 's' : '' }} in your inbox. Review them to add to your board.
+        </p>
+      </div>
+    </div>
+    <div class="banner-actions">
+      <button mat-flat-button color="primary" type="button" (click)="openReviewModal()">
+        <mat-icon>rate_review</mat-icon>
+        <span>Review Applications</span>
+      </button>
+    </div>
+  </aside>
+}

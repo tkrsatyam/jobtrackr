@@ -18,7 +18,7 @@ export const WORK_MODE_LABELS: Record<WorkMode, string> = {
 export const SOURCE_LABELS: Record<ApplicationSource, string> = {
   LINKEDIN: 'LinkedIn', NAUKRI: 'Naukri', INTERNSHALA: 'Internshala',
   COMPANY_WEBSITE: 'Company Website', REFERRAL: 'Referral',
-  ANGEL_LIST: 'AngelList', INSTAHYRE: 'Instahyre', OTHER: 'Other'
+  ANGEL_LIST: 'AngelList', INSTAHYRE: 'Instahyre', EMAIL: 'Email Ingestion', OTHER: 'Other'
 };
 
 export const ALL_STATUSES: ApplicationStatus[] = [
@@ -35,5 +35,5 @@ export const ALL_PRIORITIES: PriorityLevel[] = ['LOW','MEDIUM','HIGH','DREAM'];
 export const ALL_WORK_MODES: WorkMode[] = ['REMOTE','HYBRID','ON_SITE'];
 
 export const ALL_SOURCES: ApplicationSource[] = [
-  'LINKEDIN','NAUKRI','INTERNSHALA','COMPANY_WEBSITE','REFERRAL','ANGEL_LIST','INSTAHYRE','OTHER'
+  'LINKEDIN','NAUKRI','INTERNSHALA','COMPANY_WEBSITE','REFERRAL','ANGEL_LIST','INSTAHYRE','EMAIL','OTHER'
 ];

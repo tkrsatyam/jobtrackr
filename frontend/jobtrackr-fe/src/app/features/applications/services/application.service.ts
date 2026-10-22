@@ -1,7 +1,22 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../../environments/environment';
-import { ApplicationFilter, ApplicationResponse, ApplicationSearchResult, ApplicationStatus, BulkIdsRequest, BulkStatusRequest, BulkTagRequest, ChangeStatusRequest, CreateApplicationRequest, Page, StatusHistoryEntry, UpdateApplicationRequest } from '../../../shared/models/application.model';
+import {
+  ApplicationFilter,
+  ApplicationResponse,
+  ApplicationSearchResult,
+  ApplicationStatus,
+  BulkIdsRequest,
+  BulkStatusRequest,
+  BulkTagRequest,
+  ChangeStatusRequest,
+  ConfirmReviewRequest,
+  CreateApplicationRequest,
+  Page,
+  PendingReviewCountResponse,
+  StatusHistoryEntry,
+  UpdateApplicationRequest
+} from '../../../shared/models/application.model';
 import { Observable } from 'rxjs';
 
 @Injectable({
@@ -87,5 +102,21 @@ export class ApplicationService {
   search(keyword: string, size = 5): Observable<ApplicationSearchResult[]> {
     const params = new HttpParams().set('keyword', keyword).set('size', size);
     return this.http.get<ApplicationSearchResult[]>(`${this.baseUrl}/search`, { params });
+  }
+
+  getPendingReview(): Observable<ApplicationResponse[]> {
+    return this.http.get<ApplicationResponse[]>(`${this.baseUrl}/pending-review`);
+  }
+
+  getPendingReviewCount(): Observable<PendingReviewCountResponse> {
+    return this.http.get<PendingReviewCountResponse>(`${this.baseUrl}/pending-review/count`);
+  }
+
+  confirmReview(id: string, request: ConfirmReviewRequest): Observable<ApplicationResponse> {
+    return this.http.post<ApplicationResponse>(`${this.baseUrl}/${id}/confirm-review`, request);
+  }
+
+  rejectReview(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}/reject-review`);
   }
 }
