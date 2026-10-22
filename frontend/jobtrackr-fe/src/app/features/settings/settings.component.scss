@@ -53,6 +53,10 @@ mat-card-header, mat-card-content {
   }
 }
 
+.connection-detail-row {
+  min-height: 44px;
+}
+
 .connection-row {
   display: flex;
   align-items: center;
@@ -88,12 +92,25 @@ mat-card-header, mat-card-content {
 .connect-google-btn {
   display: inline-flex;
   align-items: center;
-  gap: var(--spacing-sm);
   border-radius: var(--radius);
   border-color: var(--mat-sys-outline-variant);
+  font-weight: 500;
+  padding: 0 var(--spacing-md);
+
+  ::ng-deep .mdc-button__label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
 
   .google-icon {
+    vertical-align: middle;
     flex-shrink: 0;
+    margin-right: var(--spacing-xs);
+  }
+
+  .btn-text {
+    line-height: 1;
   }
 }
 

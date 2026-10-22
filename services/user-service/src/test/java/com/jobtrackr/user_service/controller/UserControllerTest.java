@@ -5,7 +5,9 @@ import com.jobtrackr.user_service.dto.LinkGoogleRequest;
 import com.jobtrackr.user_service.dto.UserProfileDTO;
 import com.jobtrackr.user_service.exception.AccountAlreadyLinkedException;
 import com.jobtrackr.user_service.exception.GlobalExceptionHandler;
+import com.jobtrackr.user_service.service.JwtService;
 import com.jobtrackr.user_service.service.UserService;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,6 +38,9 @@ class UserControllerTest {
 
     @Mock
     private UserService userService;
+
+    @Mock
+    private JwtService jwtService;
 
     @InjectMocks
     private UserController userController;
@@ -75,6 +80,7 @@ class UserControllerTest {
     @DisplayName("POST /api/users/me/link-google/init should set oauth2_link_user_id cookie and return authUrl")
     void shouldInitLinkGoogleAndSetCookie() throws Exception {
         UUID userId = UUID.randomUUID();
+        when(jwtService.generateLinkToken(userId)).thenReturn("mock-link-token");
 
         mockMvc.perform(post("/api/users/me/link-google/init")
                         .header("X-User-Id", userId.toString()))
@@ -82,7 +88,7 @@ class UserControllerTest {
                 .andExpect(cookie().exists(UserController.OAUTH2_LINK_USER_ID_COOKIE))
                 .andExpect(cookie().value(UserController.OAUTH2_LINK_USER_ID_COOKIE, userId.toString()))
                 .andExpect(cookie().httpOnly(UserController.OAUTH2_LINK_USER_ID_COOKIE, true))
-                .andExpect(jsonPath("$.authUrl", is("/api/auth/oauth2/authorize/google")));
+                .andExpect(jsonPath("$.authUrl", is("/api/auth/oauth2/authorize/google?linkToken=mock-link-token")));
     }
 
     @Test

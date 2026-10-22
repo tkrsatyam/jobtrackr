@@ -40,7 +40,11 @@ export class AuthService {
   }
 
   initLinkGoogle(): Observable<{ authUrl: string }> {
-    return this.http.post<{ authUrl: string }>(`${this.baseUrl}/users/me/link-google/init`, {});
+    return this.http.post<{ authUrl: string }>(
+      `${this.baseUrl}/users/me/link-google/init`,
+      {},
+      { withCredentials: true }
+    );
   }
 
   unlinkGoogle(): Observable<void> {

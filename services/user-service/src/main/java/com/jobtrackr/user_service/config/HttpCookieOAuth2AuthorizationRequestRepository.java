@@ -1,21 +1,27 @@
 package com.jobtrackr.user_service.config;
 
+import com.jobtrackr.user_service.service.JwtService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.util.SerializationUtils;
 
 import java.util.Base64;
+import java.util.UUID;
 
 @Component
+@RequiredArgsConstructor
 public class HttpCookieOAuth2AuthorizationRequestRepository
         implements AuthorizationRequestRepository<OAuth2AuthorizationRequest> {
 
     public static final String OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME = "oauth2_auth_request";
     private static final int COOKIE_EXPIRE_SECONDS = 180;
+
+    private final JwtService jwtService;
 
     @Override
     public OAuth2AuthorizationRequest loadAuthorizationRequest(HttpServletRequest request) {
@@ -31,7 +37,7 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
                                          HttpServletRequest request,
                                          HttpServletResponse response) {
         if (authorizationRequest == null) {
-            deleteCookie(request, response, OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME);
+            deleteCookie(response, OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME);
             return;
         }
 
@@ -41,13 +47,26 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
         cookie.setHttpOnly(true);
         cookie.setMaxAge(COOKIE_EXPIRE_SECONDS);
         response.addCookie(cookie);
+
+        // If initiating OAuth with a link token, set the 1st-party link cookie on gateway origin
+        String linkToken = request.getParameter("linkToken");
+        if (linkToken != null && !linkToken.isBlank()) {
+            UUID linkUserId = jwtService.extractUserIdFromLinkToken(linkToken);
+            if (linkUserId != null) {
+                Cookie linkCookie = new Cookie(OAuth2SuccessHandler.OAUTH2_LINK_USER_ID_COOKIE, linkUserId.toString());
+                linkCookie.setPath("/");
+                linkCookie.setHttpOnly(true);
+                linkCookie.setMaxAge(COOKIE_EXPIRE_SECONDS);
+                response.addCookie(linkCookie);
+            }
+        }
     }
 
     @Override
     public OAuth2AuthorizationRequest removeAuthorizationRequest(HttpServletRequest request,
                                                                  HttpServletResponse response) {
         OAuth2AuthorizationRequest original = this.loadAuthorizationRequest(request);
-        deleteCookie(request, response, OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME);
+        deleteCookie(response, OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME);
         return original;
     }
 
@@ -63,18 +82,12 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
         return null;
     }
 
-    private void deleteCookie(HttpServletRequest request, HttpServletResponse response, String name) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies != null) {
-            for (Cookie cookie : cookies) {
-                if (cookie.getName().equals(name)) {
-                    cookie.setValue("");
-                    cookie.setPath("/");
-                    cookie.setMaxAge(0);
-                    response.addCookie(cookie);
-                }
-            }
-        }
+    private void deleteCookie(HttpServletResponse response, String name) {
+        Cookie cookie = new Cookie(name, "");
+        cookie.setPath("/");
+        cookie.setMaxAge(0);
+        cookie.setHttpOnly(true);
+        response.addCookie(cookie);
     }
 
     private String serialize(OAuth2AuthorizationRequest authorizationRequest) {

@@ -15,6 +15,7 @@ import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/c
 import { MatIconModule } from '@angular/material/icon';
 import { passwordsMatchValidator } from '../../shared/validators/password-matches.validator';
 import { CrossFieldErrorMatcher } from '../../shared/matchers/cross-field-error.matcher';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-settings',
@@ -93,7 +94,10 @@ export class SettingsComponent implements OnInit {
     this.connectingGoogle.set(true);
     this.authService.initLinkGoogle().subscribe({
       next: (res) => {
-        window.location.href = res.authUrl;
+        const url = res.authUrl.startsWith('http')
+          ? res.authUrl
+          : `${environment.apiUrl}${res.authUrl}`;
+        window.location.href = url;
       },
       error: () => {
         this.connectingGoogle.set(false);
