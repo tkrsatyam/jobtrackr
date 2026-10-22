@@ -3,6 +3,7 @@ package com.jobtrackr.application_service.service;
 import com.jobtrackr.application_service.dto.request.*;
 import com.jobtrackr.application_service.dto.response.ApplicationResponse;
 import com.jobtrackr.application_service.dto.response.ApplicationSearchResult;
+import com.jobtrackr.application_service.dto.response.PendingReviewCountResponse;
 import com.jobtrackr.application_service.entity.Application;
 import com.jobtrackr.application_service.entity.ApplicationStatusHistory;
 import com.jobtrackr.application_service.entity.ApplicationTag;
@@ -36,7 +37,7 @@ import java.util.stream.Collectors;
 @Transactional
 @RequiredArgsConstructor
 @Slf4j
-public class ApplicationServiceImpl implements ApplicationService{
+public class ApplicationServiceImpl implements ApplicationService {
 
     private final ApplicationRepository applicationRepository;
     private final StatusHistoryRepository statusHistoryRepository;
@@ -92,6 +93,12 @@ public class ApplicationServiceImpl implements ApplicationService{
                 .where(ApplicationSpecification.forUser(userId))
                 .and(ApplicationSpecification.notDeleted());
 
+        if (filter.getRequiresReview() != null) {
+            spec = spec.and(ApplicationSpecification.requiresReview(filter.getRequiresReview()));
+        } else {
+            spec = spec.and(ApplicationSpecification.requiresReview(false));
+        }
+
         if (filter.getStatus() != null) spec = spec.and(ApplicationSpecification.hasStatus(filter.getStatus()));
         if (filter.getPriority() != null) spec = spec.and(ApplicationSpecification.hasPriority(filter.getPriority()));
         if (filter.getWorkMode() != null) spec = spec.and(ApplicationSpecification.hasWorkMode(filter.getWorkMode()));
@@ -123,7 +130,6 @@ public class ApplicationServiceImpl implements ApplicationService{
         return applicationRepository.findAll(spec, pageable)
                 .map(applicationMapper::toResponse);
     }
-
 
     @Override
     public ApplicationResponse updateApplication(UUID applicationId, UpdateApplicationRequest request, HttpServletRequest httpRequest) {
@@ -172,7 +178,6 @@ public class ApplicationServiceImpl implements ApplicationService{
         ApplicationStatus previousStatus = application.getStatus();
         transitionValidator.validate(previousStatus, request.getStatus());
         application.setStatus(request.getStatus());
-
 
         ApplicationStatusHistory history = applicationMapper.toHistoryEntity(
                 application, request.getStatus(), request.getNote());
@@ -401,6 +406,87 @@ public class ApplicationServiceImpl implements ApplicationService{
         return applicationRepository.searchByKeyword(userId, pattern, size);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<ApplicationResponse> getPendingReviewApplications(HttpServletRequest httpRequest) {
+        UUID userId = userContextHolder.getUserId(httpRequest);
+        return applicationRepository.findByUserIdAndRequiresReviewTrueAndIsDeletedFalseOrderByCreatedAtDesc(userId)
+                .stream()
+                .map(applicationMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PendingReviewCountResponse getPendingReviewCount(HttpServletRequest httpRequest) {
+        UUID userId = userContextHolder.getUserId(httpRequest);
+        long count = applicationRepository.countByUserIdAndRequiresReviewTrueAndIsDeletedFalse(userId);
+        return new PendingReviewCountResponse(count);
+    }
+
+    @Override
+    public ApplicationResponse confirmReview(UUID applicationId, ConfirmReviewRequest request, HttpServletRequest httpRequest) {
+        UUID userId = userContextHolder.getUserId(httpRequest);
+        Application application = findAndVerifyOwnership(applicationId, userId);
+
+        if (request != null) {
+            if (request.getCompanyName() != null && !request.getCompanyName().isBlank()) {
+                application.setCompanyName(request.getCompanyName().trim());
+            }
+            if (request.getRole() != null && !request.getRole().isBlank()) {
+                application.setRole(request.getRole().trim());
+            }
+            if (request.getLocation() != null) {
+                application.setLocation(request.getLocation());
+            }
+            if (request.getJobUrl() != null) {
+                application.setJobUrl(request.getJobUrl());
+            }
+            if (request.getPriority() != null) {
+                application.setPriority(request.getPriority());
+            }
+            if (request.getWorkMode() != null) {
+                application.setWorkMode(request.getWorkMode());
+            }
+            if (request.getAppliedDate() != null) {
+                application.setAppliedDate(request.getAppliedDate());
+            }
+            if (request.getNotes() != null) {
+                application.setNotes(request.getNotes());
+            }
+            if (request.getStatus() != null && request.getStatus() != application.getStatus()) {
+                ApplicationStatus oldStatus = application.getStatus();
+                application.setStatus(request.getStatus());
+                ApplicationStatusHistory history = applicationMapper.toHistoryEntity(
+                        application, request.getStatus(), "Confirmed review with status change from " + oldStatus
+                );
+                application.getStatusHistory().add(history);
+            }
+        }
+
+        application.setRequiresReview(false);
+        application = applicationRepository.save(application);
+
+        eventProducer.sendApplicationCreated(ApplicationCreatedEvent.builder()
+                .applicationId(application.getApplicationId())
+                .userId(application.getUserId())
+                .companyName(application.getCompanyName())
+                .role(application.getRole())
+                .status(application.getStatus())
+                .appliedDate(application.getAppliedDate())
+                .build());
+
+        return applicationMapper.toResponse(application);
+    }
+
+    @Override
+    public void rejectReview(UUID applicationId, HttpServletRequest httpRequest) {
+        UUID userId = userContextHolder.getUserId(httpRequest);
+        Application application = findAndVerifyOwnership(applicationId, userId);
+        application.setIsDeleted(true);
+        application.setRequiresReview(false);
+        applicationRepository.save(application);
+    }
 
     private Application findAndVerifyOwnership(UUID applicationId, UUID userId) {
         Application application = applicationRepository

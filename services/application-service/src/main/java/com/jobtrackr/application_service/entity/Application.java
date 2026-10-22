@@ -11,6 +11,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -21,7 +22,9 @@ import java.util.UUID;
 @Table(name = "applications", indexes = {
         @Index(name = "idx_applications_user", columnList = "user_id"),
         @Index(name = "idx_applications_status", columnList = "status"),
-        @Index(name = "idx_applications_user_status", columnList = "user_id, status")
+        @Index(name = "idx_applications_user_status", columnList = "user_id, status"),
+        @Index(name = "idx_applications_user_review", columnList = "user_id, requires_review"),
+        @Index(name = "idx_applications_email_msg", columnList = "user_id, email_message_id")
 })
 @Getter
 @Setter
@@ -81,6 +84,23 @@ public class Application {
     @Builder.Default
     @Column(nullable = false)
     private Boolean isDeleted = false;
+
+    @Builder.Default
+    @Column(name = "ai_discovered", nullable = false)
+    private Boolean aiDiscovered = false;
+
+    @Builder.Default
+    @Column(name = "requires_review", nullable = false)
+    private Boolean requiresReview = false;
+
+    @Column(name = "confidence_score", precision = 3, scale = 2)
+    private BigDecimal confidenceScore;
+
+    @Column(name = "raw_email_snippet", columnDefinition = "TEXT")
+    private String rawEmailSnippet;
+
+    @Column(name = "email_message_id", length = 255)
+    private String emailMessageId;
 
     @CreationTimestamp
     @Column(updatable = false)

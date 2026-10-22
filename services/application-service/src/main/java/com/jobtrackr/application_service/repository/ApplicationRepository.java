@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -40,7 +41,28 @@ public interface ApplicationRepository extends JpaRepository<Application, UUID>,
     Optional<Application> findByApplicationIdAndIsDeletedFalse(UUID applicationId);
 
     Page<Application> findAll(Specification<Application> spec, Pageable pageable);
-    
+
+    boolean existsByUserIdAndEmailMessageId(UUID userId, String emailMessageId);
+
+    List<Application> findByUserIdAndRequiresReviewTrueAndIsDeletedFalseOrderByCreatedAtDesc(UUID userId);
+
+    long countByUserIdAndRequiresReviewTrueAndIsDeletedFalse(UUID userId);
+
+    @Query("""
+            SELECT a FROM Application a
+            WHERE a.userId = :userId
+              AND a.isDeleted = false
+              AND lower(trim(a.companyName)) = lower(trim(:companyName))
+              AND lower(trim(a.role)) = lower(trim(:role))
+              AND a.appliedDate >= :sinceDate
+            """)
+    List<Application> findPotentialDuplicates(
+            @Param("userId") UUID userId,
+            @Param("companyName") String companyName,
+            @Param("role") String role,
+            @Param("sinceDate") LocalDate sinceDate
+    );
+
     @Query("""
             SELECT new com.jobtrackr.application_service.dto.response.ApplicationSearchResult(
                 a.applicationId, a.companyName, a.role, a.status)

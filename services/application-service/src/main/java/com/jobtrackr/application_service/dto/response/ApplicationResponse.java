@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,6 +38,11 @@ public class ApplicationResponse {
     private String notes;
     private Boolean isArchived;
     private Boolean isDeleted;
+    private Boolean aiDiscovered;
+    private Boolean requiresReview;
+    private BigDecimal confidenceScore;
+    private String rawEmailSnippet;
+    private String emailMessageId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

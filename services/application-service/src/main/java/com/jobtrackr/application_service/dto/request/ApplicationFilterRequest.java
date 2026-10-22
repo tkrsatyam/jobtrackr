@@ -17,6 +17,7 @@ public class ApplicationFilterRequest {
     private PriorityLevel priority;
     private WorkMode workMode;
     private Boolean isArchived;
+    private Boolean requiresReview;
     private String company;
     private String role;
     private LocalDate appliedAfter;
