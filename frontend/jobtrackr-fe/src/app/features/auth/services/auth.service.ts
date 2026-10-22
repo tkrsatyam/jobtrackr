@@ -31,6 +31,14 @@ export class AuthService {
     );
   }
 
+  handleOAuthCallback(accessToken: string, refreshToken: string): void {
+    this.tokenStorage.saveTokens(accessToken, refreshToken);
+  }
+
+  getGoogleAuthUrl(): string {
+    return `${environment.apiUrl}/api/auth/oauth2/authorize/google`;
+  }
+
   logout(): void {
     const refreshToken = this.tokenStorage.getRefreshToken();
     if (refreshToken) {

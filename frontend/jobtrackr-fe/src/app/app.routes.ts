@@ -20,6 +20,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/auth/register/register.component').then(m => m.RegisterComponent)
     },
     {
+        path: 'oauth2/callback',
+        loadComponent: () => import('./features/auth/oauth2-callback/oauth2-callback.component').then(m => m.Oauth2CallbackComponent)
+    },
+    {
         path: '',
         loadComponent: () => import('./layout/shell/shell.component').then(m => m.ShellComponent),
         canActivate: [authGuard],

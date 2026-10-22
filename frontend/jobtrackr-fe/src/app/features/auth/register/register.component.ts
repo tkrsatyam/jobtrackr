@@ -23,7 +23,7 @@ import { CrossFieldErrorMatcher } from '../../../shared/matchers/cross-field-err
     MatProgressSpinnerModule,
     MatCardModule,
     MatIconModule
-],
+  ],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss',
 })
@@ -70,5 +70,9 @@ export class RegisterComponent {
         );
       }
     });
+  }
+
+  signUpWithGoogle(): void {
+    window.location.href = this.authService.getGoogleAuthUrl();
   }
 }
