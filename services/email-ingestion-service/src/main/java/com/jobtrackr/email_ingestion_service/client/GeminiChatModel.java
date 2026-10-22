@@ -2,6 +2,7 @@ package com.jobtrackr.email_ingestion_service.client;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -9,6 +10,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -19,7 +21,7 @@ public class GeminiChatModel implements ChatModel {
     private final String model;
 
     public GeminiChatModel(String baseUrl, String apiKey, String model) {
-        this.model = (model != null && !model.isBlank()) ? model : "gemini-1.5-flash";
+        this.model = (model != null && !model.isBlank()) ? model : "gemini-3.5-flash";
         String normalizedUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         this.restClient = RestClient.builder()
                 .baseUrl(normalizedUrl)
@@ -30,13 +32,23 @@ public class GeminiChatModel implements ChatModel {
 
     @Override
     public ChatResponse call(Prompt prompt) {
-        String userContent = prompt.getContents();
+        List<Map<String, String>> messages = new ArrayList<>();
+        if (prompt.getInstructions() != null && !prompt.getInstructions().isEmpty()) {
+            for (Message msg : prompt.getInstructions()) {
+                String role = switch (msg.getMessageType()) {
+                    case SYSTEM -> "system";
+                    case ASSISTANT -> "assistant";
+                    default -> "user";
+                };
+                messages.add(Map.of("role", role, "content", msg.getText() != null ? msg.getText() : ""));
+            }
+        } else {
+            messages.add(Map.of("role", "user", "content", prompt.getContents() != null ? prompt.getContents() : ""));
+        }
 
         Map<String, Object> requestBody = Map.of(
                 "model", this.model,
-                "messages", List.of(
-                        Map.of("role", "user", "content", userContent)
-                )
+                "messages", messages
         );
 
         try {

@@ -16,7 +16,7 @@ public class SpringAiConfig {
     @Value("${spring.ai.openai.base-url:https://generativelanguage.googleapis.com/v1beta/openai}")
     private String baseUrl;
 
-    @Value("${spring.ai.openai.chat.options.model:gemini-1.5-flash}")
+    @Value("${spring.ai.openai.chat.options.model:${GEMINI_MODEL:gemini-3.5-flash}}")
     private String model;
 
     @Bean
