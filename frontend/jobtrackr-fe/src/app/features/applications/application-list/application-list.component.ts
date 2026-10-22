@@ -24,6 +24,8 @@ import { MatSortModule, Sort } from '@angular/material/sort';
 import { FilterConfig, FilterModalComponent, FilterModalResult } from '../components/filter-modal/filter-modal.component';
 import { MatChipsModule } from "@angular/material/chips";
 import { BulkTagDialogComponent } from '../components/bulk-tag-dialog/bulk-tag-dialog.component';
+import { ReviewBannerComponent } from '../components/review-banner/review-banner.component';
+import { EmailIngestionService } from '../services/email-ingestion.service';
 
 type ColumnType = 'text' | 'status' | 'priority' | 'date' | 'tags' | 'select' | 'actions';
 
@@ -55,7 +57,8 @@ interface ColumnConfig {
     PriorityBadgeComponent,
     TagChipComponent,
     BulkActionToolbarComponent,
-    MatChipsModule
+    MatChipsModule,
+    ReviewBannerComponent
 ],
   templateUrl: './application-list.component.html',
   styleUrl: './application-list.component.scss',
@@ -66,6 +69,7 @@ export class ApplicationListComponent implements OnInit {
   private snackBar = inject(MatSnackBar);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  readonly ingestionService = inject(EmailIngestionService);
 
   applications = signal<ApplicationResponse[]>([]);
   totalElements = signal(0);
@@ -215,6 +219,10 @@ export class ApplicationListComponent implements OnInit {
 
     return filter;
   })
+
+  syncEmails(): void {
+    this.ingestionService.syncEmails().subscribe();
+  }
 
   ngOnInit(): void {
     this.route.queryParamMap.subscribe(params => {

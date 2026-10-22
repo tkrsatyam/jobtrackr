@@ -39,6 +39,10 @@
                                         <span class="connected-email">({{ googleEmail() }})</span>
                                     }
                                 </span>
+                                <button mat-stroked-button class="sync-btn" (click)="syncEmails()" [disabled]="ingestionService.syncing()">
+                                    <mat-icon [class.spin]="ingestionService.syncing()">sync</mat-icon>
+                                    <span>{{ ingestionService.syncing() ? 'Syncing...' : 'Sync Mailbox' }}</span>
+                                </button>
                                 @if (isLocalUser()) {
                                     <button mat-button color="warn" class="disconnect-btn" (click)="disconnectGoogle()" [disabled]="unlinkingGoogle()">
                                         @if (unlinkingGoogle()) {

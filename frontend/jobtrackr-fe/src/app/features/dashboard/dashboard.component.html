@@ -1,9 +1,15 @@
 <div class="page-container">
     <div class="page-header">
         <h1>Dashboard</h1>
-        <a mat-flat-button color="primary" routerLink="/applications/new">
+        <div class="page-actions" style="display: flex; gap: var(--spacing-sm);">
+            <button mat-stroked-button (click)="syncEmails()" [disabled]="ingestionService.syncing()">
+                <mat-icon [class.spin]="ingestionService.syncing()">sync</mat-icon>
+                <span>{{ ingestionService.syncing() ? 'Syncing...' : 'Sync Emails' }}</span>
+            </button>
+            <a mat-flat-button color="primary" routerLink="/applications/new">
             <mat-icon>add</mat-icon> Add application
         </a>
+        </div>
     </div>
 
     <app-review-banner (reviewed)="loadApplications()" />

@@ -16,7 +16,13 @@ public class JobApplicationExtractor {
 
     private static final Set<String> ATS_DOMAINS = Set.of(
             "myworkday.com", "greenhouse.io", "lever.co", "smartrecruiters.com",
-            "ashbyhq.com", "icims.com", "taleo.net", "workablemail.com", "bamboohr.com"
+            "ashbyhq.com", "icims.com", "taleo.net", "workablemail.com", "bamboohr.com", "recooty.com"
+    );
+
+    private static final Set<String> JOB_PLATFORMS = Set.of(
+            "indeed apply", "indeed", "linkedin", "naukri", "instahyre", "glassdoor",
+            "recooty", "workday", "myworkday", "greenhouse", "lever", "smartrecruiters",
+            "notifications", "no reply", "recruiting team", "talent acquisition", "careers team"
     );
 
     private static final List<String> NEGATIVE_KEYWORDS = List.of(
@@ -34,10 +40,14 @@ public class JobApplicationExtractor {
 
     private static final List<String> KNOWN_ROLES = List.of(
             "Core Java Developer", "Senior Java Developer", "Java Developer",
+            "Software Engineer I", "Software Engineer II", "Software Engineer III", "Software Engineer IV",
+            "Software Engineer 1", "Software Engineer 2", "Software Engineer 3",
             "Senior Software Engineer", "Staff Software Engineer", "Principal Software Engineer",
-            "Software Engineer", "Senior Backend Engineer", "Backend Engineer", "Backend Developer",
-            "Senior Frontend Engineer", "Frontend Engineer", "Frontend Developer",
-            "Senior Full Stack Engineer", "Full Stack Engineer", "Full Stack Developer",
+            "Associate Software Engineer", "Software Engineer",
+            "Senior Backend Engineer", "Backend Engineer 2", "Backend Engineer 1", "Backend Engineer", "Backend Developer",
+            "Senior Frontend Engineer", "Frontend Engineer 2", "Frontend Engineer 1", "Frontend Engineer", "Frontend Developer",
+            "Senior Full Stack Engineer", "Full Stack Engineer 2", "Full Stack Engineer 1", "Full Stack Engineer", "Full Stack Developer",
+            "SDE I", "SDE II", "SDE III", "SDE 1", "SDE 2", "SDE 3",
             "DevOps Engineer", "Cloud Engineer", "Site Reliability Engineer", "SRE",
             "Data Engineer", "Senior Data Engineer", "Data Scientist", "ML Engineer",
             "Machine Learning Engineer", "Android Developer", "iOS Developer", "Mobile Developer",
@@ -65,15 +75,15 @@ public class JobApplicationExtractor {
                     
                     Extract the structured data:
                     - If isJobApplication is true:
-                      - companyName: exact name of the company hiring (e.g. "Citi", "Stripe", "Google")
-                      - roleTitle: exact job position title (e.g. "Core Java Developer", "Software Engineer")
+                      - companyName: exact name of the hiring employer (e.g. if the email is from Indeed or LinkedIn, find the actual hiring company mentioned in the body like "Novo Tree Minds" or "Stripe", NOT "Indeed Apply" or "LinkedIn").
+                      - roleTitle: exact job position title including level numbers and roman numerals (e.g. "Software Engineer I", "Software Engineer 2", "Core Java Developer").
                       - status: one of SAVED, APPLIED, PHONE_SCREEN, INTERVIEW, TECHNICAL_ROUND, HR_ROUND, OFFER, REJECTED.
-                      - location: location if mentioned, else null
-                      - jobUrl: application link if mentioned, else null
-                      - recruiterName: name of recruiter if available, else null
-                      - recruiterEmail: recruiter email if available, else null
-                      - notes: concise 1-2 sentence summary of what this email says
-                      - confidenceScore: number between 0.0 and 1.0 based on how confident you are that this is a genuine job application
+                      - location: candidate or job location if mentioned (e.g. "Pune, Maharashtra, India 411001" or "Bangalore, India"), else null.
+                      - jobUrl: job posting or application status URL if found in the email, else null.
+                      - recruiterName: name of recruiter if available, else null.
+                      - recruiterEmail: recruiter email if available, else null.
+                      - notes: concise, informative 1-2 sentence summary of what this email says, mentioning the role, company, and any relevant links.
+                      - confidenceScore: number between 0.0 and 1.0 based on how confident you are that this is a genuine job application.
                     - If isJobApplication is false:
                       - confidenceScore: 0.0
                     """.formatted(sender, subject, emailBody);
@@ -103,7 +113,8 @@ public class JobApplicationExtractor {
         subject = subject.replaceAll("[\\p{Cf}]", "").replace('–', '-').replace('—', '-').trim();
 
         String lowerSubject = subject.toLowerCase();
-        String lowerBody = (emailBody != null) ? emailBody.toLowerCase() : "";
+        String body = (emailBody != null) ? emailBody : "";
+        String lowerBody = body.toLowerCase();
         String lowerSender = (sender != null) ? sender.toLowerCase() : "";
 
         // 1. Strict Sender Filtering (Newsletters / Alerts)
@@ -129,7 +140,7 @@ public class JobApplicationExtractor {
 
         // 3. Strict Job Relevance Filtering
         boolean hasJobSignal = lowerSubject.contains("application")
-                || lowerSubject.contains("applying")
+                || lowerSubject.contains("applied")
                 || lowerSubject.contains("job opportunity")
                 || lowerSubject.contains("candidacy")
                 || lowerSubject.contains("candidate")
@@ -142,7 +153,8 @@ public class JobApplicationExtractor {
                 || lowerBody.contains("received your application")
                 || lowerBody.contains("your application for")
                 || lowerBody.contains("invite you to interview")
-                || lowerBody.contains("review candidate for job application");
+                || lowerBody.contains("review candidate for job application")
+                || lowerBody.contains("application submitted");
 
         if (!hasJobSignal) {
             return Optional.empty();
@@ -160,7 +172,7 @@ public class JobApplicationExtractor {
             }
         }
 
-        // If subject contains bare word "interview", verify it's not a newsletter
+        // If subject contains bare word "interview", verify it's not a newsletter or prep question
         if (lowerSubject.contains("interview") && (lowerSubject.contains("newsletter") || lowerSubject.contains("problem") || lowerSubject.contains("weekly") || lowerSubject.contains("tips") || lowerSubject.contains("prep"))) {
             return Optional.empty();
         }
@@ -195,6 +207,7 @@ public class JobApplicationExtractor {
                 || lowerBody.contains("schedule an interview")
                 || lowerBody.contains("invite you to interview")
                 || lowerBody.contains("invitation to interview")
+                || lowerBody.contains("complete your ai interview")
                 || lowerBody.contains("complete questionnaire");
 
         if (isRejection) {
@@ -206,27 +219,34 @@ public class JobApplicationExtractor {
         }
 
         // 5. Company Name Extraction
-        String company = extractCompanyName(sender, subject, lowerBody);
+        String company = extractCompanyName(sender, subject, body);
 
         // 6. Role Title Extraction
-        String role = extractRoleTitle(subject, lowerBody);
+        String role = extractRoleTitle(subject, body);
 
-        // 7. Dynamic Confidence Scoring
-        double confidence = calculateConfidence(subject, sender, lowerBody, company, role, status);
+        // 7. Location Extraction
+        String location = extractLocation(subject, body);
+
+        // 8. Job URL Extraction
+        String jobUrl = extractJobUrl(body);
+
+        // 9. Dynamic Confidence Scoring
+        double confidence = calculateConfidence(subject, sender, lowerBody, company, role, status, jobUrl, location);
 
         if (confidence < 0.60) {
             return Optional.empty();
         }
 
-        String notes = "Extracted from email: " + subject;
+        // 10. Meaningful Structured Notes
+        String notes = buildNotes(subject, sender, company, role, location, jobUrl, body);
 
         return Optional.of(new JobApplicationExtractionRecord(
                 true,
                 company,
                 role,
                 status,
-                null,
-                null,
+                location,
+                jobUrl,
                 null,
                 cleanEmailAddress(sender),
                 notes,
@@ -234,40 +254,67 @@ public class JobApplicationExtractor {
         ));
     }
 
-    private String extractCompanyName(String sender, String subject, String lowerBody) {
+    private String extractCompanyName(String sender, String subject, String body) {
         if (sender == null || sender.isBlank()) {
             return "Unknown Company";
         }
 
-        // A. Check LinkedIn Easy Apply confirmation emails (e.g. "Satyam, your application was sent to Acme Corp")
-        if (sender.toLowerCase().contains("linkedin.com")) {
-            Pattern sentToPattern = Pattern.compile("(?i)(?:application was sent to|applied to)\\s+([^,–\\|]+)");
-            Matcher sentToMatcher = sentToPattern.matcher(subject);
+        String lowerSender = sender.toLowerCase();
+
+        // A. Check Indeed Apply confirmation emails (body has: "The following items were sent to [Company]" or "[Role]\n[Company] - [Location]")
+        if (lowerSender.contains("indeed")) {
+            Pattern sentToPattern = Pattern.compile("(?i)(?:sent to|submitted to|items were sent to)\\s+([A-Za-z0-9\\s&,\\.\\-]+?)(?:\\.|\\s*Good luck|\\s*Thank you|\\s*\\n)");
+            Matcher sentToMatcher = sentToPattern.matcher(body);
             if (sentToMatcher.find()) {
                 String candidate = sentToMatcher.group(1).trim();
-                if (candidate.length() > 1 && !candidate.equalsIgnoreCase("LinkedIn")) {
+                if (isValidCompanyName(candidate)) {
+                    return candidate;
+                }
+            }
+
+            Pattern roleCompanyPattern = Pattern.compile("(?i)(?:Developer|Engineer|Architect|Manager|Analyst|Consultant|Scientist)\\s*\\n+([A-Za-z0-9\\s&,\\.\\-]+?)\\s*-\\s*(?:[A-Za-z0-9\\s,]+(?:India|\\d{5,6}|Remote|Hybrid|On-site))");
+            Matcher rcMatcher = roleCompanyPattern.matcher(body);
+            if (rcMatcher.find()) {
+                String candidate = rcMatcher.group(1).trim();
+                if (isValidCompanyName(candidate)) {
                     return candidate;
                 }
             }
         }
 
-        // B. Extract from sender display name (e.g. "Citi Human Resources <citi@myworkday.com>")
+        // B. Check ATS confirmation body pattern: "applying for the [Role] position at [Company]" or "role at [Company]"
+        Pattern atsBodyPattern = Pattern.compile("(?i)(?:thank(?:s|\\s+you)\\s+for\\s+applying\\s+(?:for|to)\\s+(?:the\\s+)?|applied\\s+(?:for|to)\\s+(?:the\\s+)?|applying\\s+(?:for|to)\\s+(?:the\\s+)?)[A-Za-z0-9\\s/+#\\.\\-]+?(?:\\s*-\\s*(?:Job\\s*ID|Req|Position\\s*ID|ID)[:\\s]*[A-Za-z0-9]+)?\\s+(?:role|position|job)\\s+at\\s+([A-Za-z0-9\\s&\\.\\-]+?)(?:\\.|!|\\s*\\n|\\s*We\\b|$)");
+        Matcher atsBodyMatcher = atsBodyPattern.matcher(body);
+        if (atsBodyMatcher.find()) {
+            String candidate = atsBodyMatcher.group(1).trim();
+            if (isValidCompanyName(candidate)) {
+                return candidate;
+            }
+        }
+
+        // C. Check LinkedIn Easy Apply confirmation emails (e.g. "Satyam, your application was sent to Acme Corp")
+        if (lowerSender.contains("linkedin.com")) {
+            Pattern sentToPattern = Pattern.compile("(?i)(?:application was sent to|applied to)\\s+([^,–\\|]+)");
+            Matcher sentToMatcher = sentToPattern.matcher(subject);
+            if (sentToMatcher.find()) {
+                String candidate = sentToMatcher.group(1).trim();
+                if (isValidCompanyName(candidate)) {
+                    return candidate;
+                }
+            }
+        }
+
+        // D. Extract from sender display name (e.g. "Citi Human Resources <citi@myworkday.com>")
         int angleIdx = sender.indexOf('<');
         if (angleIdx > 0) {
             String rawDisplayName = sender.substring(0, angleIdx).trim().replaceAll("^\"|\"$", "");
             String cleaned = cleanDisplayName(rawDisplayName);
-            if (!cleaned.isBlank()
-                    && !cleaned.equalsIgnoreCase("No Reply")
-                    && !cleaned.equalsIgnoreCase("Notifications")
-                    && !cleaned.equalsIgnoreCase("Workday")
-                    && !cleaned.equalsIgnoreCase("Myworkday")
-                    && !cleaned.equalsIgnoreCase("Greenhouse")
-                    && !cleaned.equalsIgnoreCase("Lever")) {
+            if (isValidCompanyName(cleaned)) {
                 return cleaned;
             }
         }
 
-        // C. Check ATS domain local-parts (e.g. citi@myworkday.com -> Citi)
+        // E. Check ATS domain local-parts (e.g. citi@myworkday.com -> Citi)
         String email = cleanEmailAddress(sender);
         if (email.contains("@")) {
             String localPart = email.substring(0, email.indexOf('@'));
@@ -275,7 +322,10 @@ public class JobApplicationExtractor {
 
             for (String ats : ATS_DOMAINS) {
                 if (domain.endsWith(ats) && !localPart.equalsIgnoreCase("no-reply") && !localPart.equalsIgnoreCase("notifications")) {
-                    return capitalize(localPart);
+                    String candidate = capitalize(localPart);
+                    if (isValidCompanyName(candidate)) {
+                        return candidate;
+                    }
                 }
             }
 
@@ -290,13 +340,29 @@ public class JobApplicationExtractor {
                         && !part.equals("notifications")
                         && !part.equals("gmail")
                         && !part.equals("yahoo")
-                        && !part.equals("outlook")) {
+                        && !part.equals("outlook")
+                        && !part.equals("indeed")
+                        && !part.equals("recooty")
+                        && !part.equals("linkedin")) {
                     return capitalize(part);
                 }
             }
         }
 
         return "Unknown Company";
+    }
+
+    private boolean isValidCompanyName(String candidate) {
+        if (candidate == null || candidate.isBlank() || candidate.length() < 2 || candidate.length() > 60) {
+            return false;
+        }
+        String lower = candidate.trim().toLowerCase();
+        for (String platform : JOB_PLATFORMS) {
+            if (lower.equals(platform) || lower.startsWith(platform + " ")) {
+                return false;
+            }
+        }
+        return !lower.equals("no reply") && !lower.equals("notifications");
     }
 
     private String cleanDisplayName(String displayName) {
@@ -311,37 +377,67 @@ public class JobApplicationExtractor {
                 .trim();
     }
 
-    private String extractRoleTitle(String subject, String lowerBody) {
+    private String extractRoleTitle(String subject, String body) {
         // Pattern 1: Workday pattern e.g. "Review Candidate for Job Application: Satyam Kumar - 25886810 Core Java Developer (C112055873)"
         Pattern workdayPattern = Pattern.compile("(?i)(?:job application:|review candidate for job application:)\\s*[^\\-]+?\\s*-\\s*(?:\\d+\\s+)?([A-Za-z0-9\\s/+#\\.\\-]+?)(?:\\s*\\([A-Z0-9]+\\))?$");
         Matcher wdMatcher = workdayPattern.matcher(subject.trim());
         if (wdMatcher.find()) {
-            String role = wdMatcher.group(1).trim();
-            if (role.length() > 2) {
+            String role = sanitizeRole(wdMatcher.group(1));
+            if (isValidRole(role)) {
                 return role;
             }
         }
 
-        // Pattern 2: "Application for [Role] at [Company]" or "Applied for [Role]"
-        Pattern standardPattern = Pattern.compile("(?i)(?:application(?:\\s+received|\\s+confirmation|\\s+submitted)?(?:\\s+for)?|applied(?:\\s+for|\\s+to)?|role:?|position:?)\\s+([A-Za-z0-9\\s/+#\\.\\-]+?)(?:\\s+(?:at|@|with|-|–|\\|)\\s+[A-Za-z0-9\\s&]+|$)");
+        // Pattern 2: ATS body/subject pattern (Recooty, Greenhouse, MetLife, etc.):
+        // "applying for the Java Developer position at Novo Tree Minds"
+        // "applying to the Software Engineer I - Job ID:20903 role at MetLife"
+        Pattern atsRolePattern = Pattern.compile("(?i)(?:thank(?:s|\\s+you)\\s+for\\s+applying\\s+(?:for|to)\\s+(?:the\\s+)?|applied\\s+(?:for|to)\\s+(?:the\\s+)?|applying\\s+(?:for|to)\\s+(?:the\\s+)?)([A-Za-z0-9\\s/+#\\.\\-]+?)(?:\\s*-\\s*(?:Job\\s*ID|Req|Position\\s*ID|ID)[:\\s]*[A-Za-z0-9]+)?\\s+(?:role|position|job)\\s+at\\s+");
+        Matcher atsBodyMatcher = atsRolePattern.matcher(body);
+        if (atsBodyMatcher.find()) {
+            String role = sanitizeRole(atsBodyMatcher.group(1));
+            if (isValidRole(role)) {
+                return role;
+            }
+        }
+
+        Matcher atsSubjectMatcher = atsRolePattern.matcher(subject);
+        if (atsSubjectMatcher.find()) {
+            String role = sanitizeRole(atsSubjectMatcher.group(1));
+            if (isValidRole(role)) {
+                return role;
+            }
+        }
+
+        // Pattern 3: Indeed subject pattern: "Indeed Application: Java Developer" or "Indeed Application: Software Engineer 2 (Bangalore, India)"
+        Pattern indeedSubjectPattern = Pattern.compile("(?i)indeed\\s+application:\\s*([A-Za-z0-9\\s/+#\\.\\-]+)");
+        Matcher indMatcher = indeedSubjectPattern.matcher(subject.trim());
+        if (indMatcher.find()) {
+            String role = sanitizeRole(indMatcher.group(1));
+            if (isValidRole(role)) {
+                return role;
+            }
+        }
+
+        // Pattern 4: Standard pattern: "Application for [Role] at [Company]"
+        Pattern standardPattern = Pattern.compile("(?i)(?:application(?:\\s+confirmation|\\s+submitted)?(?:\\s+for)?|applied(?:\\s+for|\\s+to)?|role:?|position:?)\\s+([A-Za-z0-9\\s/+#\\.\\-]+?)(?:\\s+(?:at|@|with|-|–|\\|)\\s+[A-Za-z0-9\\s&]+|$)");
         Matcher stdMatcher = standardPattern.matcher(subject.trim());
         if (stdMatcher.find()) {
-            String candidate = stdMatcher.group(1).trim();
-            if (candidate.length() > 2 && candidate.length() < 60) {
+            String candidate = sanitizeRole(stdMatcher.group(1));
+            if (isValidRole(candidate)) {
                 return candidate;
             }
         }
 
-        // Pattern 3: Scan against known roles in subject
+        // Pattern 5: Scan known roles in subject (ordered with specific levels first)
         for (String knownRole : KNOWN_ROLES) {
             if (Pattern.compile("(?i)\\b" + Pattern.quote(knownRole) + "\\b").matcher(subject).find()) {
                 return knownRole;
             }
         }
 
-        // Pattern 4: Scan known roles in body preview
+        // Pattern 6: Scan known roles in body preview
         for (String knownRole : KNOWN_ROLES) {
-            if (Pattern.compile("(?i)\\b" + Pattern.quote(knownRole) + "\\b").matcher(lowerBody).find()) {
+            if (Pattern.compile("(?i)\\b" + Pattern.quote(knownRole) + "\\b").matcher(body).find()) {
                 return knownRole;
             }
         }
@@ -349,7 +445,94 @@ public class JobApplicationExtractor {
         return "Applicant Position";
     }
 
-    private double calculateConfidence(String subject, String sender, String lowerBody, String company, String role, String status) {
+    private String sanitizeRole(String rawRole) {
+        if (rawRole == null) return "";
+        return rawRole
+                .replaceAll("(?i)\\s*\\([^)]*(?:India|Remote|Hybrid|On-site|USA|UK|Bangalore|Pune|Hyderabad|Noida|Gurgaon|Delhi|Mumbai|Req|Job\\s*ID|ID)[^)]*\\)", "")
+                .replaceAll("(?i)\\s*\\([A-Z0-9]+\\)", "")
+                .replaceAll("(?i)\\s*-\\s*(?:Job\\s*ID|Req|Position\\s*ID|ID)[:\\s]*[A-Za-z0-9]+", "")
+                .trim();
+    }
+
+    private boolean isValidRole(String role) {
+        if (role == null || role.length() < 3 || role.length() > 60) {
+            return false;
+        }
+        String lower = role.trim().toLowerCase();
+        if (lower.equals("received")
+                || lower.equals("confirmation")
+                || lower.equals("submitted")
+                || lower.equals("thank you")
+                || lower.equals("position")
+                || lower.equals("role")
+                || lower.equals("job application")
+                || lower.startsWith("was sent to")
+                || lower.startsWith("sent to")
+                || lower.startsWith("your application")) {
+            return false;
+        }
+        return true;
+    }
+
+    private String extractLocation(String subject, String body) {
+        // A. From Indeed body: "Novo Tree Minds - Pune, Maharashtra, India 411001"
+        Pattern indeedLoc = Pattern.compile("(?i)(?:-\\s*|\\bin\\s+)([A-Za-z0-9\\s,]+(?:India|\\d{5,6}|Remote|Hybrid|On-site))");
+        Matcher indMatcher = indeedLoc.matcher(body);
+        if (indMatcher.find()) {
+            String loc = indMatcher.group(1).trim();
+            if (loc.length() >= 4 && loc.length() < 60) {
+                return loc;
+            }
+        }
+
+        // B. From subject/role parenthetical: "Software Engineer 2 (Bangalore, India)"
+        Pattern parenLoc = Pattern.compile("(?i)\\(([^)]*(?:India|Remote|Hybrid|On-site|USA|UK|Bangalore|Pune|Hyderabad|Noida|Gurgaon|Delhi|Mumbai)[^)]*)\\)");
+        Matcher parenMatcher = parenLoc.matcher(subject);
+        if (parenMatcher.find()) {
+            return parenMatcher.group(1).trim();
+        }
+
+        return null;
+    }
+
+    private String extractJobUrl(String body) {
+        if (body == null || body.isBlank()) {
+            return null;
+        }
+        Pattern urlPattern = Pattern.compile("(?i)https?://[^\\s\\)\"']*(?:job|career|application|recooty\\.com|myworkdayjobs\\.com|greenhouse\\.io|lever\\.co|smartrecruiters\\.com|indeed\\.com/viewjob)[^\\s\\)\"']*");
+        Matcher matcher = urlPattern.matcher(body);
+        if (matcher.find()) {
+            String url = matcher.group(0).trim().replaceAll("[\\.,;]$", "");
+            if (url.length() < 500) {
+                return url;
+            }
+        }
+        return null;
+    }
+
+    private String buildNotes(String subject, String sender, String company, String role, String location, String jobUrl, String body) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Application identified for ").append(role).append(" at ").append(company);
+        if (location != null && !location.isBlank()) {
+            sb.append(" (").append(location).append(")");
+        }
+        sb.append(".\n");
+
+        if (jobUrl != null && !jobUrl.isBlank()) {
+            sb.append("• Job URL: ").append(jobUrl).append("\n");
+        }
+
+        String senderEmail = cleanEmailAddress(sender);
+        if (!senderEmail.isBlank()) {
+            sb.append("• Source: ").append(senderEmail).append("\n");
+        }
+
+        sb.append("• Email Subject: ").append(subject);
+
+        return sb.toString();
+    }
+
+    private double calculateConfidence(String subject, String sender, String lowerBody, String company, String role, String status, String jobUrl, String location) {
         double score = 0.0;
         String lowerSubject = subject.toLowerCase();
 
@@ -372,7 +555,7 @@ public class JobApplicationExtractor {
             score += 0.40;
         }
 
-        // Rejection / Offer / Interview status signals
+        // Status signals
         if ("REJECTED".equals(status)) {
             score += 0.25;
         } else if ("OFFER".equals(status)) {
@@ -394,27 +577,31 @@ public class JobApplicationExtractor {
             isKnownJobSender = true;
         }
         if (isKnownJobSender) {
-            score += 0.25;
+            score += 0.20;
         }
 
         // 3. Verified role bonus
-        if (role != null && !role.equals("Applicant Position") && !role.equals("Software Engineer")) {
+        if (role != null && !role.equals("Applicant Position")) {
             score += 0.20;
-        } else if (role != null && !role.equals("Applicant Position")) {
-            score += 0.10;
         }
 
         // 4. Verified company bonus
-        if (company != null && !company.equals("Unknown Company")) {
-            score += 0.15;
+        if (company != null && !company.equals("Unknown Company") && isValidCompanyName(company)) {
+            score += 0.20;
         }
 
-        // 5. Body context signals
+        // 5. Rich details bonus
+        if (jobUrl != null || location != null) {
+            score += 0.10;
+        }
+
+        // 6. Body context signals
         if (lowerBody.contains("thank you for applying")
                 || lowerBody.contains("thanks for applying")
                 || lowerBody.contains("application has been received")
                 || lowerBody.contains("review candidate for job application")
                 || lowerBody.contains("application was sent")
+                || lowerBody.contains("items were sent to")
                 || lowerBody.contains("schedule an interview")
                 || lowerBody.contains("invite you to interview")
                 || lowerBody.contains("invitation to interview")) {

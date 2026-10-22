@@ -77,7 +77,7 @@ export class ReviewModalComponent implements OnInit {
     status: ['APPLIED' as ApplicationStatus, [Validators.required]],
     salaryMin: [null as number | null],
     salaryMax: [null as number | null],
-    currency: ['USD'],
+    currency: ['INR'],
     notes: ['']
   });
 
@@ -116,7 +116,7 @@ export class ReviewModalComponent implements OnInit {
       status: item.status || 'APPLIED',
       salaryMin: item.salaryMin ?? null,
       salaryMax: item.salaryMax ?? null,
-      currency: item.currency || 'USD',
+      currency: item.currency || 'INR',
       notes: item.notes || ''
     });
   }

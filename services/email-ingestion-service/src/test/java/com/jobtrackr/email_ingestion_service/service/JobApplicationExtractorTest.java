@@ -82,6 +82,94 @@ class JobApplicationExtractorTest {
     }
 
     @Test
+    @DisplayName("Should extract MetLife application with level suffix Software Engineer I")
+    void testExtractMetLifeSoftwareEngineerI() {
+        String subject = "Thank you for applying to the Software Engineer I - Job ID:20903 role at MetLife!";
+        String sender = "MetLife Global Talent Acquisition <recruiting@metlifecareers.com>";
+        String body = "Thank you for applying to the Software Engineer I - Job ID:20903 role at MetLife! We have received your application.";
+
+        Optional<JobApplicationExtractionRecord> result = extractor.extract(subject, sender, body);
+
+        assertThat(result).isPresent();
+        JobApplicationExtractionRecord record = result.get();
+        assertThat(record.companyName()).isEqualTo("MetLife");
+        assertThat(record.roleTitle()).isEqualTo("Software Engineer I");
+        assertThat(record.confidenceScore()).isGreaterThanOrEqualTo(0.80);
+        assertThat(record.notes()).contains("Software Engineer I at MetLife");
+    }
+
+    @Test
+    @DisplayName("Should extract Indeed Apply email with real employer and location")
+    void testExtractIndeedApplyWithRealEmployer() {
+        String subject = "Indeed Application: Java Developer";
+        String sender = "Indeed Apply <indeedapply@indeed.com>";
+        String body = """
+                Application submitted
+                
+                Java Developer
+                
+                Novo Tree Minds - Pune, Maharashtra, India 411001
+                
+                The following items were sent to Novo Tree Minds. Good luck!
+                • Application
+                • Resume
+                """;
+
+        Optional<JobApplicationExtractionRecord> result = extractor.extract(subject, sender, body);
+
+        assertThat(result).isPresent();
+        JobApplicationExtractionRecord record = result.get();
+        assertThat(record.companyName()).isEqualTo("Novo Tree Minds");
+        assertThat(record.roleTitle()).isEqualTo("Java Developer");
+        assertThat(record.location()).contains("Pune, Maharashtra, India 411001");
+        assertThat(record.confidenceScore()).isGreaterThanOrEqualTo(0.80);
+    }
+
+    @Test
+    @DisplayName("Should extract Novo Tree Minds Recooty direct email with jobUrl and clean role")
+    void testExtractNovoTreeMindsRecooty() {
+        String subject = "Application Received - Thank You!";
+        String sender = "Novo Tree Minds <notifications@recooty.com>";
+        String body = """
+                Dear Satyam,
+                
+                Thank you for applying for the Java Developer position at Novo Tree Minds.
+                
+                We have received your application, and our hiring team is currently reviewing all submissions.
+                
+                Job Details: View (https://recooty.com/jobs/view/998877)
+                
+                Best regards,
+                The Novo Tree Minds Team
+                """;
+
+        Optional<JobApplicationExtractionRecord> result = extractor.extract(subject, sender, body);
+
+        assertThat(result).isPresent();
+        JobApplicationExtractionRecord record = result.get();
+        assertThat(record.companyName()).isEqualTo("Novo Tree Minds");
+        assertThat(record.roleTitle()).isEqualTo("Java Developer");
+        assertThat(record.jobUrl()).isEqualTo("https://recooty.com/jobs/view/998877");
+        assertThat(record.confidenceScore()).isGreaterThanOrEqualTo(0.85);
+    }
+
+    @Test
+    @DisplayName("Should extract role level number 2 and location from Indeed Application")
+    void testExtractRoleLevel2WithLocation() {
+        String subject = "Indeed Application: Software Engineer 2 (Bangalore, India)";
+        String sender = "Indeed Apply <indeedapply@indeed.com>";
+        String body = "The following items were sent to Acme Technologies. Good luck!";
+
+        Optional<JobApplicationExtractionRecord> result = extractor.extract(subject, sender, body);
+
+        assertThat(result).isPresent();
+        JobApplicationExtractionRecord record = result.get();
+        assertThat(record.companyName()).isEqualTo("Acme Technologies");
+        assertThat(record.roleTitle()).isEqualTo("Software Engineer 2");
+        assertThat(record.location()).isEqualTo("Bangalore, India");
+    }
+
+    @Test
     @DisplayName("Should extract LinkedIn Easy Apply confirmation with company from subject")
     void testExtractLinkedInApplication() {
         String subject = "Satyam, your application was sent to Integrated Consultancy Services";

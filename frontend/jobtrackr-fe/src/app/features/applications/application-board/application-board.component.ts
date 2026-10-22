@@ -8,6 +8,7 @@ import { StatusBadgeComponent } from '../../../shared/components/status-badge/st
 import { PriorityBadgeComponent } from '../../../shared/components/priority-badge/priority-badge.component';
 import { TagChipComponent } from '../../../shared/components/tag-chip/tag-chip.component';
 import { ApplicationService } from '../services/application.service';
+import { EmailIngestionService } from '../services/email-ingestion.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ApplicationResponse, ApplicationStatus } from '../../../shared/models/application.model';
 import { ACTIVE_STATUSES, STATUS_LABELS } from '../../../shared/constants/enum-labels';
@@ -35,6 +36,7 @@ import { ReviewBannerComponent } from '../components/review-banner/review-banner
 })
 export class ApplicationBoardComponent implements OnInit {
   private appService = inject(ApplicationService);
+  readonly ingestionService = inject(EmailIngestionService);
   private snackBar = inject(MatSnackBar);
   private dialog = inject(MatDialog);
 
@@ -48,6 +50,10 @@ export class ApplicationBoardComponent implements OnInit {
 
   draggedApp = signal<ApplicationResponse | null>(null);
   allowedForDrag = signal<Set<ApplicationStatus>>(new Set());
+
+  syncEmails(): void {
+    this.ingestionService.syncEmails().subscribe();
+  }
 
   ngOnInit(): void {
     this.load();
