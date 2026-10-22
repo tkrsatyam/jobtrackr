@@ -38,13 +38,14 @@ class OAuth2AuthorizationEndpointTest {
     }
 
     @Test
-    @DisplayName("GET /api/auth/oauth2/authorize/google should redirect to Google with offline access, prompt=consent, and set auth cookie")
+    @DisplayName("GET /api/auth/oauth2/authorize/google should redirect to Google with offline access, prompt=select_account consent, and set auth cookie")
     void shouldRedirectToGoogleWithRequiredParams() throws Exception {
         mockMvc.perform(get("/api/auth/oauth2/authorize/google"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(header().string("Location", containsString("accounts.google.com/o/oauth2/v2/auth")))
                 .andExpect(header().string("Location", containsString("access_type=offline")))
-                .andExpect(header().string("Location", containsString("prompt=consent")))
+                .andExpect(header().string("Location", containsString("prompt=select_account")))
+                .andExpect(header().string("Location", containsString("consent")))
                 .andExpect(header().string("Location", containsString("client_id=mock-client-id")))
                 .andExpect(header().string("Location", containsString("gmail.readonly")))
                 .andExpect(cookie().exists(HttpCookieOAuth2AuthorizationRequestRepository.OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME));

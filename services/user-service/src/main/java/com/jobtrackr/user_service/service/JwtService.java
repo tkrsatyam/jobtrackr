@@ -41,6 +41,31 @@ public class JwtService {
                 .compact();
     }
 
+    public String generateLinkToken(UUID userId) {
+        return Jwts.builder()
+                .subject(String.valueOf(userId))
+                .claim("type", "ACCOUNT_LINK")
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + 300_000)) // 5 minutes
+                .signWith(getSigningKey())
+                .compact();
+    }
+
+    public UUID extractUserIdFromLinkToken(String token) {
+        try {
+            Claims claims = extractClaims(token);
+            if (!"ACCOUNT_LINK".equals(claims.get("type", String.class))) {
+                return null;
+            }
+            if (claims.getExpiration().before(new Date())) {
+                return null;
+            }
+            return UUID.fromString(claims.getSubject());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     public Claims extractClaims(String token) {
         return Jwts.parser()
                 .verifyWith(getSigningKey())

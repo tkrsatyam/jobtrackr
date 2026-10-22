@@ -7,6 +7,7 @@ import com.jobtrackr.user_service.repository.UserRepository;
 import com.jobtrackr.user_service.service.AesGcmEncryptionService;
 import com.jobtrackr.user_service.service.JwtService;
 import com.jobtrackr.user_service.service.RefreshTokenService;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -25,11 +26,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
+
+    public static final String OAUTH2_LINK_USER_ID_COOKIE = "oauth2_link_user_id";
 
     @Value("${application.frontend.url:http://localhost:4200}")
     private String frontendUrl;
@@ -55,8 +59,18 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String picture = oAuth2User.getAttribute("picture");
         String googleId = oAuth2User.getAttribute("sub");
 
-        log.info("Processing OAuth2 login for email: {} with provider ID: {}", email, googleId);
+        log.info("Processing OAuth2 callback for email: {} with provider ID: {}", email, googleId);
 
+        // Check if this is an account linking request for an already authenticated user
+        Cookie linkCookie = getCookie(request, OAUTH2_LINK_USER_ID_COOKIE);
+        if (linkCookie != null && linkCookie.getValue() != null && !linkCookie.getValue().isBlank()) {
+            String linkUserIdStr = linkCookie.getValue();
+            deleteCookie(response, OAUTH2_LINK_USER_ID_COOKIE);
+            handleAccountLinking(request, response, oauthToken, targetUserId(linkUserIdStr), googleId, email, picture);
+            return;
+        }
+
+        // Standard login/registration flow
         User user = userRepository.findByEmail(email).map(existingUser -> {
             if (existingUser.getProviderId() == null) {
                 existingUser.setProviderId(googleId);
@@ -100,6 +114,83 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
     }
 
+    private void handleAccountLinking(HttpServletRequest request,
+                                      HttpServletResponse response,
+                                      OAuth2AuthenticationToken oauthToken,
+                                      UUID targetUserId,
+                                      String googleId,
+                                      String email,
+                                      String picture) throws IOException {
+        if (targetUserId == null) {
+            getRedirectStrategy().sendRedirect(request, response, frontendUrl + "/settings?error=invalid_link_request");
+            return;
+        }
+
+        // Conflict check: Google ID already linked to another user in OAuth credentials
+        Optional<OAuthCredential> existingCred = oAuthCredentialRepository.findByProviderAndProviderUserId(
+                User.AuthProvider.GOOGLE, googleId
+        );
+        if (existingCred.isPresent() && !existingCred.get().getUser().getId().equals(targetUserId)) {
+            log.warn("Google account {} is already linked to user {}", googleId, existingCred.get().getUser().getId());
+            getRedirectStrategy().sendRedirect(request, response, frontendUrl + "/settings?error=account_already_linked");
+            return;
+        }
+
+        // Conflict check: Google ID already assigned to another user entity
+        Optional<User> userWithProviderId = userRepository.findByProviderIdAndProvider(
+                googleId, User.AuthProvider.GOOGLE
+        );
+        if (userWithProviderId.isPresent() && !userWithProviderId.get().getId().equals(targetUserId)) {
+            log.warn("Google account {} is already registered by user {}", googleId, userWithProviderId.get().getId());
+            getRedirectStrategy().sendRedirect(request, response, frontendUrl + "/settings?error=account_already_linked");
+            return;
+        }
+
+        Optional<User> targetUserOpt = userRepository.findById(targetUserId);
+        if (targetUserOpt.isEmpty()) {
+            log.warn("Target user for linking not found: {}", targetUserId);
+            getRedirectStrategy().sendRedirect(request, response, frontendUrl + "/settings?error=user_not_found");
+            return;
+        }
+
+        User targetUser = targetUserOpt.get();
+        if (targetUser.getProviderId() == null) {
+            targetUser.setProviderId(googleId);
+        }
+        if (targetUser.getAvatarUrl() == null && picture != null) {
+            targetUser.setAvatarUrl(picture);
+        }
+        userRepository.save(targetUser);
+
+        OAuth2AuthorizedClient authorizedClient = authorizedClientService.loadAuthorizedClient(
+                oauthToken.getAuthorizedClientRegistrationId(),
+                oauthToken.getName()
+        );
+        if (authorizedClient != null) {
+            saveOAuthCredentials(targetUser, googleId, email, authorizedClient);
+        }
+
+        log.info("Successfully linked Google account {} to user {}", email, targetUserId);
+
+        String accessToken = jwtService.generateAccessToken(targetUser.getId(), targetUser.getEmail(), targetUser.getRole().name());
+        String refreshToken = refreshTokenService.createRefreshToken(targetUser).getToken();
+
+        String redirectUrl = frontendUrl + "/settings?linked=true"
+                + "&accessToken=" + accessToken
+                + "&refreshToken=" + refreshToken;
+
+        getRedirectStrategy().sendRedirect(request, response, redirectUrl);
+    }
+
+    private UUID targetUserId(String value) {
+        try {
+            return UUID.fromString(value);
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid user ID string: {}", value);
+            return null;
+        }
+    }
+
     private void saveOAuthCredentials(User user,
                                       String googleId,
                                       String email,
@@ -133,5 +224,25 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         oAuthCredentialRepository.save(credential);
         log.info("Persisted encrypted OAuth credentials for user {}", user.getId());
+    }
+
+    private Cookie getCookie(HttpServletRequest request, String name) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (cookie.getName().equals(name)) {
+                    return cookie;
+                }
+            }
+        }
+        return null;
+    }
+
+    private void deleteCookie(HttpServletResponse response, String name) {
+        Cookie cookie = new Cookie(name, "");
+        cookie.setPath("/");
+        cookie.setMaxAge(0);
+        cookie.setHttpOnly(true);
+        response.addCookie(cookie);
     }
 }
