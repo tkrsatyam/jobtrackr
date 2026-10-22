@@ -33,7 +33,8 @@ import java.util.*;
 public class GmailPollingWorker {
 
     private static final String DEFAULT_SEARCH_QUERY =
-            "subject:(application OR applied OR interview OR offer OR candidacy OR \"thank you for applying\")";
+            "subject:(application OR applied OR interview OR \"job offer\" OR \"offer letter\" OR \"offer of employment\" OR \"employment offer\" OR candidacy OR \"thank you for applying\")"
+            + " -\"credit card\" -\"personal loan\" -\"loan\" -\"pre-approved\" -\"discount\" -\"cashback\" -\"weekly problem\" -\"digest\" -\"newsletter\" -\"contest\" -\"ipo\" -\"admission\" -\"admissions\" -\"mba\" -\"pgp\" -\"shacket\" -category:promotions -category:social";
 
     private final UserServiceClient userServiceClient;
     private final GmailClient gmailClient;

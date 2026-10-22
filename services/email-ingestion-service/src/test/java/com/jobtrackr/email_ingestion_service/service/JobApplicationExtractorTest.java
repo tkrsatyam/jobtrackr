@@ -34,7 +34,7 @@ class JobApplicationExtractorTest {
         assertThat(record.companyName()).isEqualTo("Stripe");
         assertThat(record.roleTitle()).isEqualTo("Senior Backend Engineer");
         assertThat(record.status()).isEqualTo("APPLIED");
-        assertThat(record.confidenceScore()).isGreaterThanOrEqualTo(0.5);
+        assertThat(record.confidenceScore()).isGreaterThanOrEqualTo(0.60);
     }
 
     @Test
@@ -66,14 +66,86 @@ class JobApplicationExtractorTest {
     }
 
     @Test
-    @DisplayName("Should return empty for non-job related emails")
-    void testIgnoreNonJobEmails() {
-        String subject = "Your Amazon.com order has shipped";
-        String sender = "auto-confirm@amazon.com";
-        String body = "Your package containing books is on the way.";
+    @DisplayName("Should extract Citi Workday application with correct company and role")
+    void testExtractCitiWorkdayEmail() {
+        String subject = "A Task Awaits You: Complete Questionnaire - Review Candidate for Job Application: Satyam Kumar \u200e- 25886810 Core Java Developer (C112055873)";
+        String sender = "Citi Human Resources <citi@myworkday.com>";
+        String body = "Review Candidate for Job Application: Satyam Kumar. Please complete your questionnaire.";
 
         Optional<JobApplicationExtractionRecord> result = extractor.extract(subject, sender, body);
 
-        assertThat(result).isEmpty();
+        assertThat(result).isPresent();
+        JobApplicationExtractionRecord record = result.get();
+        assertThat(record.companyName()).isEqualTo("Citi");
+        assertThat(record.roleTitle()).isEqualTo("Core Java Developer");
+        assertThat(record.confidenceScore()).isGreaterThanOrEqualTo(0.85);
+    }
+
+    @Test
+    @DisplayName("Should extract LinkedIn Easy Apply confirmation with company from subject")
+    void testExtractLinkedInApplication() {
+        String subject = "Satyam, your application was sent to Integrated Consultancy Services";
+        String sender = "LinkedIn <jobs-noreply@linkedin.com>";
+        String body = "Your application for the position has been sent to Integrated Consultancy Services.";
+
+        Optional<JobApplicationExtractionRecord> result = extractor.extract(subject, sender, body);
+
+        assertThat(result).isPresent();
+        JobApplicationExtractionRecord record = result.get();
+        assertThat(record.companyName()).isEqualTo("Integrated Consultancy Services");
+        assertThat(record.confidenceScore()).isGreaterThanOrEqualTo(0.60);
+    }
+
+    @Test
+    @DisplayName("Should return empty for non-job related emails and promotions")
+    void testIgnoreNonJobEmails() {
+        // Amazon package
+        assertThat(extractor.extract(
+                "Your Amazon.com order has shipped",
+                "auto-confirm@amazon.com",
+                "Your package is on the way."
+        )).isEmpty();
+
+        // Bank pre-approved loan
+        assertThat(extractor.extract(
+                "xx2068: Tap to See Your Pre-Approved Offer",
+                "HDFC Bank <information@mailers.hdfcbank.bank.in>",
+                "Special pre-approved loan offer for you."
+        )).isEmpty();
+
+        // News article about business offers
+        assertThat(extractor.extract(
+                "Tata Motors sweetens its offer for Iveco",
+                "Mint <info@connect.livemint.com>",
+                "Business news digest today."
+        )).isEmpty();
+
+        // Phone advertisement
+        assertThat(extractor.extract(
+                "Your iPhone offer is calling!",
+                "IDFC FIRST Bank <alwaysyoufirst@emailers.idfcfirst.bank.in>",
+                "Get cashback on latest iPhone."
+        )).isEmpty();
+
+        // LeetCode contest
+        assertThat(extractor.extract(
+                "Satyam Kumar, Join LeetCode Contest and get ready for interview prep!",
+                "LeetCode <no-reply@leetcode.com>",
+                "Weekly contest starts on Sunday."
+        )).isEmpty();
+
+        // Interview Cake weekly problem
+        assertThat(extractor.extract(
+                "Interview Cake Weekly Problem #630: Inflight Entertainment",
+                "Jacob from Interview Cake <yourfriends@interviewcake.com>",
+                "Here is this week's coding problem."
+        )).isEmpty();
+
+        // University MBA application deadline
+        assertThat(extractor.extract(
+                "PGP TBM application deadline extended to 28th September, 12:00 PM",
+                "Masters' Union <admissions@mastersunion.org>",
+                "Submit your PGP TBM admission application today."
+        )).isEmpty();
     }
 }
