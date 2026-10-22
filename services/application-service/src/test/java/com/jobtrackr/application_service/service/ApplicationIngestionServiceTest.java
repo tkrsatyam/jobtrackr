@@ -14,6 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Collections;
@@ -57,7 +58,7 @@ class ApplicationIngestionServiceTest {
     }
 
     @Test
-    @DisplayName("Should update existing application notes if duplicate role at company within 30 days")
+    @DisplayName("Should update existing application notes if duplicate role at company within 14 days")
     void testDeduplicateExistingApplication() {
         when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-456")).thenReturn(false);
 
@@ -69,6 +70,7 @@ class ApplicationIngestionServiceTest {
                 .status(ApplicationStatus.APPLIED)
                 .appliedDate(LocalDate.now().minusDays(5))
                 .notes("Existing application note")
+                .requiresReview(false)
                 .build();
 
         when(applicationRepository.findPotentialDuplicates(eq(userId), eq("Stripe"), eq("Backend Engineer"), any()))
@@ -86,6 +88,81 @@ class ApplicationIngestionServiceTest {
         assertThat(existing.getNotes()).contains("Existing application note");
         assertThat(existing.getNotes()).contains("[Email update");
         assertThat(existing.getNotes()).contains("Invitation to interview");
+    }
+
+    @Test
+    @DisplayName("Should upgrade confidence score and enrich jobUrl when incoming unreviewed event has higher confidence")
+    void testUpgradeConfidenceAndEnrichFieldsWhenInReview() {
+        when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-novo-direct")).thenReturn(false);
+
+        Application existing = Application.builder()
+                .applicationId(UUID.randomUUID())
+                .userId(userId)
+                .companyName("Novo Tree Minds")
+                .role("Java Developer")
+                .status(ApplicationStatus.APPLIED)
+                .appliedDate(LocalDate.now().minusDays(1))
+                .confidenceScore(new BigDecimal("0.80"))
+                .location("Pune, Maharashtra, India 411001")
+                .requiresReview(true)
+                .notes("Discovered from Indeed")
+                .build();
+
+        when(applicationRepository.findPotentialDuplicates(eq(userId), eq("Novo Tree Minds"), eq("Java Developer"), any()))
+                .thenReturn(List.of(existing));
+
+        ApplicationDiscoveredEvent higherConfidenceEvent = new ApplicationDiscoveredEvent(
+                UUID.randomUUID(), userId, "Novo Tree Minds", "Java Developer", "APPLIED",
+                null, "https://recooty.com/jobs/view/998877", null, "notifications@recooty.com",
+                "Direct confirmation from Recooty", 0.85,
+                "msg-novo-direct", "Application Received - Thank You!", "notifications@recooty.com", Instant.now()
+        );
+
+        ingestionService.processDiscoveredApplication(higherConfidenceEvent);
+
+        verify(applicationRepository).save(existing);
+        assertThat(existing.getConfidenceScore()).isEqualTo(new BigDecimal("0.85"));
+        assertThat(existing.getJobUrl()).isEqualTo("https://recooty.com/jobs/view/998877");
+        assertThat(existing.getLocation()).isEqualTo("Pune, Maharashtra, India 411001");
+        assertThat(existing.getNotes()).contains("Discovered from Indeed");
+        assertThat(existing.getNotes()).contains("[Email update");
+        assertThat(existing.getNotes()).contains("Direct confirmation from Recooty");
+    }
+
+    @Test
+    @DisplayName("Should retain higher confidence score but enrich missing location when incoming event has lower confidence")
+    void testRetainHigherConfidenceAndEnrichMissingLocation() {
+        when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-indeed-second")).thenReturn(false);
+
+        Application existing = Application.builder()
+                .applicationId(UUID.randomUUID())
+                .userId(userId)
+                .companyName("Novo Tree Minds")
+                .role("Java Developer")
+                .status(ApplicationStatus.APPLIED)
+                .appliedDate(LocalDate.now().minusDays(1))
+                .confidenceScore(new BigDecimal("0.85"))
+                .jobUrl("https://recooty.com/jobs/view/998877")
+                .requiresReview(true)
+                .notes("Direct Recooty note")
+                .build();
+
+        when(applicationRepository.findPotentialDuplicates(eq(userId), eq("Novo Tree Minds"), eq("Java Developer"), any()))
+                .thenReturn(List.of(existing));
+
+        ApplicationDiscoveredEvent lowerConfidenceEvent = new ApplicationDiscoveredEvent(
+                UUID.randomUUID(), userId, "Novo Tree Minds", "Java Developer", "APPLIED",
+                "Pune, Maharashtra, India 411001", null, null, "indeedapply@indeed.com",
+                "Indeed submission", 0.80,
+                "msg-indeed-second", "Indeed Application: Java Developer", "indeedapply@indeed.com", Instant.now()
+        );
+
+        ingestionService.processDiscoveredApplication(lowerConfidenceEvent);
+
+        verify(applicationRepository).save(existing);
+        assertThat(existing.getConfidenceScore()).isEqualTo(new BigDecimal("0.85"));
+        assertThat(existing.getLocation()).isEqualTo("Pune, Maharashtra, India 411001");
+        assertThat(existing.getJobUrl()).isEqualTo("https://recooty.com/jobs/view/998877");
     }
 
     @Test

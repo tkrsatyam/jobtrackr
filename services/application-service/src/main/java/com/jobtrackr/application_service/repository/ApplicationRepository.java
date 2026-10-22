@@ -53,7 +53,11 @@ public interface ApplicationRepository extends JpaRepository<Application, UUID>,
             WHERE a.userId = :userId
               AND a.isDeleted = false
               AND lower(trim(a.companyName)) = lower(trim(:companyName))
-              AND lower(trim(a.role)) = lower(trim(:role))
+              AND (
+                  lower(trim(a.role)) = lower(trim(:role))
+                  OR lower(trim(a.role)) LIKE concat('%', lower(trim(:role)), '%')
+                  OR lower(trim(:role)) LIKE concat('%', lower(trim(a.role)), '%')
+              )
               AND a.appliedDate >= :sinceDate
             """)
     List<Application> findPotentialDuplicates(

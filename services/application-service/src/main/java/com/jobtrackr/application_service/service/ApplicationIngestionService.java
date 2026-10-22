@@ -42,20 +42,55 @@ public class ApplicationIngestionService {
                 ? LocalDate.ofInstant(event.emailReceivedAt(), ZoneId.systemDefault())
                 : LocalDate.now();
 
-        // 2. Deduplication check within last 30 days
-        LocalDate thirtyDaysAgo = appliedDate.minusDays(30);
-        String roleTitle = event.roleTitle() != null ? event.roleTitle().trim() : "Software Engineer";
+        // 2. Deduplication check within last 14 days
+        LocalDate fourteenDaysAgo = appliedDate.minusDays(14);
+        String roleTitle = event.roleTitle() != null ? event.roleTitle().trim() : "Applicant Position";
         List<Application> potentialDuplicates = applicationRepository.findPotentialDuplicates(
                 event.userId(),
                 event.companyName().trim(),
                 roleTitle,
-                thirtyDaysAgo
+                fourteenDaysAgo
         );
 
         if (!potentialDuplicates.isEmpty()) {
             Application existing = potentialDuplicates.get(0);
-            log.info("Found existing matching application {} for company '{}' and role '{}'. Appending update.",
+            log.info("Found existing matching application {} for company '{}' and role '{}'.",
                     existing.getApplicationId(), existing.getCompanyName(), existing.getRole());
+
+            BigDecimal newConfidence = event.confidenceScore() != null
+                    ? BigDecimal.valueOf(event.confidenceScore()).setScale(2, RoundingMode.HALF_UP)
+                    : null;
+
+            if (Boolean.TRUE.equals(existing.getRequiresReview())) {
+                // If candidate is still awaiting review, compare confidence scores
+                if (newConfidence != null && (existing.getConfidenceScore() == null || newConfidence.compareTo(existing.getConfidenceScore()) > 0)) {
+                    log.info("Incoming application has higher confidence ({} > {}). Updating candidate details.",
+                            newConfidence, existing.getConfidenceScore());
+                    existing.setConfidenceScore(newConfidence);
+                    if (event.roleTitle() != null && !event.roleTitle().isBlank() && !event.roleTitle().equals("Applicant Position")) {
+                        existing.setRole(event.roleTitle().trim());
+                    }
+                    if (event.location() != null && !event.location().isBlank()) {
+                        existing.setLocation(event.location().trim());
+                    }
+                    if (event.jobUrl() != null && !event.jobUrl().isBlank()) {
+                        existing.setJobUrl(event.jobUrl().trim());
+                    }
+                    if (event.status() != null) {
+                        try {
+                            existing.setStatus(ApplicationStatus.valueOf(event.status()));
+                        } catch (IllegalArgumentException ignored) {}
+                    }
+                } else {
+                    // Enrich missing fields from lower/equal confidence confirmation
+                    if ((existing.getLocation() == null || existing.getLocation().isBlank()) && event.location() != null) {
+                        existing.setLocation(event.location().trim());
+                    }
+                    if ((existing.getJobUrl() == null || existing.getJobUrl().isBlank()) && event.jobUrl() != null) {
+                        existing.setJobUrl(event.jobUrl().trim());
+                    }
+                }
+            }
 
             String updateNote = "\n[Email update " + appliedDate + "]: " +
                     (event.emailSubject() != null ? event.emailSubject() + " - " : "") +
