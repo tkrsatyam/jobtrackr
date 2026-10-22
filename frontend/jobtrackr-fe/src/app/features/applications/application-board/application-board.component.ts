@@ -16,6 +16,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { ApplicationCardComponent } from "../components/application-card/application-card.component";
 import { ScrollingModule } from '@angular/cdk/scrolling';
+import { ReviewBannerComponent } from '../components/review-banner/review-banner.component';
 
 @Component({
   selector: 'app-application-board',
@@ -26,6 +27,7 @@ import { ScrollingModule } from '@angular/cdk/scrolling';
     MatIconModule,
     MatProgressBarModule,
     ApplicationCardComponent,
+    ReviewBannerComponent,
     ScrollingModule
 ],
   templateUrl: './application-board.component.html',

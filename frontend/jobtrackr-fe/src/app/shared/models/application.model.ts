@@ -7,7 +7,7 @@ export type PriorityLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'DREAM';
 export type WorkMode = 'REMOTE' | 'HYBRID' | 'ON_SITE';
 export type ApplicationSource = 
     | 'LINKEDIN' | 'NAUKRI' | 'INTERNSHALA' | 'COMPANY_WEBSITE'
-    | 'REFERRAL' | 'ANGEL_LIST' | 'INSTAHYRE' | 'OTHER';
+    | 'REFERRAL' | 'ANGEL_LIST' | 'INSTAHYRE' | 'EMAIL' | 'OTHER';
 
 export interface StatusHistoryEntry {
     status: ApplicationStatus;
@@ -37,6 +37,11 @@ export interface ApplicationResponse {
     updatedAt: string;
     tags: string[];
     statusHistory: StatusHistoryEntry[];
+    aiDiscovered?: boolean;
+    requiresReview?: boolean;
+    confidenceScore?: number | null;
+    rawEmailSnippet?: string | null;
+    emailMessageId?: string | null;
 }
 
 export interface Page<T> {
@@ -120,4 +125,20 @@ export interface BulkStatusRequest {
 export interface BulkTagRequest {
     ids: string[];
     tags: string[];
+}
+
+export interface ConfirmReviewRequest {
+    companyName?: string;
+    role?: string;
+    jobUrl?: string;
+    location?: string;
+    salaryMin?: number;
+    salaryMax?: number;
+    currency?: string;
+    notes?: string;
+    status?: ApplicationStatus;
+}
+
+export interface PendingReviewCountResponse {
+    count: number;
 }

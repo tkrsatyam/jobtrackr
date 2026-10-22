@@ -1,0 +1,141 @@
+<div class="review-modal-container">
+  <div class="modal-header">
+    <div class="title-group">
+      <mat-icon class="sparkle-icon">auto_awesome</mat-icon>
+      <h2 mat-dialog-title>
+        Review AI-Discovered Application
+        @if (totalCount() > 0) {
+          <span class="count-badge">({{ currentIndex() + 1 }} of {{ totalCount() }})</span>
+        }
+      </h2>
+    </div>
+    <button mat-icon-button (click)="close()" [disabled]="isSubmitting()" aria-label="Close dialog">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  @if (isSubmitting()) {
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+  }
+
+  <mat-dialog-content class="modal-content">
+    @if (currentItem(); as item) {
+      <div class="meta-bar">
+        <div class="confidence-pill" [class]="confidenceClass()">
+          <mat-icon class="pill-icon">verified</mat-icon>
+          <span>{{ confidencePercent() ?? 0 }}% Confidence</span>
+        </div>
+        <div class="discovered-date">
+          <span>Discovered from email on {{ item.createdAt | date:'mediumDate' }}</span>
+        </div>
+      </div>
+
+      @if (item.rawEmailSnippet) {
+        <div class="snippet-accordion">
+          <button type="button" class="snippet-toggle" (click)="toggleSnippet()">
+            <mat-icon>{{ showRawSnippet() ? 'expand_less' : 'expand_more' }}</mat-icon>
+            <span>{{ showRawSnippet() ? 'Hide email context' : 'View email context' }}</span>
+          </button>
+          @if (showRawSnippet()) {
+            <div class="snippet-box">
+              <p class="snippet-text">{{ item.rawEmailSnippet }}</p>
+            </div>
+          }
+        </div>
+      }
+
+      <form [formGroup]="form" class="review-form">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Company Name</mat-label>
+            <input matInput formControlName="companyName" placeholder="e.g. Google" />
+            @if (form.controls.companyName.hasError('required')) {
+              <mat-error>Company name is required</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Role / Position</mat-label>
+            <input matInput formControlName="role" placeholder="e.g. Software Engineer" />
+            @if (form.controls.role.hasError('required')) {
+              <mat-error>Role is required</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Status</mat-label>
+            <mat-select formControlName="status">
+              @for (st of activeStatuses; track st) {
+                <mat-option [value]="st">{{ statusLabels[st] }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Location</mat-label>
+            <input matInput formControlName="location" placeholder="e.g. Remote, New York, NY" />
+          </mat-form-field>
+        </div>
+
+        <div class="form-row single-field">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Job Posting URL</mat-label>
+            <input matInput formControlName="jobUrl" placeholder="https://..." />
+          </mat-form-field>
+        </div>
+
+        <div class="form-row three-cols">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Salary Min</mat-label>
+            <input matInput type="number" formControlName="salaryMin" placeholder="0" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Salary Max</mat-label>
+            <input matInput type="number" formControlName="salaryMax" placeholder="0" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Currency</mat-label>
+            <input matInput formControlName="currency" placeholder="USD" />
+          </mat-form-field>
+        </div>
+
+        <div class="form-row single-field">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Notes</mat-label>
+            <textarea matInput formControlName="notes" rows="3" placeholder="Additional details or recruiter notes"></textarea>
+          </mat-form-field>
+        </div>
+      </form>
+    } @else {
+      <div class="empty-state">
+        <mat-icon class="empty-icon">check_circle_outline</mat-icon>
+        <p>No pending applications to review.</p>
+      </div>
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end" class="modal-actions">
+    @if (currentItem()) {
+      <button mat-button color="warn" type="button" (click)="rejectCurrent()" [disabled]="isSubmitting()">
+        <mat-icon>delete_outline</mat-icon>
+        <span>Discard</span>
+      </button>
+      <div class="spacer"></div>
+      <button mat-button type="button" (click)="close()" [disabled]="isSubmitting()">
+        <span>Cancel</span>
+      </button>
+      <button mat-flat-button color="primary" type="button" (click)="confirmCurrent()" [disabled]="form.invalid || isSubmitting()">
+        <mat-icon>check</mat-icon>
+        <span>Confirm & Add to Board</span>
+      </button>
+    } @else {
+      <button mat-flat-button color="primary" type="button" (click)="close()">
+        <span>Close</span>
+      </button>
+    }
+  </mat-dialog-actions>
+</div>

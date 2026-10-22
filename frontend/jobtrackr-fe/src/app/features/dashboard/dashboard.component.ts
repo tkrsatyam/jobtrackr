@@ -8,6 +8,7 @@ import { ApplicationResponse } from '../../shared/models/application.model';
 import { TERMINAL_STATUSES } from '../../shared/constants/status-transitions';
 import { StatusBadgeComponent } from "../../shared/components/status-badge/status-badge.component";
 import { DatePipe } from '@angular/common';
+import { ReviewBannerComponent } from '../applications/components/review-banner/review-banner.component';
 
 interface StatCardConfig {
   label: string;
@@ -23,8 +24,9 @@ interface StatCardConfig {
     MatIcon,
     MatProgressBarModule,
     StatusBadgeComponent,
-    DatePipe
-],
+    DatePipe,
+    ReviewBannerComponent
+  ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
@@ -39,7 +41,7 @@ export class DashboardComponent implements OnInit {
   offers = computed(() => this.applications().filter(a => a.status === 'OFFER').length);
   accepted = computed(() => this.applications().filter(a => a.status === 'ACCEPTED').length);
 
-  statCards: StatCardConfig[] =[
+  statCards: StatCardConfig[] = [
     { label: 'Total', value: () => this.total() },
     { label: 'Active', value: () => this.active() },
     { label: 'Offers', value: () => this.offers(), modifier: 'offer' },
@@ -53,6 +55,11 @@ export class DashboardComponent implements OnInit {
   );
 
   ngOnInit(): void {
+    this.loadApplications();
+  }
+
+  loadApplications(): void {
+    this.loading.set(true);
     this.appService.getApplications({ size: 200 }).subscribe({
       next: page => {
         this.applications.set(page.content);
