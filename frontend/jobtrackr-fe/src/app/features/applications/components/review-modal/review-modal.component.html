@@ -26,7 +26,7 @@
           <span>{{ confidencePercent() ?? 0 }}% Confidence</span>
         </div>
         <div class="discovered-date">
-          <span>Discovered from email on {{ item.createdAt | date:'mediumDate' }}</span>
+          <span>Received: {{ (item.emailReceivedAt || item.appliedDate || item.createdAt) | date:'medium' }}</span>
         </div>
       </div>
 

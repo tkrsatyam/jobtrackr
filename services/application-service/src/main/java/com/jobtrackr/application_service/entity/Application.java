@@ -12,6 +12,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -101,6 +102,19 @@ public class Application {
 
     @Column(name = "email_message_id", length = 255)
     private String emailMessageId;
+
+    @Column(name = "email_received_at")
+    private Instant emailReceivedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "proposed_status")
+    private ApplicationStatus proposedStatus;
+
+    @Column(name = "status_proposal_reason", length = 500)
+    private String statusProposalReason;
+
+    @Column(name = "status_proposal_received_at")
+    private Instant statusProposalReceivedAt;
 
     @CreationTimestamp
     @Column(updatable = false)

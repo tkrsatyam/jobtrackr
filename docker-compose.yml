@@ -147,6 +147,9 @@ services:
       - DB_USERNAME=postgres
       - DB_PASSWORD=postgres
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - INGESTION_SCHEDULER_ENABLED=${INGESTION_SCHEDULER_ENABLED:-false}
     depends_on:
       eureka-server:
         condition: service_healthy

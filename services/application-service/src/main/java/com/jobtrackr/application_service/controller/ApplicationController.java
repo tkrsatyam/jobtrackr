@@ -67,6 +67,16 @@ public class ApplicationController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{id}/accept-status-proposal")
+    public ResponseEntity<ApplicationResponse> acceptStatusProposal(@PathVariable UUID id, HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(applicationService.acceptStatusProposal(id, httpRequest));
+    }
+
+    @PostMapping("/{id}/dismiss-status-proposal")
+    public ResponseEntity<ApplicationResponse> dismissStatusProposal(@PathVariable UUID id, HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(applicationService.dismissStatusProposal(id, httpRequest));
+    }
+
     @GetMapping("/search")
     public ResponseEntity<List<ApplicationSearchResult>> searchApplications(
             @RequestParam String keyword,

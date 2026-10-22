@@ -19,6 +19,9 @@ import com.jobtrackr.email_ingestion_service.repository.ProcessedEmailRepository
 import com.jobtrackr.email_ingestion_service.util.GmailContentParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,12 +46,29 @@ public class GmailPollingWorker {
     private final EmailPollingStateRepository emailPollingStateRepository;
     private final ProcessedEmailRepository processedEmailRepository;
 
-    @Scheduled(fixedDelayString = "${jobtrackr.ingestion.poll-interval-ms:300000}", initialDelay = 30000)
+    @Autowired(required = false)
+    private StringRedisTemplate redisTemplate;
+
+    @Value("${jobtrackr.ingestion.scheduler.enabled:false}")
+    private boolean schedulerEnabled;
+
+    @Scheduled(fixedDelayString = "${jobtrackr.ingestion.poll-interval-ms:10800000}", initialDelay = 30000)
     public void scheduledPoll() {
-        log.info("Starting scheduled email polling run");
+        if (!schedulerEnabled) {
+            log.debug("Scheduled email polling is disabled (jobtrackr.ingestion.scheduler.enabled=false)");
+            return;
+        }
+
+        log.info("Starting scheduled email polling run (interval: 3h)");
         try {
             int discovered = pollAllUsers();
             log.info("Scheduled email polling run finished. Total applications discovered: {}", discovered);
+
+            if (discovered > 0) {
+                log.info("Discovered {} new applications during background poll", discovered);
+                // [NOTIFICATION HOOK]: Trigger notification when notification-service is wired
+                // notificationProducer.sendBackgroundSyncNotification(discovered);
+            }
         } catch (Exception e) {
             log.error("Scheduled email polling run encountered an error: {}", e.getMessage(), e);
         }
@@ -133,6 +153,12 @@ public class GmailPollingWorker {
                 continue;
             }
 
+            // Check if user previously rejected this message (Redis Set + PostgreSQL tombstone)
+            if (isMessageRejected(userId, ref.id())) {
+                log.info("Skipping user-rejected email message {}", ref.id());
+                continue;
+            }
+
             if (processedEmailRepository.existsByUserIdAndMessageId(userId, ref.id())) {
                 continue;
             }
@@ -207,6 +233,23 @@ public class GmailPollingWorker {
 
         log.info("Finished polling for user {}. Applications discovered: {}", userId, discoveredCount);
         return discoveredCount;
+    }
+
+    private boolean isMessageRejected(UUID userId, String messageId) {
+        String redisKey = "jobtrackr:user:" + userId + ":rejected_emails";
+        try {
+            if (redisTemplate != null) {
+                Boolean isMember = redisTemplate.opsForSet().isMember(redisKey, messageId);
+                if (Boolean.TRUE.equals(isMember)) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Redis check failed for rejected email {}: {}", messageId, e.getMessage());
+        }
+        return processedEmailRepository.existsByUserIdAndMessageIdAndStatus(
+                userId, messageId, EmailProcessingStatus.REJECTED
+        );
     }
 
     private String maxHistoryId(String id1, String id2) {

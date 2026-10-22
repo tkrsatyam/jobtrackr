@@ -42,6 +42,10 @@ export interface ApplicationResponse {
     confidenceScore?: number | null;
     rawEmailSnippet?: string | null;
     emailMessageId?: string | null;
+    emailReceivedAt?: string | null;
+    proposedStatus?: ApplicationStatus | null;
+    statusProposalReason?: string | null;
+    statusProposalReceivedAt?: string | null;
 }
 
 export interface Page<T> {

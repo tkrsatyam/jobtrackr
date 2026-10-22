@@ -38,6 +38,28 @@
             </div>
         </div>
 
+        @if (app.proposedStatus) {
+            <div class="proposal-banner" role="alert">
+                <mat-icon class="proposal-icon">auto_awesome</mat-icon>
+                <div class="proposal-content">
+                    <div class="proposal-title">
+                        <strong>Status Update Detected:</strong> Incoming email suggests updating status to <strong>{{ statusLabels[app.proposedStatus] || app.proposedStatus }}</strong>.
+                    </div>
+                    @if (app.statusProposalReason) {
+                        <div class="proposal-reason">"{{ app.statusProposalReason }}"</div>
+                    }
+                </div>
+                <div class="proposal-actions">
+                    <button mat-flat-button color="primary" type="button" (click)="acceptProposal()">
+                        <mat-icon>check</mat-icon> Accept Update
+                    </button>
+                    <button mat-stroked-button type="button" (click)="dismissProposal()">
+                        Dismiss
+                    </button>
+                </div>
+            </div>
+        }
+
         <!-- ── Archived banner (full-width, above grid) ── -->
         @if (app.isArchived) {
             <div class="archived-banner" role="status" aria-live="polite">

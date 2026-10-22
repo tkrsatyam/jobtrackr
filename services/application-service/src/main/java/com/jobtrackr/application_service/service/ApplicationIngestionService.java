@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
@@ -90,6 +91,40 @@ public class ApplicationIngestionService {
                         existing.setJobUrl(event.jobUrl().trim());
                     }
                 }
+                if (event.emailReceivedAt() != null) {
+                    existing.setEmailReceivedAt(event.emailReceivedAt());
+                }
+            } else {
+                // Active application already confirmed by the user (Option B: Status Proposal)
+                if (event.status() != null) {
+                    try {
+                        ApplicationStatus incomingStatus = ApplicationStatus.valueOf(event.status());
+                        if (incomingStatus != existing.getStatus()) {
+                            existing.setProposedStatus(incomingStatus);
+                            String proposalReason = event.notes() != null && !event.notes().isBlank()
+                                    ? event.notes()
+                                    : (event.emailSubject() != null ? event.emailSubject() : "Detected from incoming email");
+                            existing.setStatusProposalReason(proposalReason);
+                            existing.setStatusProposalReceivedAt(event.emailReceivedAt() != null ? event.emailReceivedAt() : Instant.now());
+
+                            log.info("Registered status proposal {} for active application {} based on email {}",
+                                    incomingStatus, existing.getApplicationId(), event.emailMessageId());
+
+                            // [NOTIFICATION HOOK]: Trigger notification when notification-service is wired
+                            // notificationService.notifyStatusProposal(existing.getUserId(), existing.getApplicationId(), incomingStatus);
+                        }
+                    } catch (IllegalArgumentException ignored) {}
+                }
+
+                if ((existing.getLocation() == null || existing.getLocation().isBlank()) && event.location() != null) {
+                    existing.setLocation(event.location().trim());
+                }
+                if ((existing.getJobUrl() == null || existing.getJobUrl().isBlank()) && event.jobUrl() != null) {
+                    existing.setJobUrl(event.jobUrl().trim());
+                }
+                if (existing.getEmailReceivedAt() == null && event.emailReceivedAt() != null) {
+                    existing.setEmailReceivedAt(event.emailReceivedAt());
+                }
             }
 
             String updateNote = "\n[Email update " + appliedDate + "]: " +
@@ -138,6 +173,7 @@ public class ApplicationIngestionService {
                 .confidenceScore(confidence)
                 .rawEmailSnippet(rawSnippet.trim())
                 .emailMessageId(event.emailMessageId())
+                .emailReceivedAt(event.emailReceivedAt())
                 .isArchived(false)
                 .isDeleted(false)
                 .build();

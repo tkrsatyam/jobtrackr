@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -43,6 +44,10 @@ public class ApplicationResponse {
     private BigDecimal confidenceScore;
     private String rawEmailSnippet;
     private String emailMessageId;
+    private Instant emailReceivedAt;
+    private ApplicationStatus proposedStatus;
+    private String statusProposalReason;
+    private Instant statusProposalReceivedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

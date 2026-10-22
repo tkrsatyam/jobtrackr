@@ -486,6 +486,59 @@ public class ApplicationServiceImpl implements ApplicationService {
         application.setIsDeleted(true);
         application.setRequiresReview(false);
         applicationRepository.save(application);
+
+        if (application.getEmailMessageId() != null) {
+            eventProducer.sendApplicationReviewRejected(userId, application.getEmailMessageId());
+        }
+    }
+
+    @Override
+    public ApplicationResponse acceptStatusProposal(UUID applicationId, HttpServletRequest httpRequest) {
+        UUID userId = userContextHolder.getUserId(httpRequest);
+        Application application = findAndVerifyOwnership(applicationId, userId);
+
+        if (application.getProposedStatus() == null) {
+            throw new IllegalStateException("No status change is currently proposed for this application");
+        }
+
+        ApplicationStatus oldStatus = application.getStatus();
+        ApplicationStatus newStatus = application.getProposedStatus();
+        String reason = application.getStatusProposalReason();
+
+        application.setStatus(newStatus);
+        application.setProposedStatus(null);
+        application.setStatusProposalReason(null);
+        application.setStatusProposalReceivedAt(null);
+
+        String historyNote = reason != null && !reason.isBlank()
+                ? "Status updated from email proposal: " + reason
+                : "Status updated from email proposal";
+
+        ApplicationStatusHistory history = applicationMapper.toHistoryEntity(application, newStatus, historyNote);
+        application.getStatusHistory().add(history);
+
+        application = applicationRepository.save(application);
+        eventProducer.sendStatusUpdated(StatusUpdatedEvent.builder()
+                .applicationId(application.getApplicationId())
+                .userId(userId)
+                .previousStatus(oldStatus)
+                .newStatus(newStatus)
+                .build());
+
+        return applicationMapper.toResponse(application);
+    }
+
+    @Override
+    public ApplicationResponse dismissStatusProposal(UUID applicationId, HttpServletRequest httpRequest) {
+        UUID userId = userContextHolder.getUserId(httpRequest);
+        Application application = findAndVerifyOwnership(applicationId, userId);
+
+        application.setProposedStatus(null);
+        application.setStatusProposalReason(null);
+        application.setStatusProposalReceivedAt(null);
+
+        application = applicationRepository.save(application);
+        return applicationMapper.toResponse(application);
     }
 
     private Application findAndVerifyOwnership(UUID applicationId, UUID userId) {

@@ -77,7 +77,15 @@ public class JobApplicationExtractor {
                     - If isJobApplication is true:
                       - companyName: exact name of the hiring employer (e.g. if the email is from Indeed or LinkedIn, find the actual hiring company mentioned in the body like "Novo Tree Minds" or "Stripe", NOT "Indeed Apply" or "LinkedIn").
                       - roleTitle: exact job position title including level numbers and roman numerals (e.g. "Software Engineer I", "Software Engineer 2", "Core Java Developer").
-                      - status: one of SAVED, APPLIED, PHONE_SCREEN, INTERVIEW, TECHNICAL_ROUND, HR_ROUND, OFFER, REJECTED.
+                      - status: determine the exact status according to these rules:
+                        * REJECTED: email states application is not moving forward, candidate not selected, pursuing other candidates, or regret to inform.
+                        * OFFER: formal job offer, offer letter, employment offer, or compensation package details.
+                        * ACCEPTED: welcome to the team, signing confirmation, or onboarding after offer acceptance.
+                        * TECHNICAL_ROUND: coding challenge, technical assessment, HackerRank, CodeSignal, take-home assignment, live coding, or technical interview.
+                        * HR_ROUND: HR round, culture fit interview, behavioral questions, or final managerial discussion.
+                        * PHONE_SCREEN: recruiter phone screen, introductory talent call, or screening chat.
+                        * INTERVIEW: general interview invitation or unspecified interview schedule.
+                        * APPLIED: application submission confirmation or "thank you for applying".
                       - location: candidate or job location if mentioned (e.g. "Pune, Maharashtra, India 411001" or "Bangalore, India"), else null.
                       - jobUrl: job posting or application status URL if found in the email, else null.
                       - recruiterName: name of recruiter if available, else null.
@@ -183,13 +191,19 @@ public class JobApplicationExtractor {
                 || lowerSubject.contains("not moving forward")
                 || lowerSubject.contains("not be moving forward")
                 || lowerSubject.contains("unsuccessful")
+                || lowerSubject.contains("not selected")
                 || lowerBody.contains("not moving forward")
                 || lowerBody.contains("not be moving forward")
                 || lowerBody.contains("won't be moving forward")
+                || lowerBody.contains("pursue other candidates")
+                || lowerBody.contains("pursuing other candidates")
                 || lowerBody.contains("pursue other")
                 || lowerBody.contains("other candidates")
                 || lowerBody.contains("not selected")
-                || lowerBody.contains("regret to inform");
+                || lowerBody.contains("regret to inform")
+                || lowerBody.contains("position has been filled")
+                || lowerBody.contains("decided not to move forward")
+                || lowerBody.contains("unable to offer you an interview");
 
         boolean isOffer = lowerSubject.contains("offer of employment")
                 || lowerSubject.contains("job offer")
@@ -197,7 +211,51 @@ public class JobApplicationExtractor {
                 || lowerSubject.contains("congratulations on your offer")
                 || lowerBody.contains("pleased to offer you")
                 || lowerBody.contains("offer of employment")
-                || lowerBody.contains("attached offer letter");
+                || lowerBody.contains("attached offer letter")
+                || lowerBody.contains("extend an offer of employment")
+                || lowerBody.contains("congratulations on receiving this offer");
+
+        boolean isAccepted = lowerSubject.contains("welcome to the team")
+                || lowerSubject.contains("onboarding details")
+                || lowerBody.contains("welcome to the team")
+                || lowerBody.contains("signed offer letter")
+                || lowerBody.contains("confirmed your acceptance");
+
+        boolean isTechnicalRound = lowerSubject.contains("coding assessment")
+                || lowerSubject.contains("online assessment")
+                || lowerSubject.contains("technical assessment")
+                || lowerSubject.contains("hackerrank")
+                || lowerSubject.contains("codesignal")
+                || lowerSubject.contains("technical test")
+                || lowerSubject.contains("coding test")
+                || lowerSubject.contains("technical challenge")
+                || lowerSubject.contains("oa invitation")
+                || lowerBody.contains("coding assessment")
+                || lowerBody.contains("online assessment")
+                || lowerBody.contains("technical assessment")
+                || lowerBody.contains("hackerrank.com")
+                || lowerBody.contains("codesignal.com")
+                || lowerBody.contains("take-home assignment")
+                || lowerBody.contains("take home assignment")
+                || lowerBody.contains("live coding session");
+
+        boolean isHrRound = lowerSubject.contains("hr round")
+                || lowerSubject.contains("hr interview")
+                || lowerSubject.contains("culture fit")
+                || lowerSubject.contains("behavioral interview")
+                || lowerBody.contains("hr round")
+                || lowerBody.contains("culture fit interview")
+                || lowerBody.contains("behavioral round");
+
+        boolean isPhoneScreen = lowerSubject.contains("phone screen")
+                || lowerSubject.contains("recruiter call")
+                || lowerSubject.contains("screening call")
+                || lowerSubject.contains("introductory call")
+                || lowerSubject.contains("intro call")
+                || lowerBody.contains("recruiter phone screen")
+                || lowerBody.contains("short phone screen")
+                || lowerBody.contains("introductory call with our recruiter")
+                || lowerBody.contains("screening call with");
 
         boolean isInterview = lowerSubject.contains("interview invitation")
                 || lowerSubject.contains("schedule your interview")
@@ -214,8 +272,18 @@ public class JobApplicationExtractor {
             status = "REJECTED";
         } else if (isOffer) {
             status = "OFFER";
+        } else if (isAccepted) {
+            status = "ACCEPTED";
+        } else if (isTechnicalRound) {
+            status = "TECHNICAL_ROUND";
+        } else if (isHrRound) {
+            status = "HR_ROUND";
+        } else if (isPhoneScreen) {
+            status = "PHONE_SCREEN";
         } else if (isInterview || lowerSubject.contains("interview")) {
             status = "INTERVIEW";
+        } else {
+            status = "APPLIED";
         }
 
         // 5. Company Name Extraction
@@ -560,6 +628,10 @@ public class JobApplicationExtractor {
             score += 0.25;
         } else if ("OFFER".equals(status)) {
             score += 0.30;
+        } else if ("ACCEPTED".equals(status)) {
+            score += 0.30;
+        } else if ("TECHNICAL_ROUND".equals(status) || "HR_ROUND".equals(status) || "PHONE_SCREEN".equals(status)) {
+            score += 0.25;
         } else if ("INTERVIEW".equals(status)) {
             score += 0.25;
         }

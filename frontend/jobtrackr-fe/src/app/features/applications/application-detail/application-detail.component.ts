@@ -176,6 +176,24 @@ export class ApplicationDetailComponent implements OnInit {
     );
   }
 
+  acceptProposal(): void {
+    const app = this.application();
+    if (!app) return;
+    this.appService.acceptStatusProposal(app.applicationId).subscribe(updated => {
+      this.application.set(updated);
+      this.snackBar.open('Status updated to ' + updated.status, 'OK', { duration: 3000 });
+    });
+  }
+
+  dismissProposal(): void {
+    const app = this.application();
+    if (!app) return;
+    this.appService.dismissStatusProposal(app.applicationId).subscribe(updated => {
+      this.application.set(updated);
+      this.snackBar.open('Status update suggestion dismissed', 'OK', { duration: 3000 });
+    });
+  }
+
   delete(): void {
     const app = this.application();
     if (!app) return;
