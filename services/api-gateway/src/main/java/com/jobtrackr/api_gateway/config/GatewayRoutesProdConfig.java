@@ -1,6 +1,7 @@
 package com.jobtrackr.api_gateway.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cloud.gateway.server.mvc.filter.BeforeFilterFunctions;
 import org.springframework.cloud.gateway.server.mvc.handler.HandlerFunctions;
 import org.springframework.context.annotation.Bean;
@@ -35,6 +36,9 @@ public class GatewayRoutesProdConfig {
     @Value("${app.services.application-service-url}")
     private String applicationServiceUrl;
 
+    @Value("${app.services.email-ingestion-service-url:#{null}}")
+    private String emailIngestionServiceUrl;
+
     @Bean
     public RouterFunction<ServerResponse> userServiceProdRoute() {
         return RouterFunctions.route()
@@ -50,6 +54,16 @@ public class GatewayRoutesProdConfig {
                 .route(RequestPredicates.path("/api/applications/**"),
                         HandlerFunctions.https())
                 .before(BeforeFilterFunctions.uri(URI.create(applicationServiceUrl)))
+                .build();
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "app.services.email-ingestion-service-url")
+    public RouterFunction<ServerResponse> emailIngestionServiceProdRoute() {
+        return RouterFunctions.route()
+                .route(RequestPredicates.path("/api/ingestion/**"),
+                        HandlerFunctions.https())
+                .before(BeforeFilterFunctions.uri(URI.create(emailIngestionServiceUrl)))
                 .build();
     }
 }

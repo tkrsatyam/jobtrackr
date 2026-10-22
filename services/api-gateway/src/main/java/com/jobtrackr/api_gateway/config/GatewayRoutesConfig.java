@@ -85,4 +85,13 @@ public class GatewayRoutesConfig {
                 .filter(LoadBalancerFilterFunctions.lb("analytics-service"))
                 .build();
     }
+
+    @Bean
+    public RouterFunction<ServerResponse> emailIngestionServiceRoute() {
+        return RouterFunctions.route()
+                .route(RequestPredicates.path("/api/ingestion/**"),
+                        HandlerFunctions.http())
+                .filter(LoadBalancerFilterFunctions.lb("email-ingestion-service"))
+                .build();
+    }
 }

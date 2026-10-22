@@ -109,6 +109,26 @@ services:
     networks:
       - jobtrackr-network
 
+  email-ingestion-service:
+    build: ./services/email-ingestion-service
+    container_name: email-ingestion-service
+    ports:
+      - "8088:8088"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - jobtrackr-network
+
 networks:
   jobtrackr-network:
     driver: bridge
