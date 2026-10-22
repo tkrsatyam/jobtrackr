@@ -4,6 +4,7 @@ import { RouterLink } from "@angular/router";
 import { MatIcon } from "@angular/material/icon";
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { ApplicationService } from '../applications/services/application.service';
+import { EmailIngestionService } from '../applications/services/email-ingestion.service';
 import { ApplicationResponse } from '../../shared/models/application.model';
 import { TERMINAL_STATUSES } from '../../shared/constants/status-transitions';
 import { StatusBadgeComponent } from "../../shared/components/status-badge/status-badge.component";
@@ -32,6 +33,7 @@ interface StatCardConfig {
 })
 export class DashboardComponent implements OnInit {
   private appService = inject(ApplicationService);
+  readonly ingestionService = inject(EmailIngestionService);
 
   loading = signal(true);
   applications = signal<ApplicationResponse[]>([]);
@@ -53,6 +55,10 @@ export class DashboardComponent implements OnInit {
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
       .slice(0, 5)
   );
+
+  syncEmails(): void {
+    this.ingestionService.syncEmails().subscribe();
+  }
 
   ngOnInit(): void {
     this.loadApplications();

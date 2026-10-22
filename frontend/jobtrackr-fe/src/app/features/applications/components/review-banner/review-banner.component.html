@@ -12,6 +12,10 @@
       </div>
     </div>
     <div class="banner-actions">
+      <button mat-stroked-button type="button" (click)="syncEmails()" [disabled]="ingestionService.syncing()">
+        <mat-icon [class.spin]="ingestionService.syncing()">sync</mat-icon>
+        <span>{{ ingestionService.syncing() ? 'Syncing...' : 'Sync Mailbox' }}</span>
+      </button>
       <button mat-flat-button color="primary" type="button" (click)="openReviewModal()">
         <mat-icon>rate_review</mat-icon>
         <span>Review Applications</span>

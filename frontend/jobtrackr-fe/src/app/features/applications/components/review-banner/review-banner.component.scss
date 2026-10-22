@@ -16,7 +16,7 @@
   box-shadow: var(--shadow);
   color: var(--mat-sys-on-surface);
 
-  @media (max-width: 680px) {
+  @media (max-width: 768px) {
     flex-direction: column;
     align-items: flex-start;
   }
@@ -66,7 +66,15 @@
 }
 
 .banner-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
   flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: flex-end;
+  }
 
   button {
     font-weight: 500;

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReviewBannerComponent } from './review-banner.component';
 import { PendingReviewService } from '../../services/pending-review.service';
+import { EmailIngestionService } from '../../services/email-ingestion.service';
 import { MatDialog } from '@angular/material/dialog';
 import { of } from 'rxjs';
 import { signal } from '@angular/core';
@@ -10,16 +11,23 @@ describe('ReviewBannerComponent', () => {
   let component: ReviewBannerComponent;
   let fixture: ComponentFixture<ReviewBannerComponent>;
   let mockReviewService: any;
+  let mockIngestionService: any;
   let mockDialog: any;
 
   beforeEach(async () => {
     const countSignal = signal(3);
     const hasPendingSignal = signal(true);
+    const syncingSignal = signal(false);
 
     mockReviewService = {
       count: countSignal,
       hasPending: hasPendingSignal,
       refreshCount: vi.fn().mockReturnValue(of({ count: 3 }))
+    };
+
+    mockIngestionService = {
+      syncing: syncingSignal,
+      syncEmails: vi.fn().mockReturnValue(of({ status: 'SUCCESS', discoveredCount: 0, message: 'Done' }))
     };
 
     mockDialog = {
@@ -32,6 +40,7 @@ describe('ReviewBannerComponent', () => {
       imports: [ReviewBannerComponent],
       providers: [
         { provide: PendingReviewService, useValue: mockReviewService },
+        { provide: EmailIngestionService, useValue: mockIngestionService },
         { provide: MatDialog, useValue: mockDialog }
       ]
     }).compileComponents();
@@ -60,5 +69,10 @@ describe('ReviewBannerComponent', () => {
 
     expect(mockDialog.open).toHaveBeenCalled();
     expect(reviewedEmitted).toBe(true);
+  });
+
+  it('should call syncEmails when sync button is clicked', () => {
+    component.syncEmails();
+    expect(mockIngestionService.syncEmails).toHaveBeenCalled();
   });
 });

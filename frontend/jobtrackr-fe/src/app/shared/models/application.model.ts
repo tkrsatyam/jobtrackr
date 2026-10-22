@@ -142,3 +142,9 @@ export interface ConfirmReviewRequest {
 export interface PendingReviewCountResponse {
     count: number;
 }
+
+export interface IngestionSyncResponse {
+    status: string;
+    discoveredCount: number;
+    message: string;
+}

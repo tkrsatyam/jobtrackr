@@ -4,6 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { PendingReviewService } from '../../services/pending-review.service';
 import { ReviewModalComponent } from '../review-modal/review-modal.component';
+import { EmailIngestionService } from '../../services/email-ingestion.service';
 
 @Component({
   selector: 'app-review-banner',
@@ -16,6 +17,7 @@ import { ReviewModalComponent } from '../review-modal/review-modal.component';
 })
 export class ReviewBannerComponent implements OnInit {
   readonly reviewService = inject(PendingReviewService);
+  readonly ingestionService = inject(EmailIngestionService);
   private dialog = inject(MatDialog);
 
   readonly count = this.reviewService.count;
@@ -29,6 +31,10 @@ export class ReviewBannerComponent implements OnInit {
         // Silently handle if user is unauthenticated or service unavailable
       }
     });
+  }
+
+  syncEmails(): void {
+    this.ingestionService.syncEmails().subscribe();
   }
 
   openReviewModal(): void {

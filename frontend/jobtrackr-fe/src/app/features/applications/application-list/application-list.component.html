@@ -2,6 +2,11 @@
     <div class="page-header">
         <h1>Applications</h1>
         <div class="page-actions">
+            <button mat-stroked-button (click)="syncEmails()" [disabled]="ingestionService.syncing()">
+                <mat-icon [class.spin]="ingestionService.syncing()">sync</mat-icon>
+                <span>{{ ingestionService.syncing() ? 'Syncing...' : 'Sync Emails' }}</span>
+            </button>
+
             <a mat-stroked-button routerLink="/applications/board">
                 <mat-icon>view_kanban</mat-icon> Board View
             </a>
@@ -11,6 +16,8 @@
             </a>
         </div>
     </div>
+
+    <app-review-banner (reviewed)="load()" />
 
     <div class="filter-bar">
         <button mat-stroked-button (click)="openFilterModal()">
