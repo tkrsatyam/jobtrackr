@@ -171,7 +171,15 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         }
 
         log.info("Successfully linked Google account {} to user {}", email, targetUserId);
-        getRedirectStrategy().sendRedirect(request, response, frontendUrl + "/settings?linked=true");
+
+        String accessToken = jwtService.generateAccessToken(targetUser.getId(), targetUser.getEmail(), targetUser.getRole().name());
+        String refreshToken = refreshTokenService.createRefreshToken(targetUser).getToken();
+
+        String redirectUrl = frontendUrl + "/settings?linked=true"
+                + "&accessToken=" + accessToken
+                + "&refreshToken=" + refreshToken;
+
+        getRedirectStrategy().sendRedirect(request, response, redirectUrl);
     }
 
     private UUID targetUserId(String value) {

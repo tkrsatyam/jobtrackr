@@ -24,7 +24,10 @@ describe('SettingsComponent', () => {
     initLinkGoogle: ReturnType<typeof vi.fn>;
     unlinkGoogle: ReturnType<typeof vi.fn>;
   };
-  let mockTokenStorage: { clearTokens: ReturnType<typeof vi.fn> };
+  let mockTokenStorage: {
+    clearTokens: ReturnType<typeof vi.fn>;
+    saveTokens: ReturnType<typeof vi.fn>;
+  };
   let mockDialog: { open: ReturnType<typeof vi.fn> };
   let mockSnackBar: { open: ReturnType<typeof vi.fn> };
   let mockRouter: { navigate: ReturnType<typeof vi.fn> };
@@ -56,7 +59,8 @@ describe('SettingsComponent', () => {
     };
 
     mockTokenStorage = {
-      clearTokens: vi.fn()
+      clearTokens: vi.fn(),
+      saveTokens: vi.fn()
     };
 
     mockDialog = {
@@ -136,5 +140,19 @@ describe('SettingsComponent', () => {
     expect(mockDialog.open).toHaveBeenCalled();
     expect(mockAuthService.unlinkGoogle).toHaveBeenCalled();
     expect(mockSnackBar.open).toHaveBeenCalledWith('Google account disconnected', 'OK', { duration: 3000 });
+  });
+
+  it('should persist tokens and show snackbar when queryParams contain linked=true and tokens', async () => {
+    const route = TestBed.inject(ActivatedRoute);
+    (route as { queryParams: Observable<Params> }).queryParams = of({
+      linked: 'true',
+      accessToken: 'new-acc-tok',
+      refreshToken: 'new-ref-tok'
+    });
+
+    component.ngOnInit();
+
+    expect(mockTokenStorage.saveTokens).toHaveBeenCalledWith('new-acc-tok', 'new-ref-tok');
+    expect(mockSnackBar.open).toHaveBeenCalledWith('Google account connected successfully.', 'OK', { duration: 4000 });
   });
 });

@@ -34,6 +34,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -213,6 +214,11 @@ class OAuth2SuccessHandlerTest {
 
         when(response.encodeRedirectURL(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
+        when(jwtService.generateAccessToken(eq(targetUserId), eq("satyam@jobtrackr.com"), eq("USER")))
+                .thenReturn("mock-link-jwt-token");
+        RefreshToken mockRefreshToken = RefreshToken.builder().token("mock-link-refresh-token").build();
+        when(refreshTokenService.createRefreshToken(existingLocalUser)).thenReturn(mockRefreshToken);
+
         successHandler.onAuthenticationSuccess(request, response, authenticationToken);
 
         // Verify target user's providerId was updated
@@ -222,8 +228,13 @@ class OAuth2SuccessHandlerTest {
         // Verify OAuth credential saved
         verify(oAuthCredentialRepository).save(any(OAuthCredential.class));
 
-        // Verify redirected to settings?linked=true
-        verify(response).sendRedirect("http://localhost:4200/settings?linked=true");
+        // Verify redirected to settings?linked=true with fresh session tokens
+        ArgumentCaptor<String> redirectCaptor = ArgumentCaptor.forClass(String.class);
+        verify(response).sendRedirect(redirectCaptor.capture());
+        String redirectUrl = redirectCaptor.getValue();
+        assertThat(redirectUrl).startsWith("http://localhost:4200/settings?linked=true");
+        assertThat(redirectUrl).contains("accessToken=mock-link-jwt-token");
+        assertThat(redirectUrl).contains("refreshToken=mock-link-refresh-token");
     }
 
     @Test

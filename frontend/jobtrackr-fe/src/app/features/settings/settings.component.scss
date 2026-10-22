@@ -106,7 +106,6 @@ mat-card-header, mat-card-content {
   .google-icon {
     vertical-align: middle;
     flex-shrink: 0;
-    margin-right: var(--spacing-xs);
   }
 
   .btn-text {
@@ -140,22 +139,35 @@ mat-card-header, mat-card-content {
   display: flex;
   justify-content: flex-end;
   gap: var(--spacing-sm);
-  margin-top: var(--spacing-xs);
-  max-width: 600px;
+  margin-top: var(--spacing-sm);
 }
 
-.danger-card {
-  border: 1px solid var(--mat-sys-error);
-  border-radius: var(--radius);
+.field-hint {
+  font-size: 0.75rem;
+  color: var(--mat-sys-on-surface-variant);
+  margin: calc(var(--spacing-xs) * -1) 0 var(--spacing-xs);
+}
 
-  p {
-    font-size: 0.9rem;
-    color: var(--mat-sys-on-surface-variant);
-    margin-bottom: var(--spacing-md);
+.danger-description {
+  font-size: 0.875rem;
+  color: var(--mat-sys-on-surface-variant);
+  margin-bottom: var(--spacing-md);
+  line-height: 1.5;
+}
+
+.danger-zone {
+  border-color: color-mix(in srgb, var(--mat-sys-error) 40%, transparent);
+
+  mat-card-title {
+    color: var(--mat-sys-error);
   }
 }
 
-.delete-btn {
-  color: var(--mat-sys-error) !important;
-  border-color: var(--mat-sys-error) !important;
+.delete-account-btn {
+  border-color: var(--mat-sys-error);
+  color: var(--mat-sys-error);
+
+  &:hover {
+    background-color: color-mix(in srgb, var(--mat-sys-error) 8%, transparent);
+  }
 }

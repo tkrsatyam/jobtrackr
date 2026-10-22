@@ -76,6 +76,10 @@ export class SettingsComponent implements OnInit {
     }
 
     this.route.queryParams.subscribe(params => {
+      if (params['accessToken'] && params['refreshToken']) {
+        this.tokenStorage.saveTokens(params['accessToken'], params['refreshToken']);
+      }
+
       if (params['linked'] === 'true') {
         this.snackBar.open('Google account connected successfully.', 'OK', { duration: 4000 });
         this.authService.getProfile().subscribe();
