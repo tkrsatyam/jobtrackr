@@ -8,6 +8,7 @@ import com.jobtrackr.user_service.repository.UserRepository;
 import com.jobtrackr.user_service.service.AesGcmEncryptionService;
 import com.jobtrackr.user_service.service.JwtService;
 import com.jobtrackr.user_service.service.RefreshTokenService;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,14 +28,12 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -163,5 +162,97 @@ class OAuth2SuccessHandlerTest {
         assertThat(redirectUrl).startsWith("http://localhost:4200/oauth2/callback");
         assertThat(redirectUrl).contains("accessToken=mock-jwt-access-token");
         assertThat(redirectUrl).contains("refreshToken=mock-app-refresh-token");
+    }
+
+    @Test
+    @DisplayName("Should link Google account to existing user when linking cookie is present")
+    void shouldLinkAccountWhenLinkCookiePresent() throws IOException {
+        UUID targetUserId = UUID.randomUUID();
+        Cookie linkCookie = new Cookie("oauth2_link_user_id", targetUserId.toString());
+        when(request.getCookies()).thenReturn(new Cookie[]{linkCookie});
+
+        String email = "satyam@gmail.com";
+        String googleId = "google-sub-789";
+        String name = "Satyam Kumar";
+        String picture = "https://example.com/avatar.png";
+
+        when(authenticationToken.getPrincipal()).thenReturn(oAuth2User);
+        when(oAuth2User.getAttribute("email")).thenReturn(email);
+        when(oAuth2User.getAttribute("name")).thenReturn(name);
+        when(oAuth2User.getAttribute("picture")).thenReturn(picture);
+        when(oAuth2User.getAttribute("sub")).thenReturn(googleId);
+
+        when(oAuthCredentialRepository.findByProviderAndProviderUserId(User.AuthProvider.GOOGLE, googleId))
+                .thenReturn(Optional.empty());
+        when(userRepository.findByProviderIdAndProvider(googleId, User.AuthProvider.GOOGLE))
+                .thenReturn(Optional.empty());
+
+        User existingLocalUser = User.builder()
+                .id(targetUserId)
+                .email("satyam@jobtrackr.com")
+                .provider(User.AuthProvider.LOCAL)
+                .role(User.Role.USER)
+                .build();
+        when(userRepository.findById(targetUserId)).thenReturn(Optional.of(existingLocalUser));
+
+        when(authenticationToken.getAuthorizedClientRegistrationId()).thenReturn("google");
+        when(authenticationToken.getName()).thenReturn("google-principal");
+        when(authorizedClientService.loadAuthorizedClient("google", "google-principal")).thenReturn(authorizedClient);
+
+        OAuth2AccessToken accessToken = new OAuth2AccessToken(
+                OAuth2AccessToken.TokenType.BEARER,
+                "ya29.google-access-token",
+                Instant.now(),
+                Instant.now().plusSeconds(3600),
+                Set.of("openid", "email")
+        );
+        when(authorizedClient.getAccessToken()).thenReturn(accessToken);
+        when(authorizedClient.getRefreshToken()).thenReturn(null);
+        when(oAuthCredentialRepository.findByUserIdAndProvider(targetUserId, User.AuthProvider.GOOGLE))
+                .thenReturn(Optional.empty());
+
+        when(response.encodeRedirectURL(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        successHandler.onAuthenticationSuccess(request, response, authenticationToken);
+
+        // Verify target user's providerId was updated
+        verify(userRepository).save(existingLocalUser);
+        assertThat(existingLocalUser.getProviderId()).isEqualTo(googleId);
+
+        // Verify OAuth credential saved
+        verify(oAuthCredentialRepository).save(any(OAuthCredential.class));
+
+        // Verify redirected to settings?linked=true
+        verify(response).sendRedirect("http://localhost:4200/settings?linked=true");
+    }
+
+    @Test
+    @DisplayName("Should redirect with error when Google account already linked to another user")
+    void shouldRedirectWithErrorWhenGoogleAccountAlreadyLinkedToDifferentUser() throws IOException {
+        UUID targetUserId = UUID.randomUUID();
+        UUID otherUserId = UUID.randomUUID();
+
+        Cookie linkCookie = new Cookie("oauth2_link_user_id", targetUserId.toString());
+        when(request.getCookies()).thenReturn(new Cookie[]{linkCookie});
+
+        String googleId = "google-sub-conflict";
+        when(authenticationToken.getPrincipal()).thenReturn(oAuth2User);
+        when(oAuth2User.getAttribute("email")).thenReturn("other@gmail.com");
+        when(oAuth2User.getAttribute("name")).thenReturn("Other User");
+        when(oAuth2User.getAttribute("picture")).thenReturn(null);
+        when(oAuth2User.getAttribute("sub")).thenReturn(googleId);
+
+        User otherUser = User.builder().id(otherUserId).build();
+        OAuthCredential otherCred = OAuthCredential.builder().user(otherUser).build();
+        when(oAuthCredentialRepository.findByProviderAndProviderUserId(User.AuthProvider.GOOGLE, googleId))
+                .thenReturn(Optional.of(otherCred));
+
+        when(response.encodeRedirectURL(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        successHandler.onAuthenticationSuccess(request, response, authenticationToken);
+
+        // Verify redirect to settings with error
+        verify(response).sendRedirect("http://localhost:4200/settings?error=account_already_linked");
+        verify(userRepository, never()).save(any());
     }
 }

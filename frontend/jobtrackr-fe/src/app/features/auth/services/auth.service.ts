@@ -39,6 +39,25 @@ export class AuthService {
     return `${environment.apiUrl}/api/auth/oauth2/authorize/google`;
   }
 
+  initLinkGoogle(): Observable<{ authUrl: string }> {
+    return this.http.post<{ authUrl: string }>(`${this.baseUrl}/users/me/link-google/init`, {});
+  }
+
+  unlinkGoogle(): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/users/me/unlink-google`).pipe(
+      tap(() => {
+        const current = this.currentUserSignal();
+        if (current) {
+          this.currentUserSignal.set({
+            ...current,
+            googleConnected: false,
+            googleEmail: null
+          });
+        }
+      })
+    );
+  }
+
   logout(): void {
     const refreshToken = this.tokenStorage.getRefreshToken();
     if (refreshToken) {

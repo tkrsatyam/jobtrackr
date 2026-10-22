@@ -18,4 +18,6 @@ public class UserProfileDTO {
     private String avatarUrl;
     private String role;
     private String provider;
+    private boolean googleConnected;
+    private String googleEmail;
 }

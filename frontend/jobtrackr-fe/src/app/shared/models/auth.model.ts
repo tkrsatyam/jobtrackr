@@ -15,6 +15,8 @@ export interface UserProfile {
     avatarUrl: string | null;
     role: string;
     provider: 'LOCAL' | 'GOOGLE';
+    googleConnected?: boolean;
+    googleEmail?: string | null;
 }
 
 export interface LoginRequest {

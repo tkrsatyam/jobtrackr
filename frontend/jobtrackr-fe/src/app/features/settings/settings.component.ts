@@ -10,7 +10,7 @@ import { AuthService } from '../auth/services/auth.service';
 import { TokenStorageService } from '../../core/services/token-storage.service';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { MatIconModule } from '@angular/material/icon';
 import { passwordsMatchValidator } from '../../shared/validators/password-matches.validator';
@@ -38,9 +38,12 @@ export class SettingsComponent implements OnInit {
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   currentUser = this.authService.currentUser;
   isLocalUser = computed(() => this.currentUser()?.provider === 'LOCAL');
+  isGoogleConnected = computed(() => !!this.currentUser()?.googleConnected || this.currentUser()?.provider === 'GOOGLE');
+  googleEmail = computed(() => this.currentUser()?.googleEmail ?? (this.currentUser()?.provider === 'GOOGLE' ? this.currentUser()?.email : null));
 
   showProfileForm = signal(false);
   showPasswordForm = signal(false);
@@ -50,6 +53,8 @@ export class SettingsComponent implements OnInit {
 
   profileSaving = signal(false);
   passwordSaving = signal(false);
+  connectingGoogle = signal(false);
+  unlinkingGoogle = signal(false);
 
   passwordMismatchMatcher = new CrossFieldErrorMatcher('passwordMismatch');
 
@@ -68,6 +73,60 @@ export class SettingsComponent implements OnInit {
     if (!this.currentUser()) {
       this.authService.getProfile().subscribe();
     }
+
+    this.route.queryParams.subscribe(params => {
+      if (params['linked'] === 'true') {
+        this.snackBar.open('Google account connected successfully.', 'OK', { duration: 4000 });
+        this.authService.getProfile().subscribe();
+        this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+      } else if (params['error']) {
+        const message = params['error'] === 'account_already_linked'
+          ? 'This Google account is already linked to another JobTrackr user.'
+          : 'Failed to connect Google account.';
+        this.snackBar.open(message, 'OK', { duration: 5000 });
+        this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+      }
+    });
+  }
+
+  connectGoogle(): void {
+    this.connectingGoogle.set(true);
+    this.authService.initLinkGoogle().subscribe({
+      next: (res) => {
+        window.location.href = res.authUrl;
+      },
+      error: () => {
+        this.connectingGoogle.set(false);
+        this.snackBar.open('Unable to start Google connection flow', 'OK', { duration: 3000 });
+      }
+    });
+  }
+
+  disconnectGoogle(): void {
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Disconnect Google Account',
+        message: 'This will revoke JobTrackr access to your Google mailbox. Automated email ingestion will be paused.',
+        confirmLabel: 'Disconnect',
+        destructive: true
+      }
+    });
+
+    ref.afterClosed().subscribe(confirmed => {
+      if (!confirmed) return;
+      this.unlinkingGoogle.set(true);
+      this.authService.unlinkGoogle().subscribe({
+        next: () => {
+          this.unlinkingGoogle.set(false);
+          this.snackBar.open('Google account disconnected', 'OK', { duration: 3000 });
+          this.authService.getProfile().subscribe();
+        },
+        error: () => {
+          this.unlinkingGoogle.set(false);
+          this.snackBar.open('Failed to disconnect Google account', 'OK', { duration: 3000 });
+        }
+      });
+    });
   }
 
   openProfileForm(): void {
