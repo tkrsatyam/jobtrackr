@@ -34,6 +34,8 @@ public class ApplicationMapper {
                 .appliedDate(request.getAppliedDate())
                 .source(request.getSource() != null ? request.getSource() : ApplicationSource.OTHER)
                 .notes(request.getNotes())
+                .aiDiscovered(false)
+                .requiresReview(false)
                 .build();
 
         if (request.getTags() != null) {
@@ -85,6 +87,11 @@ public class ApplicationMapper {
                 .notes(application.getNotes())
                 .isArchived(application.getIsArchived())
                 .isDeleted(application.getIsDeleted())
+                .aiDiscovered(application.getAiDiscovered())
+                .requiresReview(application.getRequiresReview())
+                .confidenceScore(application.getConfidenceScore())
+                .rawEmailSnippet(application.getRawEmailSnippet())
+                .emailMessageId(application.getEmailMessageId())
                 .createdAt(application.getCreatedAt())
                 .updatedAt(application.getUpdatedAt())
                 .tags(tags)

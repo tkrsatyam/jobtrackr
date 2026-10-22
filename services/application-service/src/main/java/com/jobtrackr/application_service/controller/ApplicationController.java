@@ -1,10 +1,12 @@
 package com.jobtrackr.application_service.controller;
 
 import com.jobtrackr.application_service.dto.request.ApplicationFilterRequest;
+import com.jobtrackr.application_service.dto.request.ConfirmReviewRequest;
 import com.jobtrackr.application_service.dto.request.CreateApplicationRequest;
 import com.jobtrackr.application_service.dto.request.UpdateApplicationRequest;
 import com.jobtrackr.application_service.dto.response.ApplicationResponse;
 import com.jobtrackr.application_service.dto.response.ApplicationSearchResult;
+import com.jobtrackr.application_service.dto.response.PendingReviewCountResponse;
 import com.jobtrackr.application_service.entity.enums.ApplicationStatus;
 import com.jobtrackr.application_service.entity.enums.PriorityLevel;
 import com.jobtrackr.application_service.entity.enums.WorkMode;
@@ -40,6 +42,31 @@ public class ApplicationController {
         return ResponseEntity.ok(applicationService.getApplicationById(id, httpRequest));
     }
 
+    @GetMapping("/pending-review")
+    public ResponseEntity<List<ApplicationResponse>> getPendingReviewApplications(HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(applicationService.getPendingReviewApplications(httpRequest));
+    }
+
+    @GetMapping("/pending-review/count")
+    public ResponseEntity<PendingReviewCountResponse> getPendingReviewCount(HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(applicationService.getPendingReviewCount(httpRequest));
+    }
+
+    @PostMapping("/{id}/confirm-review")
+    public ResponseEntity<ApplicationResponse> confirmReview(
+            @PathVariable UUID id,
+            @RequestBody(required = false) ConfirmReviewRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        return ResponseEntity.ok(applicationService.confirmReview(id, request, httpRequest));
+    }
+
+    @DeleteMapping("/{id}/reject-review")
+    public ResponseEntity<Void> rejectReview(@PathVariable UUID id, HttpServletRequest httpRequest) {
+        applicationService.rejectReview(id, httpRequest);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/search")
     public ResponseEntity<List<ApplicationSearchResult>> searchApplications(
             @RequestParam String keyword,
@@ -55,6 +82,7 @@ public class ApplicationController {
             @RequestParam(required = false) PriorityLevel priority,
             @RequestParam(required = false) WorkMode workMode,
             @RequestParam(required = false) Boolean isArchived,
+            @RequestParam(required = false) Boolean requiresReview,
             @RequestParam(required = false) String company,
             @RequestParam(required = false) String role,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate appliedAfter,
@@ -72,6 +100,7 @@ public class ApplicationController {
                 .priority(priority)
                 .workMode(workMode)
                 .isArchived(isArchived)
+                .requiresReview(requiresReview)
                 .company(company)
                 .role(role)
                 .appliedAfter(appliedAfter)

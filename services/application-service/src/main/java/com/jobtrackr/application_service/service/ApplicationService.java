@@ -3,13 +3,10 @@ package com.jobtrackr.application_service.service;
 import com.jobtrackr.application_service.dto.request.*;
 import com.jobtrackr.application_service.dto.response.ApplicationResponse;
 import com.jobtrackr.application_service.dto.response.ApplicationSearchResult;
-import com.jobtrackr.application_service.entity.enums.ApplicationStatus;
-import com.jobtrackr.application_service.entity.enums.PriorityLevel;
-import com.jobtrackr.application_service.entity.enums.WorkMode;
+import com.jobtrackr.application_service.dto.response.PendingReviewCountResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Page;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -49,4 +46,12 @@ public interface ApplicationService {
     void bulkRemoveTag(BulkActionRequest request, HttpServletRequest httpRequest);
     
     List<ApplicationSearchResult> searchApplications(String keyword, int size, HttpServletRequest httpRequest);
+
+    List<ApplicationResponse> getPendingReviewApplications(HttpServletRequest httpRequest);
+
+    PendingReviewCountResponse getPendingReviewCount(HttpServletRequest httpRequest);
+
+    ApplicationResponse confirmReview(UUID applicationId, ConfirmReviewRequest request, HttpServletRequest httpRequest);
+
+    void rejectReview(UUID applicationId, HttpServletRequest httpRequest);
 }

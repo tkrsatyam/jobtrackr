@@ -40,6 +40,10 @@ public class ApplicationSpecification {
         return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("isArchived"), archived);
     }
 
+    public static Specification<Application> requiresReview(Boolean requiresReview) {
+        return (root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("requiresReview"), requiresReview);
+    }
+
     public static Specification<Application> companyContains(String keyword) {
         return (root, query, criteriaBuilder) ->
                 criteriaBuilder.like(criteriaBuilder.lower(root.get("companyName")), "%" + keyword.toLowerCase() + "%");

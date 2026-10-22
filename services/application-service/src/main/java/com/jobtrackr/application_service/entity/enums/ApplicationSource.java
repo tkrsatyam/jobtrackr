@@ -8,5 +8,6 @@ public enum ApplicationSource {
     REFERRAL,
     ANGEL_LIST,
     INSTAHYRE,
+    EMAIL,
     OTHER
 }
