@@ -3,6 +3,7 @@ package com.jobtrackr.email_ingestion_service.service;
 import com.jobtrackr.email_ingestion_service.client.GmailClient;
 import com.jobtrackr.email_ingestion_service.client.UserServiceClient;
 import com.jobtrackr.email_ingestion_service.dto.JobApplicationExtractionRecord;
+import com.jobtrackr.email_ingestion_service.exception.AiExtractionException;
 import com.jobtrackr.email_ingestion_service.dto.UserGoogleAccountDTO;
 import com.jobtrackr.email_ingestion_service.dto.UserGoogleTokenDTO;
 import com.jobtrackr.email_ingestion_service.dto.gmail.GmailHistoryRecord;
@@ -178,50 +179,57 @@ public class GmailPollingWorker {
             Instant receivedAt = GmailContentParser.getReceivedAt(detail);
             String bodyText = GmailContentParser.extractBodyText(detail);
 
-            Optional<JobApplicationExtractionRecord> extraction = jobApplicationExtractor.extract(subject, sender, bodyText);
+            try {
+                Optional<JobApplicationExtractionRecord> extraction = jobApplicationExtractor.extract(subject, sender, bodyText);
 
-            if (extraction.isPresent()) {
-                JobApplicationExtractionRecord rec = extraction.get();
-                ApplicationDiscoveredEvent event = new ApplicationDiscoveredEvent(
-                        UUID.randomUUID(),
-                        userId,
-                        rec.companyName(),
-                        rec.roleTitle(),
-                        rec.status(),
-                        rec.location(),
-                        rec.jobUrl(),
-                        rec.recruiterName(),
-                        rec.recruiterEmail(),
-                        rec.notes(),
-                        rec.confidenceScore(),
-                        ref.id(),
-                        subject,
-                        sender,
-                        receivedAt
-                );
+                if (extraction.isPresent()) {
+                    JobApplicationExtractionRecord rec = extraction.get();
+                    ApplicationDiscoveredEvent event = new ApplicationDiscoveredEvent(
+                            UUID.randomUUID(),
+                            userId,
+                            rec.companyName(),
+                            rec.roleTitle(),
+                            rec.status(),
+                            rec.location(),
+                            rec.jobUrl(),
+                            rec.recruiterName(),
+                            rec.recruiterEmail(),
+                            rec.notes(),
+                            rec.confidenceScore(),
+                            ref.id(),
+                            subject,
+                            sender,
+                            receivedAt
+                    );
 
-                ingestionEventProducer.publishApplicationDiscovered(event);
+                    ingestionEventProducer.publishApplicationDiscovered(event);
 
-                ProcessedEmail processed = ProcessedEmail.builder()
-                        .userId(userId)
-                        .messageId(ref.id())
-                        .subject(subject)
-                        .sender(sender)
-                        .receivedAt(receivedAt)
-                        .status(EmailProcessingStatus.PROCESSED)
-                        .build();
-                processedEmailRepository.save(processed);
-                discoveredCount++;
-            } else {
-                ProcessedEmail skipped = ProcessedEmail.builder()
-                        .userId(userId)
-                        .messageId(ref.id())
-                        .subject(subject)
-                        .sender(sender)
-                        .receivedAt(receivedAt)
-                        .status(EmailProcessingStatus.SKIPPED)
-                        .build();
-                processedEmailRepository.save(skipped);
+                    ProcessedEmail processed = ProcessedEmail.builder()
+                            .userId(userId)
+                            .messageId(ref.id())
+                            .subject(subject)
+                            .sender(sender)
+                            .receivedAt(receivedAt)
+                            .status(EmailProcessingStatus.PROCESSED)
+                            .build();
+                    processedEmailRepository.save(processed);
+                    discoveredCount++;
+                } else {
+                    ProcessedEmail skipped = ProcessedEmail.builder()
+                            .userId(userId)
+                            .messageId(ref.id())
+                            .subject(subject)
+                            .sender(sender)
+                            .receivedAt(receivedAt)
+                            .status(EmailProcessingStatus.SKIPPED)
+                            .build();
+                    processedEmailRepository.save(skipped);
+                }
+            } catch (AiExtractionException e) {
+                log.warn("AI extraction failed for email {} (subject: '{}'): {}. Skipping save to allow retry on next poll.",
+                        ref.id(), subject, e.getMessage());
+            } catch (Exception e) {
+                log.error("Unexpected error processing email message {}: {}", ref.id(), e.getMessage(), e);
             }
         }
 

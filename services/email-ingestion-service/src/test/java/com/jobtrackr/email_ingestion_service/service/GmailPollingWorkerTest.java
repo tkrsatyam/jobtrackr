@@ -3,6 +3,7 @@ package com.jobtrackr.email_ingestion_service.service;
 import com.jobtrackr.email_ingestion_service.client.GmailClient;
 import com.jobtrackr.email_ingestion_service.client.UserServiceClient;
 import com.jobtrackr.email_ingestion_service.dto.JobApplicationExtractionRecord;
+import com.jobtrackr.email_ingestion_service.exception.AiExtractionException;
 import com.jobtrackr.email_ingestion_service.dto.UserGoogleAccountDTO;
 import com.jobtrackr.email_ingestion_service.dto.UserGoogleTokenDTO;
 import com.jobtrackr.email_ingestion_service.dto.gmail.GmailHeader;
@@ -169,5 +170,40 @@ class GmailPollingWorkerTest {
 
         assertThat(total).isEqualTo(0);
         verify(gmailClient, times(2)).listMessages(any(), any(), anyInt());
+    }
+    @Test
+    @DisplayName("Should not mark email as skipped or processed when AI extraction throws AiExtractionException")
+    void testPollForUserAiFailureDoesNotSaveEmail() {
+        String token = "mock-access-token";
+        when(userServiceClient.getGoogleToken(userId))
+                .thenReturn(new UserGoogleTokenDTO(userId, "test@example.com", token, Instant.now().plusSeconds(3600)));
+
+        when(emailPollingStateRepository.findById(userId))
+                .thenReturn(Optional.of(EmailPollingState.builder().userId(userId).build()));
+
+        GmailMessageRef msgRef = new GmailMessageRef("msg-error", "thread-error");
+        when(gmailClient.listMessages(eq(token), anyString(), eq(25)))
+                .thenReturn(List.of(msgRef));
+
+        when(processedEmailRepository.existsByUserIdAndMessageId(userId, "msg-error"))
+                .thenReturn(false);
+
+        List<GmailHeader> headers = List.of(
+                new GmailHeader("Subject", "Application for SDE at Amazon"),
+                new GmailHeader("From", "careers@amazon.com")
+        );
+        GmailPayload payload = new GmailPayload("text/plain", headers, null, null);
+        GmailMessageDetail detail = new GmailMessageDetail("msg-error", "thread-error", "12345", "Snippet text", 1700000000000L, payload);
+        when(gmailClient.getMessage(token, "msg-error"))
+                .thenReturn(Optional.of(detail));
+
+        when(jobApplicationExtractor.extract(any(), any(), any()))
+                .thenThrow(new AiExtractionException("Gemini 503 Service Unavailable"));
+
+        int discovered = worker.pollForUser(userId);
+
+        assertThat(discovered).isEqualTo(0);
+        verify(processedEmailRepository, never()).save(any());
+        verify(ingestionEventProducer, never()).publishApplicationDiscovered(any());
     }
 }
