@@ -10,7 +10,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { PendingReviewService } from '../../services/pending-review.service';
 import { ApplicationResponse, ApplicationSource, ApplicationStatus, ConfirmReviewRequest } from '../../../../shared/models/application.model';
-import { ACTIVE_STATUSES, ALL_SOURCES, SOURCE_LABELS, STATUS_LABELS } from '../../../../shared/constants/enum-labels';
+import { ALL_STATUSES, ALL_SOURCES, SOURCE_LABELS, STATUS_LABELS } from '../../../../shared/constants/enum-labels';
 import { DatePipe } from '@angular/common';
 
 export interface ReviewModalData {
@@ -40,7 +40,7 @@ export class ReviewModalComponent implements OnInit {
   readonly data = inject<ReviewModalData>(MAT_DIALOG_DATA, { optional: true });
   readonly reviewService = inject(PendingReviewService);
 
-  readonly activeStatuses = ACTIVE_STATUSES;
+  readonly allStatuses = ALL_STATUSES;
   readonly statusLabels = STATUS_LABELS;
   readonly allSources = ALL_SOURCES;
   readonly sourceLabels = SOURCE_LABELS;

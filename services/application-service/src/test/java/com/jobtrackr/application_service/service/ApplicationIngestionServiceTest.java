@@ -273,4 +273,82 @@ class ApplicationIngestionServiceTest {
         assertThat(saved.getRequiresReview()).isTrue();
         assertThat(saved.getCompanyName()).isEqualTo("Stripe");
     }
+
+    @Test
+    @DisplayName("Should upgrade source from generic EMAIL to specific INDEED upon duplicate merge")
+    void testUpgradeSourceFromEmailToIndeedOnMerge() {
+        when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-indeed")).thenReturn(false);
+
+        Application existing = Application.builder()
+                .applicationId(UUID.randomUUID())
+                .userId(userId)
+                .companyName("Novo Tree Minds")
+                .role("Java Developer")
+                .status(ApplicationStatus.APPLIED)
+                .source(ApplicationSource.EMAIL)
+                .appliedDate(LocalDate.now())
+                .requiresReview(true)
+                .build();
+
+        when(applicationRepository.findPotentialDuplicates(eq(userId), eq("Novo Tree Minds"), eq("Java Developer"), any()))
+                .thenReturn(List.of(existing));
+
+        ApplicationDiscoveredEvent incomingIndeedEvent = new ApplicationDiscoveredEvent(
+                UUID.randomUUID(), userId, "Novo Tree Minds", "Java Developer", "APPLIED",
+                "Pune", "https://indeed.com/viewjob?id=123", null, null,
+                "Submitted via Indeed", 0.95,
+                "msg-indeed", "Indeed Application: Java Developer", "indeedapply@indeed.com", Instant.now()
+        );
+
+        ingestionService.processDiscoveredApplication(incomingIndeedEvent);
+
+        verify(applicationRepository).save(existing);
+        assertThat(existing.getSource()).isEqualTo(ApplicationSource.INDEED);
+    }
+
+    @Test
+    @DisplayName("Should preserve multi-email snippets in ascending chronological order")
+    void testMultiEmailSnippetsPreservedInAscendingOrder() {
+        when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-earlier-application")).thenReturn(false);
+
+        Instant laterTime = Instant.parse("2026-10-05T17:50:49Z");
+        Instant earlierTime = Instant.parse("2026-10-05T10:50:49Z");
+
+        // Existing application was created with the later email first
+        Application existing = Application.builder()
+                .applicationId(UUID.randomUUID())
+                .userId(userId)
+                .companyName("Novo Tree Minds")
+                .role("Java Developer")
+                .status(ApplicationStatus.APPLIED)
+                .appliedDate(LocalDate.of(2026, 10, 5))
+                .emailReceivedAt(laterTime)
+                .rawEmailSnippet("=== [2026-10-05T17:50:49Z] Indeed Application: Java Developer (indeedapply@indeed.com) ===\nSubmitted via Indeed.")
+                .requiresReview(true)
+                .build();
+
+        when(applicationRepository.findPotentialDuplicates(eq(userId), eq("Novo Tree Minds"), eq("Java Developer"), any()))
+                .thenReturn(List.of(existing));
+
+        // Now incoming event is an earlier email (e.g. from Recooty)
+        ApplicationDiscoveredEvent earlierEvent = new ApplicationDiscoveredEvent(
+                UUID.randomUUID(), userId, "Novo Tree Minds", "Java Developer", "APPLIED",
+                null, null, null, null,
+                "Application Received - Thank You!", 0.90,
+                "msg-earlier-application", "Application Received - Thank You!", "notifications@recooty.com", earlierTime
+        );
+
+        ingestionService.processDiscoveredApplication(earlierEvent);
+
+        verify(applicationRepository).save(existing);
+        String snippet = existing.getRawEmailSnippet();
+        assertThat(snippet).isNotNull();
+
+        // The earlier email must appear BEFORE the later email
+        int earlierIndex = snippet.indexOf("=== [2026-10-05T10:50:49Z]");
+        int laterIndex = snippet.indexOf("=== [2026-10-05T17:50:49Z]");
+        assertThat(earlierIndex).isGreaterThanOrEqualTo(0);
+        assertThat(laterIndex).isGreaterThanOrEqualTo(0);
+        assertThat(earlierIndex).isLessThan(laterIndex);
+    }
 }

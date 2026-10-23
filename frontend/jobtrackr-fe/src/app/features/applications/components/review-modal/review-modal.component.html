@@ -67,7 +67,7 @@
           <mat-form-field appearance="outline" class="form-field">
             <mat-label>Status</mat-label>
             <mat-select formControlName="status">
-              @for (st of activeStatuses; track st) {
+              @for (st of allStatuses; track st) {
                 <mat-option [value]="st">{{ statusLabels[st] }}</mat-option>
               }
             </mat-select>

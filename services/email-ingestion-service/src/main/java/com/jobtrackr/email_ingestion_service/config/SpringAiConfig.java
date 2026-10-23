@@ -16,15 +16,15 @@ public class SpringAiConfig {
     @Value("${spring.ai.openai.base-url:https://generativelanguage.googleapis.com/v1beta/openai}")
     private String baseUrl;
 
-    @Value("${spring.ai.openai.chat.options.model:${GEMINI_MODEL:gemini-3.5-flash}}")
-    private String model;
+    @Value("${jobtrackr.ai.models:${GEMINI_MODELS:${spring.ai.openai.chat.options.model:${GEMINI_MODEL:gemini-3.1-flash-lite,gemini-3.5-flash-lite,gemini-2.5-flash-lite,gemini-3.8-flash}}}}")
+    private String models;
 
     @Bean
     public ChatClient chatClient() {
         if (apiKey == null || apiKey.isBlank()) {
             return null;
         }
-        ChatModel chatModel = new GeminiChatModel(baseUrl, apiKey, model);
+        ChatModel chatModel = new GeminiChatModel(baseUrl, apiKey, models);
         return ChatClient.create(chatModel);
     }
 }

@@ -104,4 +104,18 @@ describe('ReviewModalComponent', () => {
     component.close();
     expect(mockDialogRef.close).toHaveBeenCalledWith({ reviewed: false });
   });
+
+  it('should include all statuses including terminal statuses in allStatuses', () => {
+    expect(component.allStatuses).toContain('REJECTED');
+    expect(component.allStatuses).toContain('ACCEPTED');
+    expect(component.allStatuses).toContain('OFFER');
+    expect(component.allStatuses).toContain('APPLIED');
+  });
+
+  it('should populate form with REJECTED status when item is rejected', () => {
+    const rejectedApp: ApplicationResponse = { ...mockApp, status: 'REJECTED' };
+    component.items.set([rejectedApp]);
+    (component as any).populateForm();
+    expect(component.form.controls.status.value).toBe('REJECTED');
+  });
 });
