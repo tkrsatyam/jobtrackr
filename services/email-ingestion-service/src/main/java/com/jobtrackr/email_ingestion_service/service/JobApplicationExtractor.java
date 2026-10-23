@@ -1,5 +1,7 @@
 package com.jobtrackr.email_ingestion_service.service;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jobtrackr.email_ingestion_service.dto.JobApplicationExtractionRecord;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -14,6 +16,24 @@ import java.util.regex.Pattern;
 @Slf4j
 @Service
 public class JobApplicationExtractor {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+    private static String sanitizeInput(String input) {
+        if (input == null) return "";
+        return input.replace("{", "[").replace("}", "]");
+    }
+
+    private static String extractJsonSubstring(String text) {
+        if (text == null) return null;
+        int firstBrace = text.indexOf('{');
+        int lastBrace = text.lastIndexOf('}');
+        if (firstBrace != -1 && lastBrace > firstBrace) {
+            return text.substring(firstBrace, lastBrace + 1).trim();
+        }
+        return text.trim();
+    }
 
     private static final Set<String> ATS_DOMAINS = Set.of(
             "myworkday.com", "greenhouse.io", "lever.co", "smartrecruiters.com",
@@ -103,18 +123,32 @@ public class JobApplicationExtractor {
                 String prompt = """
                     You are an expert AI assistant that parses job application emails.
                     Analyze the following email and determine if it represents a legitimate job application confirmation, interview invitation, offer, or rejection.
-                    
+
                     Sender: %s
                     Subject: %s
                     Body:
                     %s
-                    
-                    Extract the structured data:
+
+                    Extract the structured data in JSON format with these exact keys:
+                    {
+                      "isJobApplication": boolean,
+                      "companyName": string or null,
+                      "roleTitle": string or null,
+                      "status": string,
+                      "location": string or null,
+                      "jobUrl": string or null,
+                      "recruiterName": string or null,
+                      "recruiterEmail": string or null,
+                      "notes": string or null,
+                      "confidenceScore": number
+                    }
+
+                    Extraction Rules:
                     - If isJobApplication is true:
                       - companyName: exact name of the hiring employer (e.g. if the email is from Indeed or LinkedIn, find the actual hiring company mentioned in the body like "Novo Tree Minds" or "Stripe", NOT "Indeed Apply" or "LinkedIn").
                       - roleTitle: exact job position title including level numbers and roman numerals (e.g. "Software Engineer I", "Software Engineer 2", "Core Java Developer").
                       - status: determine the exact status according to these rules:
-                        * REJECTED: email states application is not moving forward, candidate not selected, pursuing other candidates, or regret to inform.
+                        * REJECTED: email states application is not moving forward, candidate not selected, pursuing other candidates, or regret to inform/unsuccessful.
                         * OFFER: formal job offer, offer letter, employment offer, or compensation package details.
                         * ACCEPTED: welcome to the team, signing confirmation, or onboarding after offer acceptance.
                         * TECHNICAL_ROUND: coding challenge, technical assessment, HackerRank, CodeSignal, take-home assignment, live coding, or technical interview.
@@ -122,7 +156,7 @@ public class JobApplicationExtractor {
                         * PHONE_SCREEN: recruiter phone screen, introductory talent call, or screening chat.
                         * INTERVIEW: general interview invitation or unspecified interview schedule. Do NOT mark questionnaires, candidate portal profile setup, or Workday task notifications as INTERVIEW (they should be APPLIED).
                         * APPLIED: application submission confirmation, questionnaire task, candidate portal setup, or "thank you for applying".
-                      - location: candidate or job location if mentioned (e.g. "Pune, Maharashtra, India 411001" or "Bangalore, India"), else null.
+                      - location: candidate or job location if mentioned, else null.
                       - jobUrl: job posting or application status URL if found in the email, else null.
                       - recruiterName: name of recruiter if available, else null.
                       - recruiterEmail: recruiter email if available, else null.
@@ -131,27 +165,34 @@ public class JobApplicationExtractor {
                     - If isJobApplication is false:
                       - Mark isJobApplication as false for aggregated job alerts, application digest summaries (e.g. "You applied for 7 jobs", weekly summaries), newsletters, promotional emails, or general job recommendations.
                       - confidenceScore: 0.0
-                    """.formatted(sender, subject, emailBody);
 
-                JobApplicationExtractionRecord record = chatClient.prompt()
-                        .messages(new UserMessage(prompt))
+                    Return ONLY a valid JSON object matching the schema above. Do not wrap in markdown or add explanations.
+                    """.formatted(sanitizeInput(sender), sanitizeInput(subject), sanitizeInput(emailBody));
+
+                String rawResponse = chatClient.prompt()
+                        .user(prompt)
                         .call()
-                        .entity(JobApplicationExtractionRecord.class);
+                        .content();
 
-                if (record != null && record.isJobApplication() && record.confidenceScore() != null && record.confidenceScore() >= 0.6) {
-                    String sanitizedNotes = cleanNotesUrl(record.notes(), record.jobUrl());
-                    return Optional.of(new JobApplicationExtractionRecord(
-                            record.isJobApplication(),
-                            record.companyName(),
-                            record.roleTitle(),
-                            record.status(),
-                            record.location(),
-                            record.jobUrl(),
-                            record.recruiterName(),
-                            record.recruiterEmail(),
-                            sanitizedNotes,
-                            record.confidenceScore()
-                    ));
+                if (rawResponse != null && !rawResponse.isBlank()) {
+                    String jsonPayload = extractJsonSubstring(rawResponse);
+                    JobApplicationExtractionRecord record = OBJECT_MAPPER.readValue(jsonPayload, JobApplicationExtractionRecord.class);
+
+                    if (record != null && record.isJobApplication() && record.confidenceScore() != null && record.confidenceScore() >= 0.6) {
+                        String sanitizedNotes = cleanNotesUrl(record.notes(), record.jobUrl());
+                        return Optional.of(new JobApplicationExtractionRecord(
+                                record.isJobApplication(),
+                                record.companyName(),
+                                record.roleTitle(),
+                                record.status(),
+                                record.location(),
+                                record.jobUrl(),
+                                record.recruiterName(),
+                                record.recruiterEmail(),
+                                sanitizedNotes,
+                                record.confidenceScore()
+                        ));
+                    }
                 }
             } catch (Exception e) {
                 log.warn("Spring AI extraction failed ({}), attempting heuristic fallback", e.getMessage());
