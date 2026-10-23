@@ -51,26 +51,50 @@ public class GeminiChatModel implements ChatModel {
                 "messages", messages
         );
 
-        try {
-            OpenAiChatCompletionResponse response = restClient.post()
-                    .uri("/chat/completions")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(requestBody)
-                    .retrieve()
-                    .body(OpenAiChatCompletionResponse.class);
+        int maxAttempts = 3;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                OpenAiChatCompletionResponse response = restClient.post()
+                        .uri("/chat/completions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(requestBody)
+                        .retrieve()
+                        .body(OpenAiChatCompletionResponse.class);
 
-            if (response != null && response.choices() != null && !response.choices().isEmpty()) {
-                String rawContent = response.choices().get(0).message().content();
-                // Strip markdown code fences if Gemini wraps json in ```json ... ```
-                String cleaned = cleanJsonContent(rawContent);
-                return new ChatResponse(List.of(new Generation(new AssistantMessage(cleaned))));
+                if (response != null && response.choices() != null && !response.choices().isEmpty()) {
+                    String rawContent = response.choices().get(0).message().content();
+                    // Strip markdown code fences if Gemini wraps json in ```json ... ```
+                    String cleaned = cleanJsonContent(rawContent);
+                    return new ChatResponse(List.of(new Generation(new AssistantMessage(cleaned))));
+                }
+                break;
+            } catch (Exception e) {
+                boolean isTransient = isTransientError(e);
+                if (isTransient && attempt < maxAttempts) {
+                    long waitMs = attempt * 1500L;
+                    log.warn("Gemini ChatModel transient error (attempt {}/{}): {}. Retrying in {}ms...",
+                            attempt, maxAttempts, e.getMessage(), waitMs);
+                    try {
+                        Thread.sleep(waitMs);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("Interrupted during retry wait", ie);
+                    }
+                } else {
+                    log.error("Gemini ChatModel execution failed on attempt {}: {}", attempt, e.getMessage());
+                    throw new RuntimeException("Gemini API call failed", e);
+                }
             }
-        } catch (Exception e) {
-            log.error("Gemini ChatModel execution failed: {}", e.getMessage());
-            throw new RuntimeException("Gemini API call failed", e);
         }
 
         return new ChatResponse(List.of(new Generation(new AssistantMessage(""))));
+    }
+
+    private boolean isTransientError(Exception e) {
+        String msg = e.getMessage() != null ? e.getMessage().toLowerCase() : "";
+        return msg.contains("503") || msg.contains("429") || msg.contains("high demand")
+                || msg.contains("temporarily unavailable") || msg.contains("resource_exhausted")
+                || msg.contains("timeout") || msg.contains("connection reset");
     }
 
     private String cleanJsonContent(String raw) {

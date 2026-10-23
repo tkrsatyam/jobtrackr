@@ -78,6 +78,7 @@ class JobApplicationExtractorTest {
         JobApplicationExtractionRecord record = result.get();
         assertThat(record.companyName()).isEqualTo("Citi");
         assertThat(record.roleTitle()).isEqualTo("Core Java Developer");
+        assertThat(record.status()).isEqualTo("APPLIED");
         assertThat(record.confidenceScore()).isGreaterThanOrEqualTo(0.85);
     }
 
@@ -235,5 +236,15 @@ class JobApplicationExtractorTest {
                 "Masters' Union <admissions@mastersunion.org>",
                 "Submit your PGP TBM admission application today."
         )).isEmpty();
+    }
+    @Test
+    @DisplayName("Should reject aggregated job alert digest")
+    void testRejectAggregatedJobDigest() {
+        String subject = "You applied for 7 jobs on 05 Oct";
+        String sender = "Naukri <info@naukri.com>";
+        String body = "Here is the summary of 7 jobs you applied for on 05 Oct.";
+
+        Optional<JobApplicationExtractionRecord> result = extractor.extract(subject, sender, body);
+        assertThat(result).isEmpty();
     }
 }

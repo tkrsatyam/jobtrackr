@@ -6,7 +6,7 @@ export type ApplicationStatus =
 export type PriorityLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'DREAM';
 export type WorkMode = 'REMOTE' | 'HYBRID' | 'ON_SITE';
 export type ApplicationSource = 
-    | 'LINKEDIN' | 'NAUKRI' | 'INTERNSHALA' | 'COMPANY_WEBSITE'
+    | 'LINKEDIN' | 'NAUKRI' | 'INDEED' | 'INTERNSHALA' | 'COMPANY_WEBSITE'
     | 'REFERRAL' | 'ANGEL_LIST' | 'INSTAHYRE' | 'EMAIL' | 'OTHER';
 
 export interface StatusHistoryEntry {
@@ -141,6 +141,7 @@ export interface ConfirmReviewRequest {
     currency?: string;
     notes?: string;
     status?: ApplicationStatus;
+    source?: ApplicationSource;
 }
 
 export interface PendingReviewCountResponse {

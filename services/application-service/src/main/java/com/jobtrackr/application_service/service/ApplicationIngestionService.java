@@ -197,7 +197,7 @@ public class ApplicationIngestionService {
                 .priority(PriorityLevel.MEDIUM)
                 .location(event.location())
                 .jobUrl(event.jobUrl())
-                .source(ApplicationSource.EMAIL)
+                .source(detectSource(event.emailSender(), event.jobUrl()))
                 .appliedDate(appliedDate)
                 .notes(event.notes())
                 .aiDiscovered(true)
@@ -213,5 +213,26 @@ public class ApplicationIngestionService {
         applicationRepository.save(application);
         log.info("Persisted AI-discovered application {} for user {} awaiting review",
                 application.getApplicationId(), event.userId());
+    }
+    private ApplicationSource detectSource(String sender, String jobUrl) {
+        String lowerSender = sender != null ? sender.toLowerCase() : "";
+        String lowerUrl = jobUrl != null ? jobUrl.toLowerCase() : "";
+
+        if (lowerSender.contains("linkedin.com") || lowerUrl.contains("linkedin.com")) {
+            return ApplicationSource.LINKEDIN;
+        }
+        if (lowerSender.contains("naukri.com") || lowerUrl.contains("naukri.com")) {
+            return ApplicationSource.NAUKRI;
+        }
+        if (lowerSender.contains("indeed.com") || lowerUrl.contains("indeed.com")) {
+            return ApplicationSource.INDEED;
+        }
+        if (lowerSender.contains("internshala.com") || lowerUrl.contains("internshala.com")) {
+            return ApplicationSource.INTERNSHALA;
+        }
+        if (lowerSender.contains("instahyre.com") || lowerUrl.contains("instahyre.com")) {
+            return ApplicationSource.INSTAHYRE;
+        }
+        return ApplicationSource.EMAIL;
     }
 }

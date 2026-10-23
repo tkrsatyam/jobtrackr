@@ -454,6 +454,9 @@ public class ApplicationServiceImpl implements ApplicationService {
             if (request.getNotes() != null) {
                 application.setNotes(request.getNotes());
             }
+            if (request.getSource() != null) {
+                application.setSource(request.getSource());
+            }
             if (request.getStatus() != null && request.getStatus() != application.getStatus()) {
                 ApplicationStatus oldStatus = application.getStatus();
                 application.setStatus(request.getStatus());

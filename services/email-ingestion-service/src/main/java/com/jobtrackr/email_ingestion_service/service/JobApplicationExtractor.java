@@ -3,6 +3,7 @@ package com.jobtrackr.email_ingestion_service.service;
 import com.jobtrackr.email_ingestion_service.dto.JobApplicationExtractionRecord;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -61,7 +62,42 @@ public class JobApplicationExtractor {
         this.chatClient = chatClient;
     }
 
+    public static boolean isAggregatedDigestOrAlert(String subject, String sender) {
+        if (subject == null) return false;
+        String lowerSubject = subject.toLowerCase();
+        return lowerSubject.matches(".*applied for \\d+ jobs.*")
+                || lowerSubject.matches(".*\\d+ jobs on \\d+.*")
+                || lowerSubject.matches(".*\\d+ jobs? matching.*")
+                || lowerSubject.matches(".*\\d+ new jobs?.*")
+                || lowerSubject.contains("daily digest")
+                || lowerSubject.contains("weekly digest")
+                || lowerSubject.contains("job recommendations")
+                || lowerSubject.contains("jobs you may be interested in")
+                || lowerSubject.contains("recommended jobs")
+                || lowerSubject.contains("top job picks")
+                || lowerSubject.contains("new jobs in")
+                || lowerSubject.contains("similar jobs");
+    }
+
+    private String cleanNotesUrl(String notes, String jobUrl) {
+        if (notes == null || notes.isBlank()) {
+            return notes;
+        }
+        if (jobUrl != null && !jobUrl.isBlank()) {
+            String cleaned = notes.replace("• Job URL: " + jobUrl, "")
+                    .replace("Job URL: " + jobUrl, "")
+                    .replace(jobUrl, "");
+            return cleaned.replaceAll("(?m)^\\s*\\n", "").trim();
+        }
+        return notes;
+    }
+
     public Optional<JobApplicationExtractionRecord> extract(String subject, String sender, String emailBody) {
+        if (isAggregatedDigestOrAlert(subject, sender)) {
+            log.info("Skipping aggregated job digest email: subject='{}'", subject);
+            return Optional.empty();
+        }
+
         if (chatClient != null) {
             try {
                 String prompt = """
@@ -84,25 +120,38 @@ public class JobApplicationExtractor {
                         * TECHNICAL_ROUND: coding challenge, technical assessment, HackerRank, CodeSignal, take-home assignment, live coding, or technical interview.
                         * HR_ROUND: HR round, culture fit interview, behavioral questions, or final managerial discussion.
                         * PHONE_SCREEN: recruiter phone screen, introductory talent call, or screening chat.
-                        * INTERVIEW: general interview invitation or unspecified interview schedule.
-                        * APPLIED: application submission confirmation or "thank you for applying".
+                        * INTERVIEW: general interview invitation or unspecified interview schedule. Do NOT mark questionnaires, candidate portal profile setup, or Workday task notifications as INTERVIEW (they should be APPLIED).
+                        * APPLIED: application submission confirmation, questionnaire task, candidate portal setup, or "thank you for applying".
                       - location: candidate or job location if mentioned (e.g. "Pune, Maharashtra, India 411001" or "Bangalore, India"), else null.
                       - jobUrl: job posting or application status URL if found in the email, else null.
                       - recruiterName: name of recruiter if available, else null.
                       - recruiterEmail: recruiter email if available, else null.
-                      - notes: concise, informative 1-2 sentence summary of what this email says, mentioning the role, company, and any relevant links.
+                      - notes: concise, informative 1-2 sentence summary of what this email says, mentioning the role and company. Do NOT include or repeat the job URL in notes.
                       - confidenceScore: number between 0.0 and 1.0 based on how confident you are that this is a genuine job application.
                     - If isJobApplication is false:
+                      - Mark isJobApplication as false for aggregated job alerts, application digest summaries (e.g. "You applied for 7 jobs", weekly summaries), newsletters, promotional emails, or general job recommendations.
                       - confidenceScore: 0.0
                     """.formatted(sender, subject, emailBody);
 
                 JobApplicationExtractionRecord record = chatClient.prompt()
-                        .user(prompt)
+                        .messages(new UserMessage(prompt))
                         .call()
                         .entity(JobApplicationExtractionRecord.class);
 
                 if (record != null && record.isJobApplication() && record.confidenceScore() != null && record.confidenceScore() >= 0.6) {
-                    return Optional.of(record);
+                    String sanitizedNotes = cleanNotesUrl(record.notes(), record.jobUrl());
+                    return Optional.of(new JobApplicationExtractionRecord(
+                            record.isJobApplication(),
+                            record.companyName(),
+                            record.roleTitle(),
+                            record.status(),
+                            record.location(),
+                            record.jobUrl(),
+                            record.recruiterName(),
+                            record.recruiterEmail(),
+                            sanitizedNotes,
+                            record.confidenceScore()
+                    ));
                 }
             } catch (Exception e) {
                 log.warn("Spring AI extraction failed ({}), attempting heuristic fallback", e.getMessage());
@@ -113,7 +162,7 @@ public class JobApplicationExtractor {
     }
 
     public Optional<JobApplicationExtractionRecord> heuristicFallback(String subject, String sender, String emailBody) {
-        if (subject == null) {
+        if (subject == null || isAggregatedDigestOrAlert(subject, sender)) {
             return Optional.empty();
         }
 
@@ -260,7 +309,6 @@ public class JobApplicationExtractor {
         boolean isInterview = lowerSubject.contains("interview invitation")
                 || lowerSubject.contains("schedule your interview")
                 || lowerSubject.contains("scheduled an interview")
-                || lowerSubject.contains("complete questionnaire")
                 || lowerSubject.contains("complete your ai interview")
                 || lowerBody.contains("schedule an interview")
                 || lowerBody.contains("invite you to interview")
@@ -586,9 +634,7 @@ public class JobApplicationExtractor {
         }
         sb.append(".\n");
 
-        if (jobUrl != null && !jobUrl.isBlank()) {
-            sb.append("• Job URL: ").append(jobUrl).append("\n");
-        }
+
 
         String senderEmail = cleanEmailAddress(sender);
         if (!senderEmail.isBlank()) {
@@ -614,7 +660,7 @@ public class JobApplicationExtractor {
         }
 
         // Interview / Assessment signals
-        if (lowerSubject.contains("interview invitation") || lowerSubject.contains("schedule your interview") || lowerSubject.contains("complete questionnaire") || lowerSubject.contains("complete your ai interview")) {
+        if (lowerSubject.contains("interview invitation") || lowerSubject.contains("schedule your interview") || lowerSubject.contains("complete your ai interview")) {
             score += 0.30;
         }
 

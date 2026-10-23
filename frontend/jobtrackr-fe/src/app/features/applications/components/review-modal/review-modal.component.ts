@@ -9,8 +9,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { PendingReviewService } from '../../services/pending-review.service';
-import { ApplicationResponse, ApplicationStatus, ConfirmReviewRequest } from '../../../../shared/models/application.model';
-import { ACTIVE_STATUSES, STATUS_LABELS } from '../../../../shared/constants/enum-labels';
+import { ApplicationResponse, ApplicationSource, ApplicationStatus, ConfirmReviewRequest } from '../../../../shared/models/application.model';
+import { ACTIVE_STATUSES, ALL_SOURCES, SOURCE_LABELS, STATUS_LABELS } from '../../../../shared/constants/enum-labels';
 import { DatePipe } from '@angular/common';
 
 export interface ReviewModalData {
@@ -42,6 +42,8 @@ export class ReviewModalComponent implements OnInit {
 
   readonly activeStatuses = ACTIVE_STATUSES;
   readonly statusLabels = STATUS_LABELS;
+  readonly allSources = ALL_SOURCES;
+  readonly sourceLabels = SOURCE_LABELS;
 
   readonly items = signal<ApplicationResponse[]>([]);
   readonly currentIndex = signal<number>(0);
@@ -75,6 +77,7 @@ export class ReviewModalComponent implements OnInit {
     jobUrl: [''],
     location: [''],
     status: ['APPLIED' as ApplicationStatus, [Validators.required]],
+    source: ['EMAIL' as ApplicationSource, [Validators.required]],
     salaryMin: [null as number | null],
     salaryMax: [null as number | null],
     currency: ['INR'],
@@ -114,6 +117,7 @@ export class ReviewModalComponent implements OnInit {
       jobUrl: item.jobUrl || '',
       location: item.location || '',
       status: item.status || 'APPLIED',
+      source: item.source || 'EMAIL',
       salaryMin: item.salaryMin ?? null,
       salaryMax: item.salaryMax ?? null,
       currency: item.currency || 'INR',
@@ -133,6 +137,7 @@ export class ReviewModalComponent implements OnInit {
       jobUrl: val.jobUrl || undefined,
       location: val.location || undefined,
       status: val.status,
+      source: val.source,
       salaryMin: val.salaryMin ?? undefined,
       salaryMax: val.salaryMax ?? undefined,
       currency: val.currency || undefined,

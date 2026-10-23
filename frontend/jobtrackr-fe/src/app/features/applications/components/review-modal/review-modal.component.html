@@ -74,12 +74,21 @@
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="form-field">
-            <mat-label>Location</mat-label>
-            <input matInput formControlName="location" placeholder="e.g. Remote, New York, NY" />
+            <mat-label>Source</mat-label>
+            <mat-select formControlName="source">
+              @for (src of allSources; track src) {
+                <mat-option [value]="src">{{ sourceLabels[src] }}</mat-option>
+              }
+            </mat-select>
           </mat-form-field>
         </div>
 
-        <div class="form-row single-field">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Location</mat-label>
+            <input matInput formControlName="location" placeholder="e.g. Remote, New York, NY" />
+          </mat-form-field>
+
           <mat-form-field appearance="outline" class="form-field">
             <mat-label>Job Posting URL</mat-label>
             <input matInput formControlName="jobUrl" placeholder="https://..." />

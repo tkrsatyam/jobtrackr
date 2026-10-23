@@ -71,6 +71,7 @@ describe('ReviewModalComponent', () => {
     expect(component.currentItem()?.companyName).toBe('Stripe');
     expect(component.form.controls.companyName.value).toBe('Stripe');
     expect(component.form.controls.role.value).toBe('Software Engineer');
+    expect(component.form.controls.source.value).toBe('EMAIL');
     expect(component.confidencePercent()).toBe(92);
     expect(component.confidenceClass()).toBe('confidence-high');
   });
@@ -87,7 +88,8 @@ describe('ReviewModalComponent', () => {
     component.confirmCurrent();
     expect(mockReviewService.confirm).toHaveBeenCalledWith('app-1', expect.objectContaining({
       companyName: 'Stripe',
-      role: 'Software Engineer'
+      role: 'Software Engineer',
+      source: 'EMAIL'
     }));
     expect(mockDialogRef.close).toHaveBeenCalledWith({ reviewed: true });
   });
