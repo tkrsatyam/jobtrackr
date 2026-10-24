@@ -1,0 +1,25 @@
+# ==============================================================================
+# JobTrackr - Caddy Reverse Proxy Configuration
+# Place in /etc/caddy/Caddyfile and reload via: sudo systemctl reload caddy
+# ==============================================================================
+
+# Replace api.yourdomain.com with your custom domain or OCI instance public IP/DuckDNS
+api.jobtrackr.tkrsatyam.dev {
+    # Reverse proxy incoming requests to Spring Cloud Gateway MVC (port 8080)
+    reverse_proxy localhost:8080 {
+        header_up X-Forwarded-Proto https
+        header_up X-Real-IP {remote_host}
+        header_up Host {host}
+    }
+
+    # Enable compression
+    encode gzip zstd
+
+    # Logging
+    log {
+        output file /var/log/caddy/jobtrackr-access.log {
+            roll_size 10mb
+            roll_keep 3
+        }
+    }
+}

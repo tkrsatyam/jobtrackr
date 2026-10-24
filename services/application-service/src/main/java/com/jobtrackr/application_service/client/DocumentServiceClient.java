@@ -9,7 +9,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@FeignClient(name = "document-service", fallback = DocumentServiceClientFallback.class)
+@FeignClient(
+        name = "document-service",
+        url = "${app.services.document-service-url:http://document-service:8084}",
+        fallback = DocumentServiceClientFallback.class
+)
 public interface DocumentServiceClient {
 
     @GetMapping("/api/documents/application/{applicationId}")
