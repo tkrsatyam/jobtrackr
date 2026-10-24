@@ -28,6 +28,7 @@ import java.util.List;
 public class ApplicationIngestionService {
 
     private final ApplicationRepository applicationRepository;
+    private final StatusTransitionValidator transitionValidator;
 
     @Transactional
     public void processDiscoveredApplication(ApplicationDiscoveredEvent event) {
@@ -62,7 +63,7 @@ public class ApplicationIngestionService {
         Application existing = null;
         for (Application app : potentialMatches) {
             if (Boolean.TRUE.equals(app.getRequiresReview())) {
-                if (app.getAppliedDate() != null && !app.getAppliedDate().isBefore(fourteenDaysAgo)) {
+                if (app.getAppliedDate() == null || !app.getAppliedDate().isBefore(fourteenDaysAgo)) {
                     existing = app;
                     break;
                 }
@@ -268,10 +269,32 @@ public class ApplicationIngestionService {
 
     private boolean shouldAdvanceStatus(ApplicationStatus current, ApplicationStatus incoming) {
         if (incoming == null || current == incoming) return false;
-        if (current == ApplicationStatus.SAVED || current == ApplicationStatus.APPLIED) {
-            return incoming != ApplicationStatus.SAVED;
+        if (current == ApplicationStatus.ACCEPTED || current == ApplicationStatus.REJECTED
+                || current == ApplicationStatus.GHOSTED || current == ApplicationStatus.WITHDRAWN) {
+            return false;
         }
-        return incoming == ApplicationStatus.OFFER || incoming == ApplicationStatus.REJECTED || incoming == ApplicationStatus.ACCEPTED;
+        if (incoming == ApplicationStatus.REJECTED || incoming == ApplicationStatus.OFFER || incoming == ApplicationStatus.ACCEPTED) {
+            return true;
+        }
+        int currentRank = getPipelineRank(current);
+        int incomingRank = getPipelineRank(incoming);
+        return (incomingRank > currentRank && incomingRank != -1)
+                || (transitionValidator != null && transitionValidator.getAllowedTransitions(current).contains(incoming));
+    }
+
+    private int getPipelineRank(ApplicationStatus status) {
+        if (status == null) return -1;
+        return switch (status) {
+            case SAVED -> 0;
+            case APPLIED -> 1;
+            case PHONE_SCREEN -> 2;
+            case INTERVIEW -> 3;
+            case TECHNICAL_ROUND -> 4;
+            case HR_ROUND -> 5;
+            case OFFER -> 6;
+            case ACCEPTED -> 7;
+            default -> -1;
+        };
     }
 
     private String formatEmailSnippetBlock(Instant receivedAt, String subject, String sender, String notes) {

@@ -50,10 +50,10 @@
                     }
                 </div>
                 <div class="proposal-actions">
-                    <button mat-flat-button color="primary" type="button" (click)="acceptProposal()">
+                    <button mat-flat-button color="primary" type="button" (click)="acceptProposal()" [disabled]="isProcessingProposal()">
                         <mat-icon>check</mat-icon> Accept Update
                     </button>
-                    <button mat-stroked-button type="button" (click)="dismissProposal()">
+                    <button mat-stroked-button type="button" (click)="dismissProposal()" [disabled]="isProcessingProposal()">
                         Dismiss
                     </button>
                 </div>

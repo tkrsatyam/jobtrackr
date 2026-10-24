@@ -4,6 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { ApplicationResponse } from '../../../../shared/models/application.model';
+import { STATUS_LABELS } from '../../../../shared/constants/enum-labels';
 
 @Component({
   selector: 'app-proposal-banner',
@@ -17,6 +18,7 @@ import { ApplicationResponse } from '../../../../shared/models/application.model
   styleUrl: './proposal-banner.component.scss'
 })
 export class ProposalBannerComponent {
+  readonly statusLabels = STATUS_LABELS;
   readonly applications = input<ApplicationResponse[]>([]);
 
   readonly proposals = computed(() =>

@@ -508,6 +508,8 @@ public class ApplicationServiceImpl implements ApplicationService {
         ApplicationStatus newStatus = application.getProposedStatus();
         String reason = application.getStatusProposalReason();
 
+        transitionValidator.validate(oldStatus, newStatus);
+
         application.setStatus(newStatus);
         application.setProposedStatus(null);
         application.setStatusProposalReason(null);

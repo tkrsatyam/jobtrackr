@@ -5,13 +5,9 @@
   gap: var(--spacing-md);
   padding: var(--spacing-sm-md) var(--spacing-md);
   margin-bottom: var(--spacing-lg);
-  background: linear-gradient(
-    135deg,
-    rgba(124, 77, 255, 0.08) 0%,
-    rgba(255, 171, 0, 0.08) 100%
-  );
-  border: 1px solid rgba(124, 77, 255, 0.25);
-  border-left: 4px solid var(--mat-sys-tertiary, #7c4dff);
+  background: color-mix(in srgb, var(--mat-sys-tertiary-container) 35%, var(--mat-sys-surface));
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-left: 4px solid var(--mat-sys-tertiary);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   color: var(--mat-sys-on-surface);
@@ -34,11 +30,11 @@
     width: 2.5rem;
     height: 2.5rem;
     border-radius: 50%;
-    background-color: rgba(124, 77, 255, 0.15);
+    background-color: var(--mat-sys-tertiary-container);
     flex-shrink: 0;
 
     .banner-icon {
-      color: #7c4dff;
+      color: var(--mat-sys-on-tertiary-container);
       font-size: 1.35rem;
       width: 1.35rem;
       height: 1.35rem;
@@ -59,7 +55,7 @@
     .banner-desc {
       margin: 0;
       font-size: 0.85rem;
-      color: var(--mat-sys-on-surface-variant, #555);
+      color: var(--mat-sys-on-surface-variant);
       line-height: 1.35;
 
       .status-chip {
@@ -68,8 +64,8 @@
         font-size: 0.78rem;
         padding: 0.1rem 0.45rem;
         border-radius: 4px;
-        background-color: rgba(124, 77, 255, 0.15);
-        color: #7c4dff;
+        background-color: var(--mat-sys-tertiary-container);
+        color: var(--mat-sys-on-tertiary-container);
         margin-left: 0.25rem;
       }
     }

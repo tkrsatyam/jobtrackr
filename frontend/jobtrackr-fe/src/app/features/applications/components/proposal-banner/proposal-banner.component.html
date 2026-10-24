@@ -10,7 +10,7 @@
           <p class="banner-desc">
             An email suggests updating <strong>{{ firstProposal().companyName }}</strong>
             ({{ firstProposal().role }}) to
-            <span class="status-chip">{{ firstProposal().proposedStatus }}</span>.
+            <span class="status-chip">{{ (firstProposal().proposedStatus ? statusLabels[firstProposal().proposedStatus!] : null) || firstProposal().proposedStatus }}</span>.
           </p>
         } @else {
           <strong class="banner-title">Status updates suggested</strong>
@@ -39,7 +39,7 @@
           @for (item of proposals(); track item.applicationId) {
             <a mat-menu-item [routerLink]="['/applications', item.applicationId]">
               <mat-icon>arrow_forward</mat-icon>
-              <span>{{ item.companyName }} &rarr; {{ item.proposedStatus }}</span>
+              <span>{{ item.companyName }} &rarr; {{ (item.proposedStatus ? statusLabels[item.proposedStatus] : null) || item.proposedStatus }}</span>
             </a>
           }
         </mat-menu>

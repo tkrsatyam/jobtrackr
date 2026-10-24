@@ -55,6 +55,7 @@ export class ApplicationDetailComponent implements OnInit {
   loading = signal(true);
   showTagInput = signal(false);
   newTagValue = signal('');
+  isProcessingProposal = signal(false);
 
   workModeLabels = WORK_MODE_LABELS;
   sourceLabels = SOURCE_LABELS;
@@ -178,19 +179,36 @@ export class ApplicationDetailComponent implements OnInit {
 
   acceptProposal(): void {
     const app = this.application();
-    if (!app) return;
-    this.appService.acceptStatusProposal(app.applicationId).subscribe(updated => {
-      this.application.set(updated);
-      this.snackBar.open('Status updated to ' + updated.status, 'OK', { duration: 3000 });
+    if (!app || this.isProcessingProposal()) return;
+    this.isProcessingProposal.set(true);
+    this.appService.acceptStatusProposal(app.applicationId).subscribe({
+      next: updated => {
+        this.isProcessingProposal.set(false);
+        this.application.set(updated);
+        const label = this.statusLabels[updated.status] || updated.status;
+        this.snackBar.open('Status updated to ' + label, 'OK', { duration: 3000 });
+      },
+      error: err => {
+        this.isProcessingProposal.set(false);
+        this.snackBar.open(err?.error?.detail || 'Failed to accept status proposal', 'Close', { duration: 5000 });
+      }
     });
   }
 
   dismissProposal(): void {
     const app = this.application();
-    if (!app) return;
-    this.appService.dismissStatusProposal(app.applicationId).subscribe(updated => {
-      this.application.set(updated);
-      this.snackBar.open('Status update suggestion dismissed', 'OK', { duration: 3000 });
+    if (!app || this.isProcessingProposal()) return;
+    this.isProcessingProposal.set(true);
+    this.appService.dismissStatusProposal(app.applicationId).subscribe({
+      next: updated => {
+        this.isProcessingProposal.set(false);
+        this.application.set(updated);
+        this.snackBar.open('Status update suggestion dismissed', 'OK', { duration: 3000 });
+      },
+      error: err => {
+        this.isProcessingProposal.set(false);
+        this.snackBar.open(err?.error?.detail || 'Failed to dismiss status proposal', 'Close', { duration: 5000 });
+      }
     });
   }
 

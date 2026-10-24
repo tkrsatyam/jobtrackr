@@ -186,6 +186,7 @@ class ApplicationReviewTest {
 
         ApplicationResponse response = applicationService.acceptStatusProposal(appId, httpRequest);
 
+        verify(transitionValidator).validate(ApplicationStatus.APPLIED, ApplicationStatus.INTERVIEW);
         assertThat(response.getStatus()).isEqualTo(ApplicationStatus.INTERVIEW);
         assertThat(app.getProposedStatus()).isNull();
         assertThat(app.getStatusProposalReason()).isNull();

@@ -31,6 +31,9 @@ class ApplicationIngestionServiceTest {
     @Mock
     private ApplicationRepository applicationRepository;
 
+    @org.mockito.Spy
+    private StatusTransitionValidator transitionValidator = new StatusTransitionValidator();
+
     @InjectMocks
     private ApplicationIngestionService ingestionService;
 
@@ -350,5 +353,38 @@ class ApplicationIngestionServiceTest {
         assertThat(earlierIndex).isGreaterThanOrEqualTo(0);
         assertThat(laterIndex).isGreaterThanOrEqualTo(0);
         assertThat(earlierIndex).isLessThan(laterIndex);
+    }
+
+    @Test
+    @DisplayName("Should advance status through intermediate stages such as PHONE_SCREEN to INTERVIEW upon merge")
+    void testAdvanceStatusThroughIntermediateStagesOnMerge() {
+        when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-interview")).thenReturn(false);
+
+        Application existing = Application.builder()
+                .applicationId(UUID.randomUUID())
+                .userId(userId)
+                .companyName("Meta")
+                .role("Software Engineer")
+                .status(ApplicationStatus.PHONE_SCREEN)
+                .source(ApplicationSource.COMPANY_WEBSITE)
+                .appliedDate(LocalDate.now())
+                .confidenceScore(BigDecimal.valueOf(0.85))
+                .requiresReview(true)
+                .build();
+
+        when(applicationRepository.findPotentialDuplicates(eq(userId), eq("Meta"), eq("Software Engineer"), any()))
+                .thenReturn(List.of(existing));
+
+        ApplicationDiscoveredEvent interviewEvent = new ApplicationDiscoveredEvent(
+                UUID.randomUUID(), userId, "Meta", "Software Engineer", "INTERVIEW",
+                null, null, null, null,
+                "Next round interview invite", 0.95,
+                "msg-interview", "Interview with Meta", "recruiter@meta.com", Instant.now()
+        );
+
+        ingestionService.processDiscoveredApplication(interviewEvent);
+
+        verify(applicationRepository).save(existing);
+        assertThat(existing.getStatus()).isEqualTo(ApplicationStatus.INTERVIEW);
     }
 }

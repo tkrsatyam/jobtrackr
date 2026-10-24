@@ -167,13 +167,17 @@ public class GeminiChatModel implements ChatModel {
 
     private long extractRetryDelaySeconds(Exception e, long defaultSeconds) {
         try {
-            String msg = e.getMessage();
-            if (msg != null && msg.contains("\"retryDelay\": \"")) {
-                int start = msg.indexOf("\"retryDelay\": \"") + 15;
-                int end = msg.indexOf("s\"", start);
-                if (end != -1) {
-                    String delayStr = msg.substring(start, end).trim();
-                    return Long.parseLong(delayStr);
+            String body = null;
+            if (e instanceof org.springframework.web.client.RestClientResponseException rce) {
+                body = rce.getResponseBodyAsString();
+            }
+            if (body == null || body.isBlank()) {
+                body = e.getMessage();
+            }
+            if (body != null) {
+                java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"retryDelay\"\\s*:\\s*\"(\\d+)(?:\\.\\d+)?s?\"").matcher(body);
+                if (m.find()) {
+                    return Long.parseLong(m.group(1));
                 }
             }
         } catch (Exception ignored) {}
