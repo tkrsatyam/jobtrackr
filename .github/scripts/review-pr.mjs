@@ -606,11 +606,24 @@ function renderConsolidatedReport(results, commitSha, isFollowUp, modelsUsed = [
 
     let tableRows = '';
     for (const issue of allIssues) {
-      let loc = issue.location;
-      if (!loc.endsWith('<br>') && !loc.includes('<br>')) {
-        loc += '<br>';
-      }
-      tableRows += `| \`${issue.domain}\` | \`${issue.severity}\` | \`${loc}\`${issue.description} | ${issue.suggestedFix} |\n`;
+      const cleanLoc = (issue.location || '')
+        .trim()
+        .replace(/^[`]+|[`]+$/g, '')
+        .replace(/<br\s*\/?>/gi, '')
+        .trim();
+
+      const cleanDesc = (issue.description || '')
+        .trim()
+        .replace(/\r?\n/g, ' ')
+        .replace(/\|/g, '\\|');
+
+      const cleanFix = (issue.suggestedFix || '')
+        .trim()
+        .replace(/\r?\n/g, ' ')
+        .replace(/\|/g, '\\|');
+
+      const locFormatted = cleanLoc ? `\`${cleanLoc}\`<br>` : '';
+      tableRows += `| \`${issue.domain}\` | \`${issue.severity}\` | ${locFormatted}${cleanDesc} | ${cleanFix} |\n`;
     }
 
     issuesSection = `### Issues Identified\n\n| Domain | Severity | Issue & Location | Suggested Fix |\n|---|---|---|---|\n${tableRows}\n`;
