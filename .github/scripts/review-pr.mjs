@@ -1,0 +1,740 @@
+#!/usr/bin/env node
+
+import { execFileSync } from 'node:child_process';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const REPO_ROOT = resolve(__dirname, '../..');
+
+// Environment variables
+const GEMINI_API_KEY = process.env.GEMINI_AI_REVIEW_API_KEY || process.env.GEMINI_API_KEY;
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const GITHUB_REPOSITORY = process.env.GITHUB_REPOSITORY;
+const PR_NUMBER = process.env.PR_NUMBER;
+const BASE_SHA = process.env.BASE_SHA;
+const HEAD_SHA = process.env.HEAD_SHA;
+const BASE_REF = process.env.BASE_REF || 'main';
+const HEAD_REF = process.env.HEAD_REF || '';
+const DIFF_THRESHOLD = parseInt(process.env.DIFF_THRESHOLD || '2000', 10);
+
+const DEFAULT_MODEL_CHAIN = [
+  'gemini-3.8-flash',
+  'gemini-3.6-flash',
+  'gemini-3.5-flash-lite',
+  'gemini-3.1-flash-lite'
+];
+
+const MODEL_CHAIN = process.env.GEMINI_MODELS
+  ? process.env.GEMINI_MODELS.split(',').map((m) => m.trim()).filter(Boolean)
+  : (process.env.GEMINI_MODEL ? [process.env.GEMINI_MODEL] : DEFAULT_MODEL_CHAIN);
+
+const EXCLUSION_PATTERNS = [
+  ':!.github/**',
+  ':!package-lock.json',
+  ':!*/package-lock.json',
+  ':!pnpm-lock.yaml',
+  ':!*/pnpm-lock.yaml',
+  ':!yarn.lock',
+  ':!*/yarn.lock',
+  ':!*.svg',
+  ':!*.png',
+  ':!*.jpg',
+  ':!*.jpeg',
+  ':!*.webp',
+  ':!*.ico',
+  ':!*.woff',
+  ':!*.woff2',
+  ':!*.ttf',
+  ':!*.eot',
+  ':!*.map',
+  ':!*.min.js',
+  ':!*.min.css',
+  ':!*.md',
+  ':!docs/**',
+  ':!services/**/src/main/resources/static/**',
+  ':!services/**/target/**',
+  ':!frontend/**/dist/**',
+  ':!.idea/**'
+];
+
+function runGit(args, suppressError = false) {
+  try {
+    return execFileSync('git', args, {
+      cwd: REPO_ROOT,
+      encoding: 'utf8',
+      maxBuffer: 15 * 1024 * 1024
+    }).trim();
+  } catch (error) {
+    if (!suppressError) {
+      console.warn(`Git command failed: git ${args.join(' ')}`);
+      console.warn(error.message);
+    }
+    return '';
+  }
+}
+
+function getDiffTargetArgs() {
+  if (BASE_SHA && HEAD_SHA) {
+    const mergeBase = runGit(['merge-base', BASE_SHA, HEAD_SHA], true);
+    if (mergeBase) {
+      return [mergeBase, HEAD_SHA];
+    }
+    return [BASE_SHA, HEAD_SHA];
+  }
+  return [`origin/${BASE_REF}...HEAD`];
+}
+
+function getCommitSha() {
+  if (HEAD_SHA) {
+    return HEAD_SHA.substring(0, 7);
+  }
+  const sha = runGit(['rev-parse', '--short', 'HEAD']);
+  return sha || 'unknown';
+}
+
+function getLatestCommitInfo() {
+  const target = HEAD_SHA || 'HEAD';
+  const out = runGit(['log', '-1', '--pretty=format:%h - %s%n%b', target], true);
+  return out ? out.trim() : '';
+}
+
+function getDiffStat(pathPrefix = null) {
+  const args = ['diff', '--shortstat', ...getDiffTargetArgs(), '--'];
+  if (pathPrefix) {
+    args.push(pathPrefix);
+  }
+  args.push(...EXCLUSION_PATTERNS);
+
+  const output = runGit(args);
+  if (!output) {
+    return { files: 0, insertions: 0, deletions: 0, total: 0 };
+  }
+
+  const insertionsMatch = output.match(/(\d+)\s+insertion/);
+  const deletionsMatch = output.match(/(\d+)\s+deletion/);
+  const filesMatch = output.match(/(\d+)\s+file/);
+
+  const insertions = insertionsMatch ? parseInt(insertionsMatch[1], 10) : 0;
+  const deletions = deletionsMatch ? parseInt(deletionsMatch[1], 10) : 0;
+  const files = filesMatch ? parseInt(filesMatch[1], 10) : 0;
+
+  return {
+    files,
+    insertions,
+    deletions,
+    total: insertions + deletions
+  };
+}
+
+function getDiffContent(pathPrefix = null) {
+  const args = ['diff', ...getDiffTargetArgs(), '--'];
+  if (pathPrefix) {
+    args.push(pathPrefix);
+  }
+  args.push(...EXCLUSION_PATTERNS);
+
+  return runGit(args);
+}
+
+function getChangedFiles(pathPrefix = null) {
+  const args = ['diff', '--name-only', ...getDiffTargetArgs(), '--'];
+  if (pathPrefix) {
+    args.push(pathPrefix);
+  }
+  args.push(...EXCLUSION_PATTERNS);
+
+  const output = runGit(args);
+  if (!output) return [];
+  return output.split('\n').map((f) => f.trim()).filter(Boolean);
+}
+
+function isTestFile(filePath) {
+  const normalized = filePath.replace(/\\/g, '/');
+  return (
+    normalized.includes('/src/test/') ||
+    normalized.includes('/e2e/') ||
+    normalized.endsWith('.spec.ts') ||
+    normalized.endsWith('.spec.js') ||
+    /[A-Z][a-zA-Z0-9]*(Test|Tests|IT)\.java$/.test(normalized)
+  );
+}
+
+function partitionDiff(diffContent) {
+  if (!diffContent || !diffContent.trim()) {
+    return { productionDiff: '', testDiff: '' };
+  }
+
+  const chunks = diffContent.split(/(?=^diff --git )/m);
+  let productionDiff = '';
+  let testDiff = '';
+
+  for (const chunk of chunks) {
+    if (!chunk.trim()) continue;
+    const match = chunk.match(/^diff --git (?:\"a\/|a\/)(.+?)(?:\"| )/m);
+    if (match) {
+      const filePath = match[1];
+      if (isTestFile(filePath)) {
+        testDiff += chunk;
+      } else {
+        productionDiff += chunk;
+      }
+    } else {
+      productionDiff += chunk;
+    }
+  }
+
+  return { productionDiff: productionDiff.trim(), testDiff: testDiff.trim() };
+}
+
+function formatDiffBlock(diffContent) {
+  const { productionDiff, testDiff } = partitionDiff(diffContent);
+  let block = '\n\n# Git Diff Under Review\n<diff_content>';
+  if (productionDiff) {
+    block += `\n<production_diff>\n${productionDiff}\n</production_diff>`;
+  }
+  if (testDiff) {
+    block += `\n<test_diff>\n${testDiff}\n</test_diff>`;
+  }
+  block += '\n</diff_content>';
+  return block;
+}
+
+function formatFilesText(files) {
+  const validExtensions = ['.java', '.ts', '.html', '.scss', '.yml', '.yaml', '.xml'];
+  let filesText = '';
+  let count = 0;
+
+  for (const relPath of files) {
+    const ext = relPath.substring(relPath.lastIndexOf('.')).toLowerCase();
+    if (!validExtensions.includes(ext)) {
+      continue;
+    }
+
+    const fullPath = resolve(REPO_ROOT, relPath);
+    if (!existsSync(fullPath)) {
+      continue;
+    }
+
+    try {
+      const content = readFileSync(fullPath, 'utf8');
+      if (content.length > 50000) {
+        continue;
+      }
+      const lang = ext.replace('.', '');
+      filesText += `\n### File: ${relPath}\n\`\`\`${lang}\n${content.trim()}\n\`\`\`\n`;
+      count++;
+    } catch (err) {
+      console.warn(`Could not read full file ${relPath}: ${err.message}`);
+    }
+  }
+
+  return { filesText, count };
+}
+
+function fetchPartitionedSourceFiles(fileList) {
+  const prodFiles = fileList.filter((f) => !isTestFile(f));
+  const testFiles = fileList.filter((f) => isTestFile(f));
+
+  const prodResult = formatFilesText(prodFiles);
+  const testResult = formatFilesText(testFiles);
+
+  const totalFiles = prodResult.count + testResult.count;
+  if (totalFiles === 0) return '';
+
+  let block = `\n\n# Full Source Files at HEAD (${totalFiles} files)\n<modified_files_full_source>`;
+  if (prodResult.count > 0) {
+    block += `\n<production_source_files>${prodResult.filesText}\n</production_source_files>`;
+  }
+  if (testResult.count > 0) {
+    block += `\n<test_source_files>${testResult.filesText}\n</test_source_files>`;
+  }
+  block += '\n</modified_files_full_source>';
+
+  return block;
+}
+
+function fetchProjectContracts(changedFiles) {
+  const contracts = [
+    {
+      path: 'docs/API_CONTRACTS.md',
+      desc: 'JobTrackr Global API Contracts & Endpoints'
+    },
+    {
+      path: 'docs/DB_SCHEMA.md',
+      desc: 'Database Schema & Entity Models'
+    },
+    {
+      path: 'frontend/jobtrackr-fe/src/app/shared/constants/status-transitions.ts',
+      desc: 'Application Pipeline Status Transitions'
+    }
+  ];
+
+  const touchedStr = changedFiles.join(' ').toLowerCase();
+  if (touchedStr.includes('gateway') || touchedStr.includes('router')) {
+    contracts.push({
+      path: 'services/api-gateway/src/main/resources/application.yml',
+      desc: 'Gateway Configuration & Route Definitions'
+    });
+  }
+
+  let contractsText = '';
+  for (const contract of contracts) {
+    const fullPath = resolve(REPO_ROOT, contract.path);
+    if (existsSync(fullPath)) {
+      try {
+        const content = readFileSync(fullPath, 'utf8').trim();
+        const ext = contract.path.substring(contract.path.lastIndexOf('.')).replace('.', '');
+        const truncatedContent = content.length > 5000 ? `${content.substring(0, 5000)}\n...(truncated for brevity)` : content;
+        contractsText += `\n### Contract: ${contract.path} (${contract.desc})\n\`\`\`${ext}\n${truncatedContent}\n\`\`\`\n`;
+      } catch (e) {
+        // Ignore read errors
+      }
+    }
+  }
+
+  if (!contractsText) return '';
+  return `\n\n# Project Contracts & Architectural Baselines\n<project_contracts>${contractsText}\n</project_contracts>`;
+}
+
+function fetchRequirementsAndAdrs(prTitle, prBody, headRef, changedFiles) {
+  const combinedText = `${prTitle || ''} ${prBody || ''} ${headRef || ''} ${changedFiles.join(' ')}`;
+
+  // Extract Ticket Keys (e.g. JD-140, JD-28)
+  const ticketMatches = [...new Set(combinedText.match(/JD-\d+/gi) || [])].map((m) => m.toUpperCase());
+
+  let extractedRequirements = '';
+  const featuresFilePath = resolve(REPO_ROOT, 'docs/FEATURES.md');
+  if (existsSync(featuresFilePath)) {
+    try {
+      const featContent = readFileSync(featuresFilePath, 'utf8');
+      const lines = featContent.split('\n');
+      const matchedLines = [];
+
+      for (const ticket of ticketMatches) {
+        for (const line of lines) {
+          if (line.includes(ticket) && !matchedLines.includes(line.trim())) {
+            matchedLines.push(line.trim());
+          }
+        }
+      }
+
+      if (matchedLines.length > 0) {
+        extractedRequirements = `### Functional Requirements Grounding\n${matchedLines.join('\n')}\n`;
+      }
+    } catch (e) {
+      console.warn(`Could not read docs/FEATURES.md: ${e.message}`);
+    }
+  }
+
+  if (!extractedRequirements) {
+    return '';
+  }
+
+  return `\n\n# Project Requirements & Scope Context\n<requirements_context>\n${extractedRequirements}</requirements_context>`;
+}
+
+function readMarkdownRule(relativePath) {
+  const fullPath = resolve(REPO_ROOT, relativePath);
+  if (!existsSync(fullPath)) {
+    console.warn(`Rule file not found: ${fullPath}`);
+    return '';
+  }
+  return readFileSync(fullPath, 'utf8').trim();
+}
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+async function callGeminiWithRetry(promptText, apiKey, model, maxAttempts = 2, timeoutMs = 60000) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  const requestBody = {
+    contents: [
+      {
+        role: 'user',
+        parts: [{ text: promptText }]
+      }
+    ],
+    generationConfig: {
+      temperature: 0.2
+    }
+  };
+
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      console.log(`Calling Gemini API (${model}), attempt ${attempt}/${maxAttempts}...`);
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const data = await response.json();
+        const candidate = data.candidates?.[0];
+        const reviewText = candidate?.content?.parts?.[0]?.text;
+        if (reviewText) {
+          return reviewText;
+        }
+        throw new Error('Gemini returned an empty candidate or text field.');
+      }
+
+      const status = response.status;
+      const errorText = await response.text();
+      lastError = new Error(`Gemini API error (status ${status}): ${errorText}`);
+
+      // Retry on 429 (Rate Limit) and 503 (High Demand / Unavailable)
+      if (status === 429 || status === 503) {
+        if (attempt < maxAttempts) {
+          const jitter = Math.floor(Math.random() * 800);
+          const delayMs = Math.pow(2, attempt) * 2000 + jitter;
+          console.warn(`Encountered HTTP ${status}. Retrying in ${delayMs}ms...`);
+          await sleep(delayMs);
+          continue;
+        }
+        throw lastError;
+      }
+
+      // Non-retryable client/server error: fail immediately
+      throw lastError;
+    } catch (err) {
+      lastError = err;
+      const isRetryableNetworkError =
+        err.name === 'AbortError' ||
+        err.code === 'UND_ERR_CONNECT_TIMEOUT' ||
+        err.code === 'ECONNRESET' ||
+        err.code === 'ETIMEDOUT';
+
+      if (attempt < maxAttempts && isRetryableNetworkError) {
+        const delayMs = Math.pow(2, attempt) * 2000;
+        console.warn(`Request failed with ${err.name || err.code}. Retrying in ${delayMs}ms...`);
+        await sleep(delayMs);
+        continue;
+      }
+
+      // If it's not a retryable network error, do not retry
+      break;
+    }
+  }
+
+  throw lastError;
+}
+
+async function callGeminiWithFallback(promptText, apiKey) {
+  let lastError = null;
+
+  for (const model of MODEL_CHAIN) {
+    try {
+      console.log(`\n--- Attempting review with model: ${model} ---`);
+      const reviewText = await callGeminiWithRetry(promptText, apiKey, model, 2, 60000);
+      console.log(`Successfully generated review using ${model}.`);
+      return { reviewText, modelUsed: model };
+    } catch (err) {
+      console.warn(`Model ${model} failed (${err.message}). Trying next fallback model...`);
+      lastError = err;
+    }
+  }
+
+  throw new Error(`All models in fallback chain failed: ${lastError?.message}`);
+}
+
+function sanitizeReviewMarkdown(markdown) {
+  if (!markdown) return markdown;
+
+  return markdown
+    // Truncate backend boilerplate paths: services/<service>/src/main/java/com/jobtrackr/<service>/pkg/File.java#L...
+    .replace(
+      /`services\/([^/]+)\/src\/(?:main|test)\/java\/com\/jobtrackr\/(?:[^/]+\/)?([^`\s]+)`/g,
+      '`services/$1/.../$2`'
+    )
+    // Truncate frontend boilerplate paths: frontend/jobtrackr-fe/src/app/(core/|features/|.../)pkg/File.ts#L...
+    .replace(
+      /`frontend\/(?:jobtrackr-fe\/)?src\/(?:app\/)?(?:core\/|features\/|shared\/|layout\/)?(?:services\/)?([^`\s]+\/[^`\s]+)`/g,
+      '`frontend/.../$1`'
+    )
+    // Ensure a <br> exists between the backtick location and the following description in table cells
+    .replace(
+      /(\|(?:\s*`[^`]+#L\d+`\s*))(?!\s*<br>)\s*([A-Za-z0-9])/g,
+      '$1<br>$2'
+    );
+}
+
+async function publishOrUpdateComment(repo, prNumber, token, commentBody, commitSha) {
+  const sanitizedBody = sanitizeReviewMarkdown(commentBody);
+  const listUrl = `https://api.github.com/repos/${repo}/issues/${prNumber}/comments?per_page=100`;
+  const signatureTag = `<!-- jobtrackr-ai-review:commit:${commitSha} -->`;
+  const headerPattern = `## 🤖 AI Code Review | Commit \`${commitSha}\``;
+  const headers = {
+    'Authorization': `Bearer ${token}`,
+    'Accept': 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28',
+    'User-Agent': 'jobtrackr-ai-reviewer'
+  };
+
+  try {
+    const listRes = await fetch(listUrl, { headers });
+    if (listRes.ok) {
+      const comments = await listRes.json();
+      const matchingComments = comments.filter(
+        (c) =>
+          typeof c.body === 'string' &&
+          (c.body.includes(signatureTag) || c.body.includes(headerPattern))
+      );
+
+      if (matchingComments.length > 0) {
+        const primary = matchingComments[0];
+        console.log(`Found existing review comment (ID: ${primary.id}) for commit ${commitSha}. Updating in-place...`);
+        const updateUrl = `https://api.github.com/repos/${repo}/issues/comments/${primary.id}`;
+        const updateRes = await fetch(updateUrl, {
+          method: 'PATCH',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ body: sanitizedBody })
+        });
+
+        if (updateRes.ok) {
+          console.log(`Successfully updated review comment (ID: ${primary.id}) for commit ${commitSha}.`);
+
+          // Remove any duplicate comments previously created for this same commit
+          for (let i = 1; i < matchingComments.length; i++) {
+            const duplicate = matchingComments[i];
+            console.log(`Cleaning up duplicate review comment (ID: ${duplicate.id}) for commit ${commitSha}...`);
+            try {
+              await fetch(`https://api.github.com/repos/${repo}/issues/comments/${duplicate.id}`, {
+                method: 'DELETE',
+                headers
+              });
+            } catch (delErr) {
+              console.warn(`Failed to delete duplicate comment ${duplicate.id}:`, delErr.message);
+            }
+          }
+          return;
+        }
+        console.warn(`Failed to update existing comment (status ${updateRes.status}). Falling back to creating new comment.`);
+      }
+    }
+  } catch (err) {
+    console.warn(`Error checking existing comments: ${err.message}. Proceeding to create new comment.`);
+  }
+
+  // Create new comment if no existing comment found or update failed
+  const createUrl = `https://api.github.com/repos/${repo}/issues/${prNumber}/comments`;
+  const createRes = await fetch(createUrl, {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ body: sanitizedBody })
+  });
+
+  if (!createRes.ok) {
+    const errorText = await createRes.text();
+    throw new Error(`Failed to post comment to GitHub (status ${createRes.status}): ${errorText}`);
+  }
+
+  console.log(`Successfully created new review comment for commit ${commitSha}.`);
+}
+
+async function fetchPRContext(repo, prNumber, token) {
+  const headers = {
+    'Authorization': `Bearer ${token}`,
+    'Accept': 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28',
+    'User-Agent': 'jobtrackr-ai-reviewer'
+  };
+
+  try {
+    const prRes = await fetch(`https://api.github.com/repos/${repo}/pulls/${prNumber}`, { headers });
+    const prData = prRes.ok ? await prRes.json() : null;
+
+    const commentsRes = await fetch(`https://api.github.com/repos/${repo}/issues/${prNumber}/comments?per_page=100`, { headers });
+    const commentsData = commentsRes.ok ? await commentsRes.json() : [];
+
+    let contextText = '';
+    if (prData) {
+      contextText += `### PR Title: ${prData.title}\n\n### PR Description:\n${prData.body || 'No description provided.'}\n\n`;
+    }
+
+    if (commentsData.length > 0) {
+      contextText += `### PR Discussion & Previous Review Feedback:\n`;
+      const currentCommit = getCommitSha();
+      for (const comment of commentsData) {
+        const author = comment.user?.login || 'unknown';
+        // Avoid self-echo of the exact commit currently being reviewed
+        if (author.includes('bot') && comment.body.includes(`Commit \`${currentCommit}\``)) {
+          continue;
+        }
+        contextText += `\n--- Comment by @${author} ---\n${comment.body}\n`;
+      }
+    }
+
+    return {
+      text: contextText.trim(),
+      title: prData?.title || '',
+      body: prData?.body || ''
+    };
+  } catch (err) {
+    console.warn(`Failed to fetch PR context: ${err.message}`);
+    return { text: '', title: '', body: '' };
+  }
+}
+
+async function main() {
+  if (!GEMINI_API_KEY) {
+    console.warn('GEMINI_AI_REVIEW_API_KEY is not set. Skipping AI review.');
+    process.exit(0);
+  }
+
+  if (!GITHUB_TOKEN || !GITHUB_REPOSITORY || !PR_NUMBER) {
+    console.warn('Missing GITHUB_TOKEN, GITHUB_REPOSITORY, or PR_NUMBER. Skipping AI review.');
+    process.exit(0);
+  }
+
+  const commitSha = getCommitSha();
+  console.log(`Starting AI Code Review for PR #${PR_NUMBER} (commit: ${commitSha}, base: ${BASE_REF}, baseSha: ${BASE_SHA || 'none'}, headSha: ${HEAD_SHA || 'none'})...`);
+
+  // Ensure commits are available in local git graph
+  if (BASE_SHA && HEAD_SHA) {
+    // If specific SHAs were not unpacked in checkout, fetch them directly
+    const hasBase = runGit(['cat-file', '-t', BASE_SHA]);
+    const hasHead = runGit(['cat-file', '-t', HEAD_SHA]);
+    if (hasBase !== 'commit' || hasHead !== 'commit') {
+      console.log(`Fetching commit revisions ${BASE_SHA} and ${HEAD_SHA}...`);
+      runGit(['fetch', 'origin', BASE_SHA, HEAD_SHA]);
+    }
+  } else {
+    // Fallback when running outside PR workflow: fetch base branch without shallow truncation
+    runGit(['fetch', 'origin', BASE_REF]);
+  }
+
+  // Calculate statistics
+  const totalStats = getDiffStat();
+  const backendStats = getDiffStat('services');
+  const frontendStats = getDiffStat('frontend');
+
+  console.log(`Total changed lines: ${totalStats.total} (${totalStats.insertions}+ / ${totalStats.deletions}-)`);
+  console.log(`Backend (services): ${backendStats.total} lines. Frontend: ${frontendStats.total} lines.`);
+
+  if (totalStats.total === 0) {
+    console.log('No eligible code changes detected after filtering lockfiles and assets. Skipping review.');
+    process.exit(0);
+  }
+
+  // Load rules
+  const basePrompt = readMarkdownRule('.github/ai-review/ai-review-prompt.md');
+  const backendRules = readMarkdownRule('.github/ai-review/backend-rules.md');
+  const frontendRules = readMarkdownRule('.github/ai-review/frontend-rules.md');
+
+  // Extract list of changed files
+  const changedFiles = getChangedFiles();
+  const backendChangedFiles = getChangedFiles('services');
+  const frontendChangedFiles = getChangedFiles('frontend');
+
+  // Build full source files and project contracts for behavioral delta analysis
+  const projectContractsBlock = fetchProjectContracts(changedFiles);
+  const fullSourceFilesBlock = fetchPartitionedSourceFiles(changedFiles);
+  const backendSourceFilesBlock = fetchPartitionedSourceFiles(backendChangedFiles);
+  const frontendSourceFilesBlock = fetchPartitionedSourceFiles(frontendChangedFiles);
+
+  // Fetch PR description and discussion context
+  const prContext = await fetchPRContext(GITHUB_REPOSITORY, PR_NUMBER, GITHUB_TOKEN);
+  const commitInfo = getLatestCommitInfo();
+  let commitInfoText = '';
+  if (commitInfo) {
+    commitInfoText = `### Latest Commit Under Review at HEAD:\n\`\`\`\n${commitInfo}\n\`\`\`\n\n`;
+  }
+
+  let prContextBlock = '';
+  if (prContext.text || commitInfoText) {
+    const combinedContext = `${commitInfoText}${prContext.text}`.trim();
+    console.log(`Fetched PR and commit context (${combinedContext.length} chars). Injecting into review prompt.`);
+    prContextBlock = `\n\n# Pull Request Description & Conversation Context\n<pr_context>\n${combinedContext}\n</pr_context>`;
+  }
+
+  // Extract relevant requirements and ticket context
+  const requirementsContextBlock = fetchRequirementsAndAdrs(
+    prContext.title,
+    prContext.body,
+    HEAD_REF,
+    changedFiles
+  );
+  if (requirementsContextBlock) {
+    console.log(`Extracted functional requirements context for PR #${PR_NUMBER}. Injecting into review prompt.`);
+  }
+
+  let reviewComment = '';
+  const header = `<!-- jobtrackr-ai-review:commit:${commitSha} -->\n## 🤖 AI Code Review | Commit \`${commitSha}\`\n\n`;
+
+  // Decision: Single Call Mode vs Split Call Mode
+  const shouldSplit = totalStats.total > DIFF_THRESHOLD && backendStats.total > 100 && frontendStats.total > 100;
+
+  if (shouldSplit) {
+    console.log(`Diff exceeds threshold (${totalStats.total} > ${DIFF_THRESHOLD}) with substantial BE and FE changes. Executing Split Mode.`);
+
+    const backendDiff = getDiffContent('services');
+    const frontendDiff = getDiffContent('frontend');
+
+    const backendDiffBlock = formatDiffBlock(backendDiff);
+    const frontendDiffBlock = formatDiffBlock(frontendDiff);
+
+    const backendFullPrompt = `${basePrompt}${requirementsContextBlock}${projectContractsBlock}${backendSourceFilesBlock}${prContextBlock}\n\n# Backend Domain Rules\n${backendRules}${backendDiffBlock}`;
+    const frontendFullPrompt = `${basePrompt}${requirementsContextBlock}${projectContractsBlock}${frontendSourceFilesBlock}${prContextBlock}\n\n# Frontend Domain Rules\n${frontendRules}${frontendDiffBlock}`;
+
+    try {
+      const [backendRes, frontendRes] = await Promise.all([
+        callGeminiWithFallback(backendFullPrompt, GEMINI_API_KEY),
+        callGeminiWithFallback(frontendFullPrompt, GEMINI_API_KEY)
+      ]);
+
+      const footer = `\n\n---\n*This review was automatically generated by ${backendRes.modelUsed} / ${frontendRes.modelUsed} and is advisory.*`;
+      reviewComment = `${header}### 📦 Backend Review\n\n${backendRes.reviewText}\n\n---\n\n### 🎨 Frontend Review\n\n${frontendRes.reviewText}${footer}`;
+    } catch (splitError) {
+      console.warn('Split review failed:', splitError.message);
+      return;
+    }
+  } else {
+    console.log(`Executing Single Call Mode (total lines: ${totalStats.total}, threshold: ${DIFF_THRESHOLD}).`);
+
+    let combinedRules = '';
+    if (backendStats.total > 0) {
+      combinedRules += `\n\n# Backend Domain Rules\n${backendRules}`;
+    }
+    if (frontendStats.total > 0) {
+      combinedRules += `\n\n# Frontend Domain Rules\n${frontendRules}`;
+    }
+
+    const fullDiff = getDiffContent();
+    const fullDiffBlock = formatDiffBlock(fullDiff);
+    const singlePrompt = `${basePrompt}${requirementsContextBlock}${projectContractsBlock}${fullSourceFilesBlock}${prContextBlock}${combinedRules}${fullDiffBlock}`;
+
+    try {
+      const { reviewText, modelUsed } = await callGeminiWithFallback(singlePrompt, GEMINI_API_KEY);
+      const footer = `\n\n---\n*This review was automatically generated by ${modelUsed} and is advisory.*`;
+      reviewComment = `${header}${reviewText}${footer}`;
+    } catch (singleError) {
+      console.warn('Single review call failed:', singleError.message);
+      return;
+    }
+  }
+
+  try {
+    await publishOrUpdateComment(GITHUB_REPOSITORY, PR_NUMBER, GITHUB_TOKEN, reviewComment, commitSha);
+  } catch (postError) {
+    console.warn('Failed to publish review comment to PR:', postError.message);
+  }
+}
+
+main().catch((err) => {
+  console.error('Unexpected error in review script:', err);
+  process.exit(0); // Advisory: never break CI pipeline
+});
