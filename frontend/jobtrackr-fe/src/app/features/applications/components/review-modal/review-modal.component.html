@@ -26,7 +26,7 @@
           <span>{{ confidencePercent() ?? 0 }}% Confidence</span>
         </div>
         <div class="discovered-date">
-          <span>Discovered from email on {{ item.createdAt | date:'mediumDate' }}</span>
+          <span>Received: {{ (item.emailReceivedAt || item.appliedDate || item.createdAt) | date:'medium' }}</span>
         </div>
       </div>
 
@@ -67,19 +67,28 @@
           <mat-form-field appearance="outline" class="form-field">
             <mat-label>Status</mat-label>
             <mat-select formControlName="status">
-              @for (st of activeStatuses; track st) {
+              @for (st of allStatuses; track st) {
                 <mat-option [value]="st">{{ statusLabels[st] }}</mat-option>
               }
             </mat-select>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="form-field">
-            <mat-label>Location</mat-label>
-            <input matInput formControlName="location" placeholder="e.g. Remote, New York, NY" />
+            <mat-label>Source</mat-label>
+            <mat-select formControlName="source">
+              @for (src of allSources; track src) {
+                <mat-option [value]="src">{{ sourceLabels[src] }}</mat-option>
+              }
+            </mat-select>
           </mat-form-field>
         </div>
 
-        <div class="form-row single-field">
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>Location</mat-label>
+            <input matInput formControlName="location" placeholder="e.g. Remote, New York, NY" />
+          </mat-form-field>
+
           <mat-form-field appearance="outline" class="form-field">
             <mat-label>Job Posting URL</mat-label>
             <input matInput formControlName="jobUrl" placeholder="https://..." />

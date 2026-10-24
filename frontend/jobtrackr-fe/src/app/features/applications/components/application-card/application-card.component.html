@@ -32,6 +32,13 @@
 
     <p class="card-role">{{ app().role }}</p>
 
+    @if (app().proposedStatus) {
+        <div class="card-proposal-badge" [title]="'Suggested status update: ' + app().proposedStatus">
+            <mat-icon>auto_awesome</mat-icon>
+            <span>Suggested: {{ app().proposedStatus }}</span>
+        </div>
+    }
+
     <div class="card-meta">
         <app-priority-badge [priority]="app().priority" />
         @if (app().appliedDate) {

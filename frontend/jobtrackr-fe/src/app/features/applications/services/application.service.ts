@@ -119,4 +119,12 @@ export class ApplicationService {
   rejectReview(id: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}/reject-review`);
   }
+
+  acceptStatusProposal(id: string): Observable<ApplicationResponse> {
+    return this.http.post<ApplicationResponse>(`${this.baseUrl}/${id}/accept-status-proposal`, {});
+  }
+
+  dismissStatusProposal(id: string): Observable<ApplicationResponse> {
+    return this.http.post<ApplicationResponse>(`${this.baseUrl}/${id}/dismiss-status-proposal`, {});
+  }
 }

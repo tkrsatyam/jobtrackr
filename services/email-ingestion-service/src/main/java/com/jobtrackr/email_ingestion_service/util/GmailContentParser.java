@@ -12,6 +12,11 @@ import java.util.regex.Pattern;
 
 public class GmailContentParser {
 
+    private static final Pattern COMMENT_PATTERN = Pattern.compile("<!--.*?-->", Pattern.DOTALL);
+    private static final Pattern HEAD_PATTERN = Pattern.compile("<head[^>]*>.*?</head>", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+    private static final Pattern STYLE_PATTERN = Pattern.compile("<style[^>]*>.*?</style>", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+    private static final Pattern SCRIPT_PATTERN = Pattern.compile("<script[^>]*>.*?</script>", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+    private static final Pattern XML_PATTERN = Pattern.compile("<xml[^>]*>.*?</xml>", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
     private static final Pattern ANCHOR_PATTERN = Pattern.compile("(?i)<a\\s+[^>]*href=[\"']([^\"']+)[\"'][^>]*>(.*?)</a>", Pattern.DOTALL);
     private static final Pattern BREAK_TAG_PATTERN = Pattern.compile("(?i)<(?:br|p|/p|div|/div|tr|/tr|li|/li)\\s*/?>");
     private static final Pattern STRIP_TAGS_PATTERN = Pattern.compile("<[^>]*>");
@@ -86,6 +91,13 @@ public class GmailContentParser {
         if (html == null || html.isBlank()) {
             return "";
         }
+
+        // Strip non-visible blocks (comments, head, style, script, xml) before text extraction
+        html = COMMENT_PATTERN.matcher(html).replaceAll(" ");
+        html = HEAD_PATTERN.matcher(html).replaceAll(" ");
+        html = STYLE_PATTERN.matcher(html).replaceAll(" ");
+        html = SCRIPT_PATTERN.matcher(html).replaceAll(" ");
+        html = XML_PATTERN.matcher(html).replaceAll(" ");
 
         // Convert <a href="url">text</a> to text (url)
         Matcher matcher = ANCHOR_PATTERN.matcher(html);

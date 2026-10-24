@@ -31,6 +31,9 @@ class ApplicationIngestionServiceTest {
     @Mock
     private ApplicationRepository applicationRepository;
 
+    @org.mockito.Spy
+    private StatusTransitionValidator transitionValidator = new StatusTransitionValidator();
+
     @InjectMocks
     private ApplicationIngestionService ingestionService;
 
@@ -194,5 +197,194 @@ class ApplicationIngestionServiceTest {
         assertThat(saved.getConfidenceScore()).isNotNull();
         assertThat(saved.getSource()).isEqualTo(ApplicationSource.EMAIL);
         assertThat(saved.getEmailMessageId()).isEqualTo("msg-789");
+    }
+
+    @Test
+    @DisplayName("Should match single active application by company when role is generic Applicant Position")
+    void testSingleActiveCompanyFallbackForGenericRole() {
+        when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-stripe-invite")).thenReturn(false);
+        when(applicationRepository.findPotentialDuplicates(eq(userId), eq("Stripe"), eq("Applicant Position"), any()))
+                .thenReturn(Collections.emptyList());
+
+        Application activeApp = Application.builder()
+                .applicationId(UUID.randomUUID())
+                .userId(userId)
+                .companyName("Stripe")
+                .role("Backend Engineer")
+                .status(ApplicationStatus.APPLIED)
+                .appliedDate(LocalDate.now().minusDays(20))
+                .requiresReview(false)
+                .build();
+
+        when(applicationRepository.findActiveByCompany(eq(userId), eq("Stripe"), any()))
+                .thenReturn(List.of(activeApp));
+
+        ApplicationDiscoveredEvent event = new ApplicationDiscoveredEvent(
+                UUID.randomUUID(), userId, "Stripe", "Applicant Position", "INTERVIEW",
+                null, null, null, null, "Please schedule interview", 0.90,
+                "msg-stripe-invite", "Update regarding your application at Stripe", "jobs@stripe.com", Instant.now()
+        );
+
+        ingestionService.processDiscoveredApplication(event);
+
+        verify(applicationRepository).save(activeApp);
+        assertThat(activeApp.getProposedStatus()).isEqualTo(ApplicationStatus.INTERVIEW);
+        assertThat(activeApp.getStatusProposalReason()).contains("Please schedule interview");
+    }
+
+    @Test
+    @DisplayName("Should not auto-match when multiple active applications exist for company with generic role")
+    void testMultipleActiveCompanyFallbackDoesNotAutoMatch() {
+        when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-multi-stripe")).thenReturn(false);
+        when(applicationRepository.findPotentialDuplicates(eq(userId), eq("Stripe"), eq("Applicant Position"), any()))
+                .thenReturn(Collections.emptyList());
+
+        Application app1 = Application.builder()
+                .applicationId(UUID.randomUUID())
+                .userId(userId)
+                .companyName("Stripe")
+                .role("Backend Engineer")
+                .status(ApplicationStatus.APPLIED)
+                .appliedDate(LocalDate.now().minusDays(10))
+                .requiresReview(false)
+                .build();
+
+        Application app2 = Application.builder()
+                .applicationId(UUID.randomUUID())
+                .userId(userId)
+                .companyName("Stripe")
+                .role("Full Stack Engineer")
+                .status(ApplicationStatus.APPLIED)
+                .appliedDate(LocalDate.now().minusDays(15))
+                .requiresReview(false)
+                .build();
+
+        when(applicationRepository.findActiveByCompany(eq(userId), eq("Stripe"), any()))
+                .thenReturn(List.of(app1, app2));
+
+        ApplicationDiscoveredEvent event = new ApplicationDiscoveredEvent(
+                UUID.randomUUID(), userId, "Stripe", "Applicant Position", "INTERVIEW",
+                null, null, null, null, "Interview invitation", 0.90,
+                "msg-multi-stripe", "Stripe Interview", "jobs@stripe.com", Instant.now()
+        );
+
+        ingestionService.processDiscoveredApplication(event);
+
+        ArgumentCaptor<Application> captor = ArgumentCaptor.forClass(Application.class);
+        verify(applicationRepository).save(captor.capture());
+        Application saved = captor.getValue();
+        assertThat(saved.getRequiresReview()).isTrue();
+        assertThat(saved.getCompanyName()).isEqualTo("Stripe");
+    }
+
+    @Test
+    @DisplayName("Should upgrade source from generic EMAIL to specific INDEED upon duplicate merge")
+    void testUpgradeSourceFromEmailToIndeedOnMerge() {
+        when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-indeed")).thenReturn(false);
+
+        Application existing = Application.builder()
+                .applicationId(UUID.randomUUID())
+                .userId(userId)
+                .companyName("Novo Tree Minds")
+                .role("Java Developer")
+                .status(ApplicationStatus.APPLIED)
+                .source(ApplicationSource.EMAIL)
+                .appliedDate(LocalDate.now())
+                .requiresReview(true)
+                .build();
+
+        when(applicationRepository.findPotentialDuplicates(eq(userId), eq("Novo Tree Minds"), eq("Java Developer"), any()))
+                .thenReturn(List.of(existing));
+
+        ApplicationDiscoveredEvent incomingIndeedEvent = new ApplicationDiscoveredEvent(
+                UUID.randomUUID(), userId, "Novo Tree Minds", "Java Developer", "APPLIED",
+                "Pune", "https://indeed.com/viewjob?id=123", null, null,
+                "Submitted via Indeed", 0.95,
+                "msg-indeed", "Indeed Application: Java Developer", "indeedapply@indeed.com", Instant.now()
+        );
+
+        ingestionService.processDiscoveredApplication(incomingIndeedEvent);
+
+        verify(applicationRepository).save(existing);
+        assertThat(existing.getSource()).isEqualTo(ApplicationSource.INDEED);
+    }
+
+    @Test
+    @DisplayName("Should preserve multi-email snippets in ascending chronological order")
+    void testMultiEmailSnippetsPreservedInAscendingOrder() {
+        when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-earlier-application")).thenReturn(false);
+
+        Instant laterTime = Instant.parse("2026-10-05T17:50:49Z");
+        Instant earlierTime = Instant.parse("2026-10-05T10:50:49Z");
+
+        // Existing application was created with the later email first
+        Application existing = Application.builder()
+                .applicationId(UUID.randomUUID())
+                .userId(userId)
+                .companyName("Novo Tree Minds")
+                .role("Java Developer")
+                .status(ApplicationStatus.APPLIED)
+                .appliedDate(LocalDate.of(2026, 10, 5))
+                .emailReceivedAt(laterTime)
+                .rawEmailSnippet("=== [2026-10-05T17:50:49Z] Indeed Application: Java Developer (indeedapply@indeed.com) ===\nSubmitted via Indeed.")
+                .requiresReview(true)
+                .build();
+
+        when(applicationRepository.findPotentialDuplicates(eq(userId), eq("Novo Tree Minds"), eq("Java Developer"), any()))
+                .thenReturn(List.of(existing));
+
+        // Now incoming event is an earlier email (e.g. from Recooty)
+        ApplicationDiscoveredEvent earlierEvent = new ApplicationDiscoveredEvent(
+                UUID.randomUUID(), userId, "Novo Tree Minds", "Java Developer", "APPLIED",
+                null, null, null, null,
+                "Application Received - Thank You!", 0.90,
+                "msg-earlier-application", "Application Received - Thank You!", "notifications@recooty.com", earlierTime
+        );
+
+        ingestionService.processDiscoveredApplication(earlierEvent);
+
+        verify(applicationRepository).save(existing);
+        String snippet = existing.getRawEmailSnippet();
+        assertThat(snippet).isNotNull();
+
+        // The earlier email must appear BEFORE the later email
+        int earlierIndex = snippet.indexOf("=== [2026-10-05T10:50:49Z]");
+        int laterIndex = snippet.indexOf("=== [2026-10-05T17:50:49Z]");
+        assertThat(earlierIndex).isGreaterThanOrEqualTo(0);
+        assertThat(laterIndex).isGreaterThanOrEqualTo(0);
+        assertThat(earlierIndex).isLessThan(laterIndex);
+    }
+
+    @Test
+    @DisplayName("Should advance status through intermediate stages such as PHONE_SCREEN to INTERVIEW upon merge")
+    void testAdvanceStatusThroughIntermediateStagesOnMerge() {
+        when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-interview")).thenReturn(false);
+
+        Application existing = Application.builder()
+                .applicationId(UUID.randomUUID())
+                .userId(userId)
+                .companyName("Meta")
+                .role("Software Engineer")
+                .status(ApplicationStatus.PHONE_SCREEN)
+                .source(ApplicationSource.COMPANY_WEBSITE)
+                .appliedDate(LocalDate.now())
+                .confidenceScore(BigDecimal.valueOf(0.85))
+                .requiresReview(true)
+                .build();
+
+        when(applicationRepository.findPotentialDuplicates(eq(userId), eq("Meta"), eq("Software Engineer"), any()))
+                .thenReturn(List.of(existing));
+
+        ApplicationDiscoveredEvent interviewEvent = new ApplicationDiscoveredEvent(
+                UUID.randomUUID(), userId, "Meta", "Software Engineer", "INTERVIEW",
+                null, null, null, null,
+                "Next round interview invite", 0.95,
+                "msg-interview", "Interview with Meta", "recruiter@meta.com", Instant.now()
+        );
+
+        ingestionService.processDiscoveredApplication(interviewEvent);
+
+        verify(applicationRepository).save(existing);
+        assertThat(existing.getStatus()).isEqualTo(ApplicationStatus.INTERVIEW);
     }
 }

@@ -18,6 +18,7 @@
     </div>
 
     <app-review-banner (reviewed)="load()" />
+    <app-proposal-banner [applications]="applications()" />
 
     <div class="filter-bar">
         <button mat-stroked-button (click)="openFilterModal()">

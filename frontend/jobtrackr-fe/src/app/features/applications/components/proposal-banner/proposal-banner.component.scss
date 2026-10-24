@@ -1,0 +1,93 @@
+.proposal-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm-md) var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  background: color-mix(in srgb, var(--mat-sys-tertiary-container) 35%, var(--mat-sys-surface));
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-left: 4px solid var(--mat-sys-tertiary);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  color: var(--mat-sys-on-surface);
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.banner-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+
+  .icon-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background-color: var(--mat-sys-tertiary-container);
+    flex-shrink: 0;
+
+    .banner-icon {
+      color: var(--mat-sys-on-tertiary-container);
+      font-size: 1.35rem;
+      width: 1.35rem;
+      height: 1.35rem;
+    }
+  }
+
+  .text-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xxs);
+
+    .banner-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--mat-sys-on-surface);
+    }
+
+    .banner-desc {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--mat-sys-on-surface-variant);
+      line-height: 1.35;
+
+      .status-chip {
+        display: inline-block;
+        font-weight: 600;
+        font-size: 0.78rem;
+        padding: 0.1rem 0.45rem;
+        border-radius: 4px;
+        background-color: var(--mat-sys-tertiary-container);
+        color: var(--mat-sys-on-tertiary-container);
+        margin-left: 0.25rem;
+      }
+    }
+  }
+}
+
+.banner-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  button, a {
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    text-decoration: none;
+  }
+}

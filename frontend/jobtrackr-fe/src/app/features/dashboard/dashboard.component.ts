@@ -10,6 +10,7 @@ import { TERMINAL_STATUSES } from '../../shared/constants/status-transitions';
 import { StatusBadgeComponent } from "../../shared/components/status-badge/status-badge.component";
 import { DatePipe } from '@angular/common';
 import { ReviewBannerComponent } from '../applications/components/review-banner/review-banner.component';
+import { ProposalBannerComponent } from '../applications/components/proposal-banner/proposal-banner.component';
 
 interface StatCardConfig {
   label: string;
@@ -26,7 +27,8 @@ interface StatCardConfig {
     MatProgressBarModule,
     StatusBadgeComponent,
     DatePipe,
-    ReviewBannerComponent
+    ReviewBannerComponent,
+    ProposalBannerComponent
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',

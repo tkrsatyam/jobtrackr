@@ -25,6 +25,7 @@ import { FilterConfig, FilterModalComponent, FilterModalResult } from '../compon
 import { MatChipsModule } from "@angular/material/chips";
 import { BulkTagDialogComponent } from '../components/bulk-tag-dialog/bulk-tag-dialog.component';
 import { ReviewBannerComponent } from '../components/review-banner/review-banner.component';
+import { ProposalBannerComponent } from '../components/proposal-banner/proposal-banner.component';
 import { EmailIngestionService } from '../services/email-ingestion.service';
 
 type ColumnType = 'text' | 'status' | 'priority' | 'date' | 'tags' | 'select' | 'actions';
@@ -58,7 +59,8 @@ interface ColumnConfig {
     TagChipComponent,
     BulkActionToolbarComponent,
     MatChipsModule,
-    ReviewBannerComponent
+    ReviewBannerComponent,
+    ProposalBannerComponent
 ],
   templateUrl: './application-list.component.html',
   styleUrl: './application-list.component.scss',

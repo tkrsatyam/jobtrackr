@@ -1,5 +1,5 @@
 import { CdkDragDrop, CdkDragEnd, CdkDragStart, DragDropModule } from '@angular/cdk/drag-drop';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -18,6 +18,7 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
 import { ApplicationCardComponent } from "../components/application-card/application-card.component";
 import { ScrollingModule } from '@angular/cdk/scrolling';
 import { ReviewBannerComponent } from '../components/review-banner/review-banner.component';
+import { ProposalBannerComponent } from '../components/proposal-banner/proposal-banner.component';
 
 @Component({
   selector: 'app-application-board',
@@ -29,6 +30,7 @@ import { ReviewBannerComponent } from '../components/review-banner/review-banner
     MatProgressBarModule,
     ApplicationCardComponent,
     ReviewBannerComponent,
+    ProposalBannerComponent,
     ScrollingModule
 ],
   templateUrl: './application-board.component.html',
@@ -47,6 +49,12 @@ export class ApplicationBoardComponent implements OnInit {
   terminalStatuses = TERMINAL_STATUSES;
   statusLabels = STATUS_LABELS;
   columnIds = [...ACTIVE_STATUSES, ...TERMINAL_STATUSES].map(status => `col-${status}`);
+
+  allApplications = computed(() => {
+    const list: ApplicationResponse[] = [];
+    this.columns().forEach(apps => list.push(...apps));
+    return list;
+  });
 
   draggedApp = signal<ApplicationResponse | null>(null);
   allowedForDrag = signal<Set<ApplicationStatus>>(new Set());

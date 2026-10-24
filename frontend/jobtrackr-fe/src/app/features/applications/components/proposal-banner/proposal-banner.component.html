@@ -1,0 +1,49 @@
+@if (hasProposals()) {
+  <aside class="proposal-banner" role="status" aria-live="polite">
+    <div class="banner-content">
+      <div class="icon-wrap">
+        <mat-icon class="banner-icon">auto_awesome</mat-icon>
+      </div>
+      <div class="text-wrap">
+        @if (count() === 1) {
+          <strong class="banner-title">Status update suggested</strong>
+          <p class="banner-desc">
+            An email suggests updating <strong>{{ firstProposal().companyName }}</strong>
+            ({{ firstProposal().role }}) to
+            <span class="status-chip">{{ (firstProposal().proposedStatus ? statusLabels[firstProposal().proposedStatus!] : null) || firstProposal().proposedStatus }}</span>.
+          </p>
+        } @else {
+          <strong class="banner-title">Status updates suggested</strong>
+          <p class="banner-desc">
+            {{ count() }} applications have status updates suggested from your inbox.
+          </p>
+        }
+      </div>
+    </div>
+    <div class="banner-actions">
+      @if (count() === 1) {
+        <a mat-flat-button color="primary" [routerLink]="['/applications', firstProposal().applicationId]">
+          <mat-icon>visibility</mat-icon>
+          <span>View Application</span>
+        </a>
+      } @else {
+        <a mat-flat-button color="primary" [routerLink]="['/applications', firstProposal().applicationId]">
+          <mat-icon>visibility</mat-icon>
+          <span>View First ({{ firstProposal().companyName }})</span>
+        </a>
+        <button mat-stroked-button type="button" [matMenuTriggerFor]="proposalsMenu">
+          <mat-icon>expand_more</mat-icon>
+          <span>All Updates ({{ count() }})</span>
+        </button>
+        <mat-menu #proposalsMenu="matMenu">
+          @for (item of proposals(); track item.applicationId) {
+            <a mat-menu-item [routerLink]="['/applications', item.applicationId]">
+              <mat-icon>arrow_forward</mat-icon>
+              <span>{{ item.companyName }} &rarr; {{ (item.proposedStatus ? statusLabels[item.proposedStatus] : null) || item.proposedStatus }}</span>
+            </a>
+          }
+        </mat-menu>
+      }
+    </div>
+  </aside>
+}

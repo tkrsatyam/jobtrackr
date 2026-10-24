@@ -6,7 +6,7 @@ export type ApplicationStatus =
 export type PriorityLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'DREAM';
 export type WorkMode = 'REMOTE' | 'HYBRID' | 'ON_SITE';
 export type ApplicationSource = 
-    | 'LINKEDIN' | 'NAUKRI' | 'INTERNSHALA' | 'COMPANY_WEBSITE'
+    | 'LINKEDIN' | 'NAUKRI' | 'INDEED' | 'INTERNSHALA' | 'COMPANY_WEBSITE'
     | 'REFERRAL' | 'ANGEL_LIST' | 'INSTAHYRE' | 'EMAIL' | 'OTHER';
 
 export interface StatusHistoryEntry {
@@ -42,6 +42,10 @@ export interface ApplicationResponse {
     confidenceScore?: number | null;
     rawEmailSnippet?: string | null;
     emailMessageId?: string | null;
+    emailReceivedAt?: string | null;
+    proposedStatus?: ApplicationStatus | null;
+    statusProposalReason?: string | null;
+    statusProposalReceivedAt?: string | null;
 }
 
 export interface Page<T> {
@@ -137,6 +141,7 @@ export interface ConfirmReviewRequest {
     currency?: string;
     notes?: string;
     status?: ApplicationStatus;
+    source?: ApplicationSource;
 }
 
 export interface PendingReviewCountResponse {

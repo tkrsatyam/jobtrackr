@@ -53,21 +53,19 @@ public class ApplicationMapper {
     }
 
     public ApplicationResponse toResponse(Application application) {
-        List<String> tags = application.getTags() == null
-                ? Collections.emptyList()
-                : application.getTags().stream()
-                        .map(ApplicationTag::getTag)
-                        .toList();
+        List<String> tags = application.getTags() != null
+                ? application.getTags().stream().map(ApplicationTag::getTag).toList()
+                : Collections.emptyList();
 
-        List<ApplicationResponse.StatusHistoryEntry> history = application.getStatusHistory() == null
-                ? Collections.emptyList()
-                : application.getStatusHistory().stream()
+        List<ApplicationResponse.StatusHistoryEntry> history = application.getStatusHistory() != null
+                ? application.getStatusHistory().stream()
                 .map(h -> ApplicationResponse.StatusHistoryEntry.builder()
                         .status(h.getStatus())
                         .note(h.getNote())
                         .changedAt(h.getChangedAt())
                         .build())
-                        .toList();
+                .toList()
+                : Collections.emptyList();
 
         return ApplicationResponse.builder()
                 .applicationId(application.getApplicationId())
@@ -92,6 +90,10 @@ public class ApplicationMapper {
                 .confidenceScore(application.getConfidenceScore())
                 .rawEmailSnippet(application.getRawEmailSnippet())
                 .emailMessageId(application.getEmailMessageId())
+                .emailReceivedAt(application.getEmailReceivedAt())
+                .proposedStatus(application.getProposedStatus())
+                .statusProposalReason(application.getStatusProposalReason())
+                .statusProposalReceivedAt(application.getStatusProposalReceivedAt())
                 .createdAt(application.getCreatedAt())
                 .updatedAt(application.getUpdatedAt())
                 .tags(tags)

@@ -3,6 +3,7 @@ package com.jobtrackr.email_ingestion_service.service;
 import com.jobtrackr.email_ingestion_service.client.GmailClient;
 import com.jobtrackr.email_ingestion_service.client.UserServiceClient;
 import com.jobtrackr.email_ingestion_service.dto.JobApplicationExtractionRecord;
+import com.jobtrackr.email_ingestion_service.exception.AiExtractionException;
 import com.jobtrackr.email_ingestion_service.dto.UserGoogleAccountDTO;
 import com.jobtrackr.email_ingestion_service.dto.UserGoogleTokenDTO;
 import com.jobtrackr.email_ingestion_service.dto.gmail.GmailHistoryRecord;
@@ -19,9 +20,11 @@ import com.jobtrackr.email_ingestion_service.repository.ProcessedEmailRepository
 import com.jobtrackr.email_ingestion_service.util.GmailContentParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigInteger;
 import java.time.Instant;
@@ -43,12 +46,29 @@ public class GmailPollingWorker {
     private final EmailPollingStateRepository emailPollingStateRepository;
     private final ProcessedEmailRepository processedEmailRepository;
 
-    @Scheduled(fixedDelayString = "${jobtrackr.ingestion.poll-interval-ms:300000}", initialDelay = 30000)
+    @Autowired(required = false)
+    private StringRedisTemplate redisTemplate;
+
+    @Value("${jobtrackr.ingestion.scheduler.enabled:false}")
+    private boolean schedulerEnabled;
+
+    @Scheduled(fixedDelayString = "${jobtrackr.ingestion.poll-interval-ms:10800000}", initialDelay = 30000)
     public void scheduledPoll() {
-        log.info("Starting scheduled email polling run");
+        if (!schedulerEnabled) {
+            log.debug("Scheduled email polling is disabled (jobtrackr.ingestion.scheduler.enabled=false)");
+            return;
+        }
+
+        log.info("Starting scheduled email polling run (interval: 3h)");
         try {
             int discovered = pollAllUsers();
             log.info("Scheduled email polling run finished. Total applications discovered: {}", discovered);
+
+            if (discovered > 0) {
+                log.info("Discovered {} new applications during background poll", discovered);
+                // [NOTIFICATION HOOK]: Trigger notification when notification-service is wired
+                // notificationProducer.sendBackgroundSyncNotification(discovered);
+            }
         } catch (Exception e) {
             log.error("Scheduled email polling run encountered an error: {}", e.getMessage(), e);
         }
@@ -79,7 +99,6 @@ public class GmailPollingWorker {
         return totalDiscovered;
     }
 
-    @Transactional
     public int pollForUser(UUID userId) {
         log.info("Polling emails for user {}", userId);
 
@@ -133,6 +152,12 @@ public class GmailPollingWorker {
                 continue;
             }
 
+            // Check if user previously rejected this message (Redis Set + PostgreSQL tombstone)
+            if (isMessageRejected(userId, ref.id())) {
+                log.info("Skipping user-rejected email message {}", ref.id());
+                continue;
+            }
+
             if (processedEmailRepository.existsByUserIdAndMessageId(userId, ref.id())) {
                 continue;
             }
@@ -152,50 +177,57 @@ public class GmailPollingWorker {
             Instant receivedAt = GmailContentParser.getReceivedAt(detail);
             String bodyText = GmailContentParser.extractBodyText(detail);
 
-            Optional<JobApplicationExtractionRecord> extraction = jobApplicationExtractor.extract(subject, sender, bodyText);
+            try {
+                Optional<JobApplicationExtractionRecord> extraction = jobApplicationExtractor.extract(subject, sender, bodyText);
 
-            if (extraction.isPresent()) {
-                JobApplicationExtractionRecord rec = extraction.get();
-                ApplicationDiscoveredEvent event = new ApplicationDiscoveredEvent(
-                        UUID.randomUUID(),
-                        userId,
-                        rec.companyName(),
-                        rec.roleTitle(),
-                        rec.status(),
-                        rec.location(),
-                        rec.jobUrl(),
-                        rec.recruiterName(),
-                        rec.recruiterEmail(),
-                        rec.notes(),
-                        rec.confidenceScore(),
-                        ref.id(),
-                        subject,
-                        sender,
-                        receivedAt
-                );
+                if (extraction.isPresent()) {
+                    JobApplicationExtractionRecord rec = extraction.get();
+                    ApplicationDiscoveredEvent event = new ApplicationDiscoveredEvent(
+                            UUID.randomUUID(),
+                            userId,
+                            rec.companyName(),
+                            rec.roleTitle(),
+                            rec.status(),
+                            rec.location(),
+                            rec.jobUrl(),
+                            rec.recruiterName(),
+                            rec.recruiterEmail(),
+                            rec.notes(),
+                            rec.confidenceScore(),
+                            ref.id(),
+                            subject,
+                            sender,
+                            receivedAt
+                    );
 
-                ingestionEventProducer.publishApplicationDiscovered(event);
+                    ingestionEventProducer.publishApplicationDiscovered(event);
 
-                ProcessedEmail processed = ProcessedEmail.builder()
-                        .userId(userId)
-                        .messageId(ref.id())
-                        .subject(subject)
-                        .sender(sender)
-                        .receivedAt(receivedAt)
-                        .status(EmailProcessingStatus.PROCESSED)
-                        .build();
-                processedEmailRepository.save(processed);
-                discoveredCount++;
-            } else {
-                ProcessedEmail skipped = ProcessedEmail.builder()
-                        .userId(userId)
-                        .messageId(ref.id())
-                        .subject(subject)
-                        .sender(sender)
-                        .receivedAt(receivedAt)
-                        .status(EmailProcessingStatus.SKIPPED)
-                        .build();
-                processedEmailRepository.save(skipped);
+                    ProcessedEmail processed = ProcessedEmail.builder()
+                            .userId(userId)
+                            .messageId(ref.id())
+                            .subject(subject)
+                            .sender(sender)
+                            .receivedAt(receivedAt)
+                            .status(EmailProcessingStatus.PROCESSED)
+                            .build();
+                    processedEmailRepository.save(processed);
+                    discoveredCount++;
+                } else {
+                    ProcessedEmail skipped = ProcessedEmail.builder()
+                            .userId(userId)
+                            .messageId(ref.id())
+                            .subject(subject)
+                            .sender(sender)
+                            .receivedAt(receivedAt)
+                            .status(EmailProcessingStatus.SKIPPED)
+                            .build();
+                    processedEmailRepository.save(skipped);
+                }
+            } catch (AiExtractionException e) {
+                log.warn("AI extraction failed for email {} (subject: '{}'): {}. Skipping save to allow retry on next poll.",
+                        ref.id(), subject, e.getMessage());
+            } catch (Exception e) {
+                log.error("Unexpected error processing email message {}: {}", ref.id(), e.getMessage(), e);
             }
         }
 
@@ -207,6 +239,23 @@ public class GmailPollingWorker {
 
         log.info("Finished polling for user {}. Applications discovered: {}", userId, discoveredCount);
         return discoveredCount;
+    }
+
+    private boolean isMessageRejected(UUID userId, String messageId) {
+        String redisKey = "jobtrackr:user:" + userId + ":rejected_emails";
+        try {
+            if (redisTemplate != null) {
+                Boolean isMember = redisTemplate.opsForSet().isMember(redisKey, messageId);
+                if (Boolean.TRUE.equals(isMember)) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Redis check failed for rejected email {}: {}", messageId, e.getMessage());
+        }
+        return processedEmailRepository.existsByUserIdAndMessageIdAndStatus(
+                userId, messageId, EmailProcessingStatus.REJECTED
+        );
     }
 
     private String maxHistoryId(String id1, String id2) {

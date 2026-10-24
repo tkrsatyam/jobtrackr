@@ -52,18 +52,37 @@ public interface ApplicationRepository extends JpaRepository<Application, UUID>,
             SELECT a FROM Application a
             WHERE a.userId = :userId
               AND a.isDeleted = false
-              AND lower(trim(a.companyName)) = lower(trim(:companyName))
+              AND lower(a.companyName) = lower(trim(:companyName))
               AND (
-                  lower(trim(a.role)) = lower(trim(:role))
-                  OR lower(trim(a.role)) LIKE concat('%', lower(trim(:role)), '%')
-                  OR lower(trim(:role)) LIKE concat('%', lower(trim(a.role)), '%')
+                  lower(a.role) = lower(trim(:role))
+                  OR lower(a.role) LIKE concat('%', lower(trim(:role)), '%')
+                  OR lower(trim(:role)) LIKE concat('%', lower(a.role), '%')
               )
-              AND a.appliedDate >= :sinceDate
+              AND (a.appliedDate IS NULL OR a.appliedDate >= :sinceDate)
             """)
     List<Application> findPotentialDuplicates(
             @Param("userId") UUID userId,
             @Param("companyName") String companyName,
             @Param("role") String role,
+            @Param("sinceDate") LocalDate sinceDate
+    );
+
+    @Query("""
+            SELECT a FROM Application a
+            WHERE a.userId = :userId
+              AND a.isDeleted = false
+              AND a.requiresReview = false
+              AND a.status NOT IN (com.jobtrackr.application_service.entity.enums.ApplicationStatus.ACCEPTED,
+                                   com.jobtrackr.application_service.entity.enums.ApplicationStatus.REJECTED,
+                                   com.jobtrackr.application_service.entity.enums.ApplicationStatus.WITHDRAWN,
+                                   com.jobtrackr.application_service.entity.enums.ApplicationStatus.GHOSTED)
+              AND lower(a.companyName) = lower(trim(:companyName))
+              AND (a.appliedDate IS NULL OR a.appliedDate >= :sinceDate)
+            ORDER BY a.appliedDate DESC
+            """)
+    List<Application> findActiveByCompany(
+            @Param("userId") UUID userId,
+            @Param("companyName") String companyName,
             @Param("sinceDate") LocalDate sinceDate
     );
 

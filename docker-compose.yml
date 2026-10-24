@@ -58,6 +58,11 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     networks:
       - jobtrackr-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   kafka:
     image: confluentinc/cp-kafka:7.6.0
@@ -72,7 +77,13 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "29092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - jobtrackr-network
 
@@ -131,7 +142,7 @@ services:
       postgres:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
@@ -147,13 +158,16 @@ services:
       - DB_USERNAME=postgres
       - DB_PASSWORD=postgres
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - INGESTION_SCHEDULER_ENABLED=${INGESTION_SCHEDULER_ENABLED:-false}
     depends_on:
       eureka-server:
         condition: service_healthy
       postgres:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
       redis:
         condition: service_healthy
     networks:

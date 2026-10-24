@@ -1,5 +1,6 @@
 package com.jobtrackr.application_service.dto.request;
 
+import com.jobtrackr.application_service.entity.enums.ApplicationSource;
 import com.jobtrackr.application_service.entity.enums.ApplicationStatus;
 import com.jobtrackr.application_service.entity.enums.PriorityLevel;
 import com.jobtrackr.application_service.entity.enums.WorkMode;
@@ -24,4 +25,5 @@ public class ConfirmReviewRequest {
     private WorkMode workMode;
     private LocalDate appliedDate;
     private String notes;
+    private ApplicationSource source;
 }
