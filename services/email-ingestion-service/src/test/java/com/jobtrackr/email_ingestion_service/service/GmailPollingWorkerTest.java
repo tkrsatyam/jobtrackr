@@ -171,9 +171,10 @@ class GmailPollingWorkerTest {
         assertThat(total).isEqualTo(0);
         verify(gmailClient, times(2)).listMessages(any(), any(), anyInt());
     }
+
     @Test
-    @DisplayName("Should not mark email as skipped or processed when AI extraction throws AiExtractionException")
-    void testPollForUserAiFailureDoesNotSaveEmail() {
+    @DisplayName("Should save email as FAILED with bodyText and lastError when AI extraction throws AiExtractionException")
+    void testPollForUserAiFailureSavesAsFailed() {
         String token = "mock-access-token";
         when(userServiceClient.getGoogleToken(userId))
                 .thenReturn(new UserGoogleTokenDTO(userId, "test@example.com", token, Instant.now().plusSeconds(3600)));
@@ -203,7 +204,105 @@ class GmailPollingWorkerTest {
         int discovered = worker.pollForUser(userId);
 
         assertThat(discovered).isEqualTo(0);
-        verify(processedEmailRepository, never()).save(any());
+        ArgumentCaptor<ProcessedEmail> captor = ArgumentCaptor.forClass(ProcessedEmail.class);
+        verify(processedEmailRepository).save(captor.capture());
+        ProcessedEmail saved = captor.getValue();
+        assertThat(saved.getStatus()).isEqualTo(EmailProcessingStatus.FAILED);
+        assertThat(saved.getMessageId()).isEqualTo("msg-error");
+        assertThat(saved.getRetryCount()).isEqualTo(0);
+        assertThat(saved.getLastError()).contains("Gemini 503 Service Unavailable");
         verify(ingestionEventProducer, never()).publishApplicationDiscovered(any());
+    }
+
+    @Test
+    @DisplayName("Should retry failed emails, publish event, and update status to PROCESSED when extraction succeeds")
+    void testPollForUserRetriesFailedEmailsSuccessfully() {
+        String token = "mock-access-token";
+        when(userServiceClient.getGoogleToken(userId))
+                .thenReturn(new UserGoogleTokenDTO(userId, "test@example.com", token, Instant.now().plusSeconds(3600)));
+
+        when(emailPollingStateRepository.findById(userId))
+                .thenReturn(Optional.of(EmailPollingState.builder().userId(userId).build()));
+
+        when(gmailClient.listMessages(eq(token), anyString(), eq(25)))
+                .thenReturn(List.of());
+
+        ProcessedEmail failedEmail = ProcessedEmail.builder()
+                .userId(userId)
+                .messageId("msg-failed-1")
+                .subject("Interview at Stripe")
+                .sender("recruiting@stripe.com")
+                .bodyText("We would like to invite you for an interview.")
+                .receivedAt(Instant.now().minusSeconds(3600))
+                .status(EmailProcessingStatus.FAILED)
+                .retryCount(1)
+                .lastError("Previous 429 quota error")
+                .build();
+
+        when(processedEmailRepository.findByUserIdAndStatusAndRetryCountLessThanOrderByReceivedAtAsc(eq(userId), eq(EmailProcessingStatus.FAILED), eq(3)))
+                .thenReturn(List.of(failedEmail));
+
+        JobApplicationExtractionRecord record = new JobApplicationExtractionRecord(
+                true, "Stripe", "Backend Engineer", "INTERVIEW",
+                "Remote", null, null, "recruiting@stripe.com", "Interview invite", 0.98
+        );
+        when(jobApplicationExtractor.extract("Interview at Stripe", "recruiting@stripe.com", "We would like to invite you for an interview."))
+                .thenReturn(Optional.of(record));
+
+        int discovered = worker.pollForUser(userId);
+
+        assertThat(discovered).isEqualTo(1);
+        verify(ingestionEventProducer, times(1)).publishApplicationDiscovered(any(ApplicationDiscoveredEvent.class));
+
+        ArgumentCaptor<ProcessedEmail> captor = ArgumentCaptor.forClass(ProcessedEmail.class);
+        verify(processedEmailRepository).save(captor.capture());
+        ProcessedEmail updated = captor.getValue();
+        assertThat(updated.getStatus()).isEqualTo(EmailProcessingStatus.PROCESSED);
+        assertThat(updated.getBodyText()).isNull();
+        assertThat(updated.getLastError()).isNull();
+    }
+
+    @Test
+    @DisplayName("Should increment retryCount when retry encounters AiExtractionException")
+    void testPollForUserRetryFailsAndIncrementsRetryCount() {
+        String token = "mock-access-token";
+        when(userServiceClient.getGoogleToken(userId))
+                .thenReturn(new UserGoogleTokenDTO(userId, "test@example.com", token, Instant.now().plusSeconds(3600)));
+
+        when(emailPollingStateRepository.findById(userId))
+                .thenReturn(Optional.of(EmailPollingState.builder().userId(userId).build()));
+
+        when(gmailClient.listMessages(eq(token), anyString(), eq(25)))
+                .thenReturn(List.of());
+
+        ProcessedEmail failedEmail = ProcessedEmail.builder()
+                .userId(userId)
+                .messageId("msg-failed-2")
+                .subject("Interview at Stripe")
+                .sender("recruiting@stripe.com")
+                .bodyText("Interview details.")
+                .receivedAt(Instant.now().minusSeconds(3600))
+                .status(EmailProcessingStatus.FAILED)
+                .retryCount(1)
+                .lastError("First 429 error")
+                .build();
+
+        when(processedEmailRepository.findByUserIdAndStatusAndRetryCountLessThanOrderByReceivedAtAsc(eq(userId), eq(EmailProcessingStatus.FAILED), eq(3)))
+                .thenReturn(List.of(failedEmail));
+
+        when(jobApplicationExtractor.extract(any(), any(), any()))
+                .thenThrow(new AiExtractionException("Still 429 quota exhausted"));
+
+        int discovered = worker.pollForUser(userId);
+
+        assertThat(discovered).isEqualTo(0);
+        verify(ingestionEventProducer, never()).publishApplicationDiscovered(any());
+
+        ArgumentCaptor<ProcessedEmail> captor = ArgumentCaptor.forClass(ProcessedEmail.class);
+        verify(processedEmailRepository).save(captor.capture());
+        ProcessedEmail updated = captor.getValue();
+        assertThat(updated.getStatus()).isEqualTo(EmailProcessingStatus.FAILED);
+        assertThat(updated.getRetryCount()).isEqualTo(2);
+        assertThat(updated.getLastError()).contains("Still 429 quota exhausted");
     }
 }

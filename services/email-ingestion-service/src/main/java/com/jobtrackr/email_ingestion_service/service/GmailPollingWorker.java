@@ -39,6 +39,8 @@ public class GmailPollingWorker {
             "subject:(application OR applied OR interview OR \"job offer\" OR \"offer letter\" OR \"offer of employment\" OR \"employment offer\" OR candidacy OR \"thank you for applying\")"
             + " -\"credit card\" -\"personal loan\" -\"loan\" -\"pre-approved\" -\"discount\" -\"cashback\" -\"weekly problem\" -\"digest\" -\"newsletter\" -\"contest\" -\"ipo\" -\"admission\" -\"admissions\" -\"mba\" -\"pgp\" -\"shacket\" -category:promotions -category:social";
 
+    private static final int MAX_RETRY_ATTEMPTS = 3;
+
     private final UserServiceClient userServiceClient;
     private final GmailClient gmailClient;
     private final JobApplicationExtractor jobApplicationExtractor;
@@ -115,6 +117,8 @@ public class GmailPollingWorker {
             return 0;
         }
 
+        int discoveredCount = retryFailedEmails(userId);
+
         String accessToken = tokenDTO.accessToken();
         EmailPollingState state = emailPollingStateRepository.findById(userId)
                 .orElseGet(() -> EmailPollingState.builder().userId(userId).build());
@@ -144,7 +148,6 @@ public class GmailPollingWorker {
             messagesToProcess = gmailClient.listMessages(accessToken, DEFAULT_SEARCH_QUERY, 25);
         }
 
-        int discoveredCount = 0;
         Set<String> processedInBatch = new HashSet<>();
 
         for (GmailMessageRef ref : messagesToProcess) {
@@ -224,8 +227,20 @@ public class GmailPollingWorker {
                     processedEmailRepository.save(skipped);
                 }
             } catch (AiExtractionException e) {
-                log.warn("AI extraction failed for email {} (subject: '{}'): {}. Skipping save to allow retry on next poll.",
+                log.warn("AI extraction failed for email {} (subject: '{}'): {}. Saving with status FAILED for retry.",
                         ref.id(), subject, e.getMessage());
+                ProcessedEmail failed = ProcessedEmail.builder()
+                        .userId(userId)
+                        .messageId(ref.id())
+                        .subject(subject)
+                        .sender(sender)
+                        .receivedAt(receivedAt)
+                        .bodyText(bodyText)
+                        .status(EmailProcessingStatus.FAILED)
+                        .retryCount(0)
+                        .lastError(e.getMessage())
+                        .build();
+                processedEmailRepository.save(failed);
             } catch (Exception e) {
                 log.error("Unexpected error processing email message {}: {}", ref.id(), e.getMessage(), e);
             }
@@ -239,6 +254,101 @@ public class GmailPollingWorker {
 
         log.info("Finished polling for user {}. Applications discovered: {}", userId, discoveredCount);
         return discoveredCount;
+    }
+
+    private int retryFailedEmails(UUID userId) {
+        List<ProcessedEmail> failedEmails;
+        try {
+            failedEmails = processedEmailRepository
+                    .findByUserIdAndStatusAndRetryCountLessThanOrderByReceivedAtAsc(
+                            userId, EmailProcessingStatus.FAILED, MAX_RETRY_ATTEMPTS
+                    );
+        } catch (Exception e) {
+            log.error("Failed to query FAILED emails for retry for user {}: {}", userId, e.getMessage());
+            return 0;
+        }
+
+        if (failedEmails == null || failedEmails.isEmpty()) {
+            return 0;
+        }
+
+        log.info("Retrying AI extraction for {} failed email(s) for user {}", failedEmails.size(), userId);
+        int recoveredCount = 0;
+
+        for (ProcessedEmail failed : failedEmails) {
+            if (failed.getBodyText() == null || failed.getBodyText().isBlank()) {
+                log.warn("Failed email {} has no bodyText stored. Marking as SKIPPED.", failed.getMessageId());
+                failed.setStatus(EmailProcessingStatus.SKIPPED);
+                failed.setLastError("Missing body text for retry");
+                processedEmailRepository.save(failed);
+                continue;
+            }
+
+            if (isMessageRejected(userId, failed.getMessageId())) {
+                log.info("Skipping retry for user-rejected email message {}", failed.getMessageId());
+                failed.setStatus(EmailProcessingStatus.REJECTED);
+                failed.setBodyText(null);
+                processedEmailRepository.save(failed);
+                continue;
+            }
+
+            try {
+                Optional<JobApplicationExtractionRecord> extraction =
+                        jobApplicationExtractor.extract(failed.getSubject(), failed.getSender(), failed.getBodyText());
+
+                if (extraction.isPresent()) {
+                    JobApplicationExtractionRecord rec = extraction.get();
+                    ApplicationDiscoveredEvent event = new ApplicationDiscoveredEvent(
+                            UUID.randomUUID(),
+                            userId,
+                            rec.companyName(),
+                            rec.roleTitle(),
+                            rec.status(),
+                            rec.location(),
+                            rec.jobUrl(),
+                            rec.recruiterName(),
+                            rec.recruiterEmail(),
+                            rec.notes(),
+                            rec.confidenceScore(),
+                            failed.getMessageId(),
+                            failed.getSubject(),
+                            failed.getSender(),
+                            failed.getReceivedAt()
+                    );
+
+                    ingestionEventProducer.publishApplicationDiscovered(event);
+
+                    failed.setStatus(EmailProcessingStatus.PROCESSED);
+                    failed.setBodyText(null);
+                    failed.setLastError(null);
+                    processedEmailRepository.save(failed);
+                    recoveredCount++;
+                    log.info("Successfully recovered failed email {} for user {}", failed.getMessageId(), userId);
+                } else {
+                    failed.setStatus(EmailProcessingStatus.SKIPPED);
+                    failed.setBodyText(null);
+                    failed.setLastError(null);
+                    processedEmailRepository.save(failed);
+                    log.info("Retry determined email {} is not a job application. Marked SKIPPED.", failed.getMessageId());
+                }
+            } catch (AiExtractionException e) {
+                int nextRetryCount = failed.getRetryCount() + 1;
+                failed.setRetryCount(nextRetryCount);
+                failed.setLastError(e.getMessage());
+                if (nextRetryCount >= MAX_RETRY_ATTEMPTS) {
+                    log.warn("Email {} reached maximum retries ({}). Retaining status FAILED without further automatic retries.",
+                            failed.getMessageId(), MAX_RETRY_ATTEMPTS);
+                } else {
+                    log.warn("AI extraction retry failed for email {} (attempt {}/{}): {}",
+                            failed.getMessageId(), nextRetryCount, MAX_RETRY_ATTEMPTS, e.getMessage());
+                }
+                processedEmailRepository.save(failed);
+            } catch (Exception e) {
+                log.error("Unexpected error during retry for email {}: {}", failed.getMessageId(), e.getMessage(), e);
+            }
+        }
+
+        return recoveredCount;
     }
 
     private boolean isMessageRejected(UUID userId, String messageId) {
