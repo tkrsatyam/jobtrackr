@@ -22,11 +22,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.math.BigInteger;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 
@@ -40,6 +42,10 @@ public class GmailPollingWorker {
             + " -\"credit card\" -\"personal loan\" -\"loan\" -\"pre-approved\" -\"discount\" -\"cashback\" -\"weekly problem\" -\"digest\" -\"newsletter\" -\"contest\" -\"ipo\" -\"admission\" -\"admissions\" -\"mba\" -\"pgp\" -\"shacket\" -category:promotions -category:social";
 
     private static final int MAX_RETRY_ATTEMPTS = 3;
+    private static final int RETRY_BATCH_SIZE = 10;
+    private static final String SCHEDULED_POLL_LOCK_KEY = "jobtrackr:lock:email-ingestion:scheduled-poll";
+    private static final Duration SCHEDULED_POLL_LOCK_TIMEOUT = Duration.ofMinutes(10);
+    private static final Duration USER_POLL_LOCK_TIMEOUT = Duration.ofMinutes(5);
 
     private final UserServiceClient userServiceClient;
     private final GmailClient gmailClient;
@@ -61,6 +67,24 @@ public class GmailPollingWorker {
             return;
         }
 
+        String lockValue = UUID.randomUUID().toString();
+        boolean lockAcquired = false;
+
+        if (redisTemplate != null) {
+            try {
+                Boolean acquired = redisTemplate.opsForValue()
+                        .setIfAbsent(SCHEDULED_POLL_LOCK_KEY, lockValue, SCHEDULED_POLL_LOCK_TIMEOUT);
+                if (!Boolean.TRUE.equals(acquired)) {
+                    log.info("Another instance is currently running scheduled email polling. Skipping this execution.");
+                    return;
+                }
+                lockAcquired = true;
+                log.debug("Acquired distributed lock for scheduled email polling: {}", SCHEDULED_POLL_LOCK_KEY);
+            } catch (Exception e) {
+                log.warn("Redis error acquiring distributed lock for scheduled poll: {}. Proceeding without lock.", e.getMessage());
+            }
+        }
+
         log.info("Starting scheduled email polling run (interval: 3h)");
         try {
             int discovered = pollAllUsers();
@@ -73,6 +97,18 @@ public class GmailPollingWorker {
             }
         } catch (Exception e) {
             log.error("Scheduled email polling run encountered an error: {}", e.getMessage(), e);
+        } finally {
+            if (lockAcquired && redisTemplate != null) {
+                try {
+                    String current = redisTemplate.opsForValue().get(SCHEDULED_POLL_LOCK_KEY);
+                    if (lockValue.equals(current)) {
+                        redisTemplate.delete(SCHEDULED_POLL_LOCK_KEY);
+                        log.debug("Released distributed lock for scheduled email polling: {}", SCHEDULED_POLL_LOCK_KEY);
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to release scheduled email polling lock: {}", e.getMessage());
+                }
+            }
         }
     }
 
@@ -104,6 +140,41 @@ public class GmailPollingWorker {
     public int pollForUser(UUID userId) {
         log.info("Polling emails for user {}", userId);
 
+        String userLockKey = "jobtrackr:lock:email-ingestion:user:" + userId;
+        String userLockValue = UUID.randomUUID().toString();
+        boolean userLockAcquired = false;
+
+        if (redisTemplate != null) {
+            try {
+                Boolean acquired = redisTemplate.opsForValue()
+                        .setIfAbsent(userLockKey, userLockValue, USER_POLL_LOCK_TIMEOUT);
+                if (!Boolean.TRUE.equals(acquired)) {
+                    log.info("Polling already in progress for user {}. Skipping concurrent run.", userId);
+                    return 0;
+                }
+                userLockAcquired = true;
+            } catch (Exception e) {
+                log.warn("Redis error acquiring user polling lock for user {}: {}. Proceeding without lock.", userId, e.getMessage());
+            }
+        }
+
+        try {
+            return executePollForUser(userId);
+        } finally {
+            if (userLockAcquired && redisTemplate != null) {
+                try {
+                    String current = redisTemplate.opsForValue().get(userLockKey);
+                    if (userLockValue.equals(current)) {
+                        redisTemplate.delete(userLockKey);
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to release user polling lock for user {}: {}", userId, e.getMessage());
+                }
+            }
+        }
+    }
+
+    private int executePollForUser(UUID userId) {
         UserGoogleTokenDTO tokenDTO;
         try {
             tokenDTO = userServiceClient.getGoogleToken(userId);
@@ -261,7 +332,7 @@ public class GmailPollingWorker {
         try {
             failedEmails = processedEmailRepository
                     .findByUserIdAndStatusAndRetryCountLessThanOrderByReceivedAtAsc(
-                            userId, EmailProcessingStatus.FAILED, MAX_RETRY_ATTEMPTS
+                            userId, EmailProcessingStatus.FAILED, MAX_RETRY_ATTEMPTS, PageRequest.of(0, RETRY_BATCH_SIZE)
                     );
         } catch (Exception e) {
             log.error("Failed to query FAILED emails for retry for user {}: {}", userId, e.getMessage());

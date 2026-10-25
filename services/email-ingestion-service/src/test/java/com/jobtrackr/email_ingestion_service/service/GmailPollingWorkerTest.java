@@ -25,7 +25,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -56,6 +62,12 @@ class GmailPollingWorkerTest {
     @Mock
     private ProcessedEmailRepository processedEmailRepository;
 
+    @Mock
+    private StringRedisTemplate redisTemplate;
+
+    @Mock
+    private ValueOperations<String, String> valueOperations;
+
     @InjectMocks
     private GmailPollingWorker worker;
 
@@ -64,6 +76,10 @@ class GmailPollingWorkerTest {
     @BeforeEach
     void setUp() {
         userId = UUID.randomUUID();
+        ReflectionTestUtils.setField(worker, "redisTemplate", redisTemplate);
+        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        lenient().when(valueOperations.setIfAbsent(anyString(), anyString(), any(Duration.class)))
+                .thenReturn(Boolean.TRUE);
     }
 
     @Test
@@ -215,7 +231,7 @@ class GmailPollingWorkerTest {
     }
 
     @Test
-    @DisplayName("Should retry failed emails, publish event, and update status to PROCESSED when extraction succeeds")
+    @DisplayName("Should retry failed emails with pageable limit, publish event, and update status to PROCESSED when extraction succeeds")
     void testPollForUserRetriesFailedEmailsSuccessfully() {
         String token = "mock-access-token";
         when(userServiceClient.getGoogleToken(userId))
@@ -239,8 +255,9 @@ class GmailPollingWorkerTest {
                 .lastError("Previous 429 quota error")
                 .build();
 
-        when(processedEmailRepository.findByUserIdAndStatusAndRetryCountLessThanOrderByReceivedAtAsc(eq(userId), eq(EmailProcessingStatus.FAILED), eq(3)))
-                .thenReturn(List.of(failedEmail));
+        when(processedEmailRepository.findByUserIdAndStatusAndRetryCountLessThanOrderByReceivedAtAsc(
+                eq(userId), eq(EmailProcessingStatus.FAILED), eq(3), eq(PageRequest.of(0, 10))
+        )).thenReturn(List.of(failedEmail));
 
         JobApplicationExtractionRecord record = new JobApplicationExtractionRecord(
                 true, "Stripe", "Backend Engineer", "INTERVIEW",
@@ -287,8 +304,9 @@ class GmailPollingWorkerTest {
                 .lastError("First 429 error")
                 .build();
 
-        when(processedEmailRepository.findByUserIdAndStatusAndRetryCountLessThanOrderByReceivedAtAsc(eq(userId), eq(EmailProcessingStatus.FAILED), eq(3)))
-                .thenReturn(List.of(failedEmail));
+        when(processedEmailRepository.findByUserIdAndStatusAndRetryCountLessThanOrderByReceivedAtAsc(
+                eq(userId), eq(EmailProcessingStatus.FAILED), eq(3), any(Pageable.class)
+        )).thenReturn(List.of(failedEmail));
 
         when(jobApplicationExtractor.extract(any(), any(), any()))
                 .thenThrow(new AiExtractionException("Still 429 quota exhausted"));
@@ -304,5 +322,29 @@ class GmailPollingWorkerTest {
         assertThat(updated.getStatus()).isEqualTo(EmailProcessingStatus.FAILED);
         assertThat(updated.getRetryCount()).isEqualTo(2);
         assertThat(updated.getLastError()).contains("Still 429 quota exhausted");
+    }
+
+    @Test
+    @DisplayName("Should skip scheduled poll when distributed lock cannot be acquired")
+    void testScheduledPollSkipsWhenLockNotAcquired() {
+        ReflectionTestUtils.setField(worker, "schedulerEnabled", true);
+        when(valueOperations.setIfAbsent(eq("jobtrackr:lock:email-ingestion:scheduled-poll"), anyString(), any(Duration.class)))
+                .thenReturn(Boolean.FALSE);
+
+        worker.scheduledPoll();
+
+        verify(userServiceClient, never()).getGoogleAccounts();
+    }
+
+    @Test
+    @DisplayName("Should skip user poll when concurrent user lock is held")
+    void testPollForUserSkipsWhenConcurrentLockHeld() {
+        when(valueOperations.setIfAbsent(eq("jobtrackr:lock:email-ingestion:user:" + userId), anyString(), any(Duration.class)))
+                .thenReturn(Boolean.FALSE);
+
+        int discovered = worker.pollForUser(userId);
+
+        assertThat(discovered).isEqualTo(0);
+        verify(userServiceClient, never()).getGoogleToken(any());
     }
 }
