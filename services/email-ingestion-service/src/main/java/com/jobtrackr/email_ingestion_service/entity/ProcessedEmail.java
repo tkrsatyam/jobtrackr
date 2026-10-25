@@ -13,7 +13,8 @@ import java.util.UUID;
         uniqueConstraints = @UniqueConstraint(name = "uk_processed_emails_user_message", columnNames = {"user_id", "message_id"}),
         indexes = {
                 @Index(name = "idx_processed_emails_user_id", columnList = "user_id"),
-                @Index(name = "idx_processed_emails_message_id", columnList = "message_id")
+                @Index(name = "idx_processed_emails_message_id", columnList = "message_id"),
+                @Index(name = "idx_processed_emails_retry", columnList = "user_id, status, retry_count")
         })
 @Getter
 @Setter
@@ -42,9 +43,19 @@ public class ProcessedEmail {
     @Column(name = "received_at")
     private Instant receivedAt;
 
+    @Column(name = "body_text", columnDefinition = "TEXT")
+    private String bodyText;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     private EmailProcessingStatus status;
+
+    @Column(name = "retry_count", nullable = false)
+    @Builder.Default
+    private int retryCount = 0;
+
+    @Column(name = "last_error", columnDefinition = "TEXT")
+    private String lastError;
 
     @CreationTimestamp
     @Column(name = "processed_at", nullable = false, updatable = false)
