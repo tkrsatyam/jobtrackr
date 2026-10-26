@@ -13,7 +13,7 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
-    // Comma-separated list, e.g. "http://localhost:4200,https://jobtrackr.vercel.app"
+    // Comma-separated list, e.g. "http://localhost:4200,https://jobtrackr-portal.vercel.app"
     @Value("${app.cors.allowed-origins:http://localhost:4200}")
     private String allowedOrigins;
 
