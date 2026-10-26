@@ -255,3 +255,21 @@ Since Render free services on this stack cold-start in 2–3 minutes (not the ~3
 2. Have a pre-seeded demo account ready with 20–30 applications across different statuses so the analytics charts look good
 3. Record a **Loom video** (2–3 min) as a backup — more reliable than a live demo with a cold-start risk
 4. Pin the Loom link in your GitHub README alongside the live URL
+
+---
+
+## OCI Production Infrastructure & CI/CD Operations
+
+JobTrackr backend microservices run on an Oracle Cloud Infrastructure (OCI) Ampere A1 Compute VM behind Caddy reverse proxy with automated Let's Encrypt TLS at `jobtrackr-api.duckdns.org`.
+
+### Automated CI/CD Workflow
+* Pushes to `main` trigger [`.github/workflows/deploy-backend.yml`](../.github/workflows/deploy-backend.yml).
+* Changes are path-filtered to build multi-arch images (`linux/amd64`, `linux/arm64`) only for modified microservices.
+* Images are tagged and pushed to Docker Hub (`satyamk07/jobtrackr-*`).
+* SSH action logs into the OCI VM and executes `docker compose pull && docker compose up -d --remove-orphans`.
+
+### Configuration Sync Boundary
+> [!IMPORTANT]
+> The CI/CD pipeline deploys application code changes inside container images. It does **not** automatically synchronize `/opt/jobtrackr/docker-compose.prod.yml` or `/opt/jobtrackr/.env`.
+> 
+> If a future change adds new environment variables, modifies exposed ports, alters volume mounts, or adjusts JVM memory limits, update `.env` or `docker-compose.prod.yml` directly on the OCI host. Application code changes deploy hands-free.
