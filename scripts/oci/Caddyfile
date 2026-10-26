@@ -3,8 +3,8 @@
 # Place in /etc/caddy/Caddyfile and reload via: sudo systemctl reload caddy
 # ==============================================================================
 
-# Replace api.yourdomain.com with your custom domain or OCI instance public IP/DuckDNS
-api.jobtrackr.tkrsatyam.dev {
+# Replace with your DuckDNS domain (e.g. jobtrackr-api.duckdns.org)
+jobtrackr-api.duckdns.org {
     # Reverse proxy incoming requests to Spring Cloud Gateway MVC (port 8080)
     reverse_proxy localhost:8080 {
         header_up X-Forwarded-Proto https
