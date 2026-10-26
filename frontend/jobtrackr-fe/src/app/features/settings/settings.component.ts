@@ -7,7 +7,6 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../auth/services/auth.service';
-import { EmailIngestionService } from '../applications/services/email-ingestion.service';
 import { TokenStorageService } from '../../core/services/token-storage.service';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -39,7 +38,6 @@ export class SettingsComponent implements OnInit {
   private fb = inject(NonNullableFormBuilder);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
-  readonly ingestionService = inject(EmailIngestionService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
 
@@ -94,10 +92,6 @@ export class SettingsComponent implements OnInit {
         this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
       }
     });
-  }
-
-  syncEmails(): void {
-    this.ingestionService.syncEmails().subscribe();
   }
 
   connectGoogle(): void {
