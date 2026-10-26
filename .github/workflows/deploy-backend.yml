@@ -201,9 +201,11 @@ jobs:
        needs.build-application-service.result == 'success' ||
        needs.build-email-ingestion-service.result == 'success')
     runs-on: ubuntu-latest
+    env:
+      OCI_HOST: ${{ secrets.OCI_HOST }}
     steps:
       - name: Deploy to OCI host
-        if: ${{ secrets.OCI_HOST != '' }}
+        if: env.OCI_HOST != ''
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.OCI_HOST }}
