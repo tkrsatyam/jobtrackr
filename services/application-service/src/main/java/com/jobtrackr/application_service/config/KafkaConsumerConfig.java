@@ -1,5 +1,9 @@
 package com.jobtrackr.application_service.config;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.jobtrackr.application_service.kafka.event.ApplicationDiscoveredEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.boot.kafka.autoconfigure.KafkaProperties;
@@ -20,16 +24,26 @@ public class KafkaConsumerConfig {
 
     @Bean
     public ConsumerFactory<String, Object> consumerFactory(KafkaProperties kafkaProperties) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        JsonDeserializer<Object> jsonDeserializer =
+                new JsonDeserializer<>(ApplicationDiscoveredEvent.class, objectMapper, false);
+        jsonDeserializer.addTrustedPackages("*");
+
+        ErrorHandlingDeserializer<Object> errorHandlingDeserializer =
+                new ErrorHandlingDeserializer<>(jsonDeserializer);
+
         Map<String, Object> props = kafkaProperties.buildConsumerProperties();
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, "application-service-group");
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class);
-        props.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class.getName());
-        props.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
-        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, "com.jobtrackr.application_service.kafka.event.ApplicationDiscoveredEvent");
-        props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "application-service-group-v2");
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        return new DefaultKafkaConsumerFactory<>(props);
+
+        return new DefaultKafkaConsumerFactory<>(
+                props,
+                new StringDeserializer(),
+                errorHandlingDeserializer
+        );
     }
 
     @Bean
