@@ -23,16 +23,16 @@ import java.util.Map;
 public class KafkaConsumerConfig {
 
     @Bean
-    public ConsumerFactory<String, Object> consumerFactory(KafkaProperties kafkaProperties) {
+    public ConsumerFactory<String, ApplicationDiscoveredEvent> consumerFactory(KafkaProperties kafkaProperties) {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-        JsonDeserializer<Object> jsonDeserializer =
+        JsonDeserializer<ApplicationDiscoveredEvent> jsonDeserializer =
                 new JsonDeserializer<>(ApplicationDiscoveredEvent.class, objectMapper, false);
         jsonDeserializer.addTrustedPackages("*");
 
-        ErrorHandlingDeserializer<Object> errorHandlingDeserializer =
+        ErrorHandlingDeserializer<ApplicationDiscoveredEvent> errorHandlingDeserializer =
                 new ErrorHandlingDeserializer<>(jsonDeserializer);
 
         Map<String, Object> props = kafkaProperties.buildConsumerProperties();
@@ -47,9 +47,9 @@ public class KafkaConsumerConfig {
     }
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, Object> kafkaListenerContainerFactory(
-            ConsumerFactory<String, Object> consumerFactory) {
-        ConcurrentKafkaListenerContainerFactory<String, Object> factory =
+    public ConcurrentKafkaListenerContainerFactory<String, ApplicationDiscoveredEvent> kafkaListenerContainerFactory(
+            ConsumerFactory<String, ApplicationDiscoveredEvent> consumerFactory) {
+        ConcurrentKafkaListenerContainerFactory<String, ApplicationDiscoveredEvent> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory);
         return factory;
