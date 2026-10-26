@@ -6,7 +6,7 @@ set -euo pipefail
 
 echo "==> [1/5] Updating system packages..."
 sudo apt-get update -y && sudo apt-get upgrade -y
-sudo apt-get install -y curl wget git ufw debian-keyring debian-archive-keyring apt-transport-https
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y curl wget git ufw debian-keyring debian-archive-keyring apt-transport-https iptables-persistent netfilter-persistent
 
 echo "==> [2/5] Setting up 2 GB swapfile as OOM safeguard..."
 if [ ! -f /swapfile ]; then
@@ -48,12 +48,12 @@ fi
 
 echo "==> [5/5] Configuring firewall (UFW & iptables)..."
 # Oracle Cloud Ubuntu images include default iptables rules that block incoming 80/443.
-# Open ports 80 (HTTP) and 443 (HTTPS) in iptables:
-sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT || true
-sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT || true
-if command -v netfilter-persistent &> /dev/null; then
-    sudo netfilter-persistent save
-fi
+# Insert allow rules at priority position 1 (before any REJECT rule):
+sudo iptables -I INPUT 1 -p tcp --dport 80 -j ACCEPT
+sudo iptables -I INPUT 1 -p tcp --dport 443 -j ACCEPT
+sudo ufw allow 80/tcp || true
+sudo ufw allow 443/tcp || true
+sudo netfilter-persistent save
 
 echo "==> Creating /opt/jobtrackr directory..."
 sudo mkdir -p /opt/jobtrackr

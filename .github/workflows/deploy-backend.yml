@@ -203,10 +203,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to OCI host
-        if: ${{ env.OCI_HOST != '' }}
+        if: ${{ secrets.OCI_HOST != '' }}
         uses: appleboy/ssh-action@v1.0.3
-        env:
-          OCI_HOST: ${{ secrets.OCI_HOST }}
         with:
           host: ${{ secrets.OCI_HOST }}
           username: ${{ secrets.OCI_USERNAME || 'ubuntu' }}
