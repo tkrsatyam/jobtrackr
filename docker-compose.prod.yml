@@ -38,7 +38,7 @@ services:
       - jobtrackr-network
 
   api-gateway:
-    image: ${DOCKERHUB_USERNAME:-tkrsatyam}/jobtrackr-api-gateway:latest
+    image: ${DOCKERHUB_USERNAME:-satyamk07}/jobtrackr-api-gateway:latest
     container_name: api-gateway
     restart: unless-stopped
     ports:
@@ -63,7 +63,7 @@ services:
       - jobtrackr-network
 
   user-service:
-    image: ${DOCKERHUB_USERNAME:-tkrsatyam}/jobtrackr-user-service:latest
+    image: ${DOCKERHUB_USERNAME:-satyamk07}/jobtrackr-user-service:latest
     container_name: user-service
     restart: unless-stopped
     environment:
@@ -92,7 +92,7 @@ services:
       - jobtrackr-network
 
   application-service:
-    image: ${DOCKERHUB_USERNAME:-tkrsatyam}/jobtrackr-application-service:latest
+    image: ${DOCKERHUB_USERNAME:-satyamk07}/jobtrackr-application-service:latest
     container_name: application-service
     restart: unless-stopped
     environment:
@@ -123,7 +123,7 @@ services:
       - jobtrackr-network
 
   email-ingestion-service:
-    image: ${DOCKERHUB_USERNAME:-tkrsatyam}/jobtrackr-email-ingestion-service:latest
+    image: ${DOCKERHUB_USERNAME:-satyamk07}/jobtrackr-email-ingestion-service:latest
     container_name: email-ingestion-service
     restart: unless-stopped
     environment:
