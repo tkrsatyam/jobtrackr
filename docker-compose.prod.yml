@@ -42,7 +42,7 @@ services:
       - JAVA_TOOL_OPTIONS=-Xms128m -Xmx768m
       - REDIS_URL=${REDIS_URL}
       - JWT_SECRET=${JWT_SECRET}
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:4200,https://jobtrackr.vercel.app}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:4200,https://jobtrackr-portal.vercel.app}
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8080/ping"]
       interval: 30s
@@ -67,7 +67,7 @@ services:
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-https://jobtrackr-api.duckdns.org/api/auth/oauth2/code/google}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
-      - FRONTEND_URL=${FRONTEND_URL:-https://jobtrackr.vercel.app}
+      - FRONTEND_URL=${FRONTEND_URL:-https://jobtrackr-portal.vercel.app}
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8081/ping"]
       interval: 30s
