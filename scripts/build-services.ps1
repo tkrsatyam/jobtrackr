@@ -41,7 +41,6 @@ $ServicesDir = Join-Path $RootDir "services"
 
 # Default services required for Docker compose
 $DockerServices = @(
-    "eureka-server",
     "api-gateway",
     "user-service",
     "application-service",

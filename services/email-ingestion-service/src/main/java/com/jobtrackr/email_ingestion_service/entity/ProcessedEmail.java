@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -49,6 +50,12 @@ public class ProcessedEmail {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     private EmailProcessingStatus status;
+
+    @Column(name = "confidence_score", precision = 3, scale = 2)
+    private BigDecimal confidenceScore;
+
+    @Column(name = "rejection_reason", columnDefinition = "TEXT")
+    private String rejectionReason;
 
     @Column(name = "retry_count", nullable = false)
     @Builder.Default

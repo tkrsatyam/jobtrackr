@@ -50,6 +50,7 @@ public class GatewayRoutesConfig {
                 .route(RequestPredicates.path("/api/auth/**").or(RequestPredicates.path("/api/users/**")),
                         HandlerFunctions.http())
                 .before(BeforeFilterFunctions.uri(URI.create(userServiceUrl)))
+                .before(BeforeFilterFunctions.preserveHostHeader())
                 .build();
     }
 
@@ -59,6 +60,7 @@ public class GatewayRoutesConfig {
                 .route(RequestPredicates.path("/api/applications/**"),
                         HandlerFunctions.http())
                 .before(BeforeFilterFunctions.uri(URI.create(applicationServiceUrl)))
+                .before(BeforeFilterFunctions.preserveHostHeader())
                 .build();
     }
 
@@ -68,6 +70,7 @@ public class GatewayRoutesConfig {
                 .route(RequestPredicates.path("/api/reminders/**"),
                         HandlerFunctions.http())
                 .before(BeforeFilterFunctions.uri(URI.create(reminderServiceUrl)))
+                .before(BeforeFilterFunctions.preserveHostHeader())
                 .build();
     }
 
@@ -77,6 +80,7 @@ public class GatewayRoutesConfig {
                 .route(RequestPredicates.path("/api/documents/**"),
                         HandlerFunctions.http())
                 .before(BeforeFilterFunctions.uri(URI.create(documentServiceUrl)))
+                .before(BeforeFilterFunctions.preserveHostHeader())
                 .build();
     }
 
@@ -86,6 +90,7 @@ public class GatewayRoutesConfig {
                 .route(RequestPredicates.path("/api/contacts/**"),
                         HandlerFunctions.http())
                 .before(BeforeFilterFunctions.uri(URI.create(contactServiceUrl)))
+                .before(BeforeFilterFunctions.preserveHostHeader())
                 .build();
     }
 
@@ -95,6 +100,7 @@ public class GatewayRoutesConfig {
                 .route(RequestPredicates.path("/api/notifications/**"),
                         HandlerFunctions.http())
                 .before(BeforeFilterFunctions.uri(URI.create(notificationServiceUrl)))
+                .before(BeforeFilterFunctions.preserveHostHeader())
                 .build();
     }
 
@@ -104,6 +110,7 @@ public class GatewayRoutesConfig {
                 .route(RequestPredicates.path("/api/analytics/**"),
                         HandlerFunctions.http())
                 .before(BeforeFilterFunctions.uri(URI.create(analyticsServiceUrl)))
+                .before(BeforeFilterFunctions.preserveHostHeader())
                 .build();
     }
 
@@ -113,6 +120,7 @@ public class GatewayRoutesConfig {
                 .route(RequestPredicates.path("/api/ingestion/**"),
                         HandlerFunctions.http())
                 .before(BeforeFilterFunctions.uri(URI.create(emailIngestionServiceUrl)))
+                .before(BeforeFilterFunctions.preserveHostHeader())
                 .build();
     }
 }

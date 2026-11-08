@@ -31,6 +31,7 @@ export class SidebarComponent {
     { label: 'Dashboard', icon: 'dashboard', route:'/dashboard', exact: true },
     { label: 'Applications', icon: 'work_outline', route: '/applications', exact: true },
     { label: 'Board', icon: 'view_kanban', route: '/applications/board', exact: true },
+    { label: 'Inbox Sync', icon: 'mark_email_read', route: '/email-sync', exact: true },
     { label: 'Settings', icon: 'settings', route: '/settings', exact: true }
   ];
 

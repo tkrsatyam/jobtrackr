@@ -10,5 +10,21 @@ public record JobApplicationExtractionRecord(
         String recruiterName,
         String recruiterEmail,
         String notes,
-        Double confidenceScore
-) {}
+        Double confidenceScore,
+        String rejectionReason
+) {
+    public JobApplicationExtractionRecord(
+            boolean isJobApplication,
+            String companyName,
+            String roleTitle,
+            String status,
+            String location,
+            String jobUrl,
+            String recruiterName,
+            String recruiterEmail,
+            String notes,
+            Double confidenceScore
+    ) {
+        this(isJobApplication, companyName, roleTitle, status, location, jobUrl, recruiterName, recruiterEmail, notes, confidenceScore, null);
+    }
+}

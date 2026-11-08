@@ -15,7 +15,6 @@ SERVICES_DIR="$ROOT_DIR/services"
 
 # Default services required for Docker compose
 DOCKER_SERVICES=(
-  "eureka-server"
   "api-gateway"
   "user-service"
   "application-service"

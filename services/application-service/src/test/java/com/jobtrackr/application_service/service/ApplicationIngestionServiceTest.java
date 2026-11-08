@@ -34,6 +34,9 @@ class ApplicationIngestionServiceTest {
     @org.mockito.Spy
     private StatusTransitionValidator transitionValidator = new StatusTransitionValidator();
 
+    @org.mockito.Spy
+    private ApplicationMapper applicationMapper = new ApplicationMapper();
+
     @InjectMocks
     private ApplicationIngestionService ingestionService;
 
@@ -356,7 +359,7 @@ class ApplicationIngestionServiceTest {
     }
 
     @Test
-    @DisplayName("Should advance status through intermediate stages such as PHONE_SCREEN to INTERVIEW upon merge")
+    @DisplayName("Should propose status update upon merge rather than silently overwriting status")
     void testAdvanceStatusThroughIntermediateStagesOnMerge() {
         when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-interview")).thenReturn(false);
 
@@ -385,6 +388,9 @@ class ApplicationIngestionServiceTest {
         ingestionService.processDiscoveredApplication(interviewEvent);
 
         verify(applicationRepository).save(existing);
-        assertThat(existing.getStatus()).isEqualTo(ApplicationStatus.INTERVIEW);
+        assertThat(existing.getStatus()).isEqualTo(ApplicationStatus.PHONE_SCREEN);
+        assertThat(existing.getProposedStatus()).isEqualTo(ApplicationStatus.INTERVIEW);
+        assertThat(existing.getStatusProposalReason()).isEqualTo("Next round interview invite");
+        assertThat(existing.getStatusHistory()).isNotEmpty();
     }
 }

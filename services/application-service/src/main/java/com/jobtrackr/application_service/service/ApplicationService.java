@@ -55,6 +55,8 @@ public interface ApplicationService {
 
     void rejectReview(UUID applicationId, HttpServletRequest httpRequest);
 
+    ApplicationResponse restoreReview(UUID applicationId, HttpServletRequest httpRequest);
+
     ApplicationResponse acceptStatusProposal(UUID applicationId, HttpServletRequest httpRequest);
 
     ApplicationResponse dismissStatusProposal(UUID applicationId, HttpServletRequest httpRequest);

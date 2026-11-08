@@ -496,6 +496,23 @@ public class ApplicationServiceImpl implements ApplicationService {
     }
 
     @Override
+    public ApplicationResponse restoreReview(UUID applicationId, HttpServletRequest httpRequest) {
+        UUID userId = userContextHolder.getUserId(httpRequest);
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new ApplicationNotFoundException(applicationId));
+
+        if (!application.getUserId().equals(userId)) {
+            throw new UnauthorizedAccessException("You do not have access to this application");
+        }
+
+        application.setIsDeleted(false);
+        application.setRequiresReview(true);
+        application = applicationRepository.save(application);
+
+        return applicationMapper.toResponse(application);
+    }
+
+    @Override
     public ApplicationResponse acceptStatusProposal(UUID applicationId, HttpServletRequest httpRequest) {
         UUID userId = userContextHolder.getUserId(httpRequest);
         Application application = findAndVerifyOwnership(applicationId, userId);

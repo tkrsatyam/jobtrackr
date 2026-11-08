@@ -80,6 +80,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - APP_JWT_SECRET=${JWT_SECRET}
+      - LOGGING_LEVEL_COM_JOBTRACKR=DEBUG
     depends_on:
       redis:
         condition: service_healthy
@@ -100,6 +101,8 @@ services:
       - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-http://localhost:8080/api/auth/oauth2/code/google}
       - DB_USERNAME=postgres
       - DB_PASSWORD=postgres
+      - LOGGING_LEVEL_COM_JOBTRACKR=DEBUG
+      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY=DEBUG
     depends_on:
       postgres:
         condition: service_healthy
@@ -117,6 +120,7 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - DB_USERNAME=postgres
       - DB_PASSWORD=postgres
+      - LOGGING_LEVEL_COM_JOBTRACKR=DEBUG
     depends_on:
       postgres:
         condition: service_healthy
@@ -140,6 +144,7 @@ services:
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_DATA_REDIS_PORT=6379
       - INGESTION_SCHEDULER_ENABLED=${INGESTION_SCHEDULER_ENABLED:-false}
+      - LOGGING_LEVEL_COM_JOBTRACKR=DEBUG
     depends_on:
       postgres:
         condition: service_healthy

@@ -11,6 +11,7 @@ import com.jobtrackr.application_service.entity.enums.ApplicationStatus;
 import com.jobtrackr.application_service.entity.enums.PriorityLevel;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -117,10 +118,15 @@ public class ApplicationMapper {
     }
 
     public ApplicationStatusHistory toHistoryEntity(Application application, ApplicationStatus status, String note) {
+        return toHistoryEntity(application, status, note, LocalDateTime.now());
+    }
+
+    public ApplicationStatusHistory toHistoryEntity(Application application, ApplicationStatus status, String note, LocalDateTime changedAt) {
         return ApplicationStatusHistory.builder()
                 .application(application)
                 .status(status)
                 .note(note)
+                .changedAt(changedAt != null ? changedAt : LocalDateTime.now())
                 .build();
     }
 }

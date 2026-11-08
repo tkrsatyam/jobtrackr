@@ -117,7 +117,7 @@ class JobApplicationExtractorTest {
     }
 
     @Test
-    @DisplayName("Should return empty when AI determines email is not a job application")
+    @DisplayName("Should return extraction record with isJobApplication=false when AI determines not job application")
     void shouldReturnEmptyWhenAiDeterminesNotJobApplication() {
         String json = """
                 {
@@ -130,7 +130,8 @@ class JobApplicationExtractorTest {
                   "recruiterName": null,
                   "recruiterEmail": null,
                   "notes": null,
-                  "confidenceScore": 0.0
+                  "confidenceScore": 0.05,
+                  "rejectionReason": "Promotional email"
                 }
                 """;
         mockChatResponse(json);
@@ -141,11 +142,14 @@ class JobApplicationExtractorTest {
                 "Just checking in with some company news."
         );
 
-        assertThat(result).isEmpty();
+        assertThat(result).isPresent();
+        assertThat(result.get().isJobApplication()).isFalse();
+        assertThat(result.get().confidenceScore()).isEqualTo(0.05);
+        assertThat(result.get().rejectionReason()).isEqualTo("Promotional email");
     }
 
     @Test
-    @DisplayName("Should return empty when AI confidence score is below threshold")
+    @DisplayName("Should return extraction record even when AI confidence score is below threshold")
     void shouldReturnEmptyWhenConfidenceIsBelowThreshold() {
         String json = """
                 {
@@ -158,7 +162,8 @@ class JobApplicationExtractorTest {
                   "recruiterName": null,
                   "recruiterEmail": null,
                   "notes": "Uncertain email content",
-                  "confidenceScore": 0.40
+                  "confidenceScore": 0.40,
+                  "rejectionReason": "Ambiguous newsletter"
                 }
                 """;
         mockChatResponse(json);
@@ -169,7 +174,9 @@ class JobApplicationExtractorTest {
                 "Maybe related to a role"
         );
 
-        assertThat(result).isEmpty();
+        assertThat(result).isPresent();
+        assertThat(result.get().confidenceScore()).isEqualTo(0.40);
+        assertThat(result.get().rejectionReason()).isEqualTo("Ambiguous newsletter");
     }
 
     @Test
@@ -209,6 +216,82 @@ class JobApplicationExtractorTest {
 
         assertThat(result).isEmpty();
         verifyNoInteractions(chatClient);
+    }
+
+    @Test
+    @DisplayName("Should not reject Salesforce job application emails due to sale keyword")
+    void shouldNotRejectSalesforceJobApplicationEmails() {
+        boolean isNonJob = JobApplicationExtractor.isNonJobEmail(
+                "Regarding your job application for Zensar - Salesforce Operations Analyst",
+                "noreply_careers@zensar.com"
+        );
+        assertThat(isNonJob).isFalse();
+
+        boolean isNonJobWorkday = JobApplicationExtractor.isNonJobEmail(
+                "Application Received for Salesforce Service Cloud Administrator",
+                "safeguardglobal@myworkday.com"
+        );
+        assertThat(isNonJobWorkday).isFalse();
+
+        boolean isNonJobCandidate = JobApplicationExtractor.isNonJobEmail(
+                "Application for Salesforce Administrator Role",
+                "Khushi Polshettiwar <khushipolshettiwar25@gmail.com>"
+        );
+        assertThat(isNonJobCandidate).isFalse();
+    }
+
+    @Test
+    @DisplayName("Should not reject Capgemini application emails due to emi keyword")
+    void shouldNotRejectCapgeminiApplicationEmails() {
+        boolean isNonJobApp = JobApplicationExtractor.isNonJobEmail(
+                "Capgemini Group – New Job Application Received",
+                "HRsystem@capgemini.com"
+        );
+        assertThat(isNonJobApp).isFalse();
+
+        boolean isNonJobInterview = JobApplicationExtractor.isNonJobEmail(
+                "Capgemini Face-to-Face Interview Drive | Java Full Stack Developer (React/Angular) | Bangalore-EPIP & Mumbai - Airoli | 10th October 2026",
+                "Rajbhar, Lalita <lalita.rajbhar@capgemini.com>"
+        );
+        assertThat(isNonJobInterview).isFalse();
+    }
+
+    @Test
+    @DisplayName("Should not reject Deloitte interview screening emails")
+    void shouldNotRejectDeloitteInterviewScreeningEmails() {
+        boolean isNonJob = JobApplicationExtractor.isNonJobEmail(
+                "Re: Preliminary Screening - Virtual Interview | T&T | Customer | S&S | Consultant | Salesforce | Hyderabad | Deloitte",
+                "Khushi Polshettiwar <khushipolshettiwar25@gmail.com>"
+        );
+        assertThat(isNonJob).isFalse();
+    }
+
+    @Test
+    @DisplayName("Should fast reject bootcamps, resume marketing, and job match senders")
+    void shouldFastRejectBootcampsAndResumeMarketingSenders() {
+        boolean isBootcamp = JobApplicationExtractor.isNonJobEmail(
+                "Update: Confirm your application to turn skills into real projects",
+                "Coding Ninjas Job Bootcamp <hello@careercamp.codingninjas.com>"
+        );
+        assertThat(isBootcamp).isTrue();
+
+        boolean isResumePromo = JobApplicationExtractor.isNonJobEmail(
+                "Your resume is only half of the application",
+                "Andrei from Novorésumé <andrei@novoresume.net>"
+        );
+        assertThat(isResumePromo).isTrue();
+
+        boolean isIndeedMatch = JobApplicationExtractor.isNonJobEmail(
+                "Sr. Developer - Enterprise Application Salesforce N 4B @ Genpact India Pvt. Ltd.",
+                "Indeed <donotreply@match.indeed.com>"
+        );
+        assertThat(isIndeedMatch).isTrue();
+
+        boolean isAmbitionBox = JobApplicationExtractor.isNonJobEmail(
+                "⭐ You applied to Purplefront Technologies - see what employees have to say!",
+                "AmbitionBox <reviews@ambitionbox.com>"
+        );
+        assertThat(isAmbitionBox).isTrue();
     }
 
     @Test

@@ -1,0 +1,229 @@
+<div class="page-container inbox-sync-page">
+  <div class="page-header">
+    <div class="header-titles">
+      <h1>Inbox Sync</h1>
+      <p class="subtitle">Automated email ingestion, AI application discovery, and parsing audit log</p>
+    </div>
+    <div class="page-actions">
+      <button
+        mat-flat-button
+        color="primary"
+        (click)="triggerSync()"
+        [disabled]="syncing()">
+        <mat-icon [class.spin]="syncing()">sync</mat-icon>
+        <span>{{ syncing() ? 'Scanning Inbox...' : 'Sync Emails Now' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Hero Connection & Status Card -->
+  <mat-card class="integration-card">
+    <div class="integration-content">
+      <div class="integration-status">
+        <div class="account-badge">
+          @if (status()?.connected) {
+            <span class="badge-connected">
+              <mat-icon class="status-icon">check_circle</mat-icon>
+              <span>Linked to Gmail</span>
+              @if (status()?.connectedEmail) {
+                <strong class="account-email">({{ status()?.connectedEmail }})</strong>
+              }
+            </span>
+          } @else {
+            <span class="badge-disconnected">
+              <mat-icon class="status-icon">warning</mat-icon>
+              <span>No Google Account Linked</span>
+            </span>
+            <a mat-stroked-button routerLink="/settings" class="connect-link">Connect in Settings</a>
+          }
+        </div>
+
+        <div class="polling-info">
+          @if (status()?.lastPolledAt) {
+            <span class="last-poll">Last synced: {{ status()?.lastPolledAt | date: 'medium' }}</span>
+          } @else {
+            <span class="last-poll">No syncs recorded yet</span>
+          }
+        </div>
+      </div>
+
+      <div class="integration-desc">
+        <mat-icon class="info-icon">auto_awesome</mat-icon>
+        <p>
+          JobTrackr scans your inbox for application confirmations, interview invitations, assessment tests, and status proposals using Google Gemini AI. Low-confidence marketing or promotional emails are classified with detailed rejection rationales.
+        </p>
+      </div>
+    </div>
+  </mat-card>
+
+  <!-- Metrics Grid -->
+  <div class="stat-grid">
+    <div class="stat-card">
+      <span class="stat-label">Total Emails Scanned</span>
+      <span class="stat-value">{{ status()?.totalScanned ?? 0 }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Applications Discovered</span>
+      <span class="stat-value discovered">{{ status()?.totalProcessed ?? 0 }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Skipped / Filtered</span>
+      <span class="stat-value skipped">{{ status()?.totalSkipped ?? 0 }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">User Dismissed</span>
+      <span class="stat-value dismissed">{{ status()?.totalRejected ?? 0 }}</span>
+    </div>
+  </div>
+
+  <!-- Pending Review Banner / Card if items waiting -->
+  @if (hasPendingReviews()) {
+    <mat-card class="pending-review-banner">
+      <div class="pending-content">
+        <div class="pending-icon-wrapper">
+          <mat-icon>notifications_active</mat-icon>
+        </div>
+        <div class="pending-text">
+          <h3>{{ pendingCount() }} Application{{ pendingCount() > 1 ? 's' : '' }} Awaiting Confirmation</h3>
+          <p>The AI has discovered job applications that need your review before adding them to your tracker.</p>
+        </div>
+      </div>
+      <button mat-flat-button color="accent" (click)="openReviewModal()">
+        Review Applications
+      </button>
+    </mat-card>
+  }
+
+  <!-- Audit Log Feed Section -->
+  <section class="audit-section">
+    <div class="section-header">
+      <div class="section-title-group">
+        <h2>Ingestion Audit Feed</h2>
+        <span class="total-badge">{{ totalElements() }} Total Messages</span>
+      </div>
+
+      <!-- Filter Chips -->
+      <div class="filter-chips">
+        @for (f of filters; track f.value) {
+          <button
+            type="button"
+            class="filter-chip"
+            [class.active]="selectedFilter() === f.value"
+            (click)="onFilterChange(f.value)">
+            {{ f.label }}
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (loading()) {
+      <mat-progress-bar mode="indeterminate" class="feed-progress" />
+    }
+
+    <!-- Email Feed Table -->
+    <div class="feed-container">
+      @if (history().length > 0) {
+        <div class="email-list">
+          @for (item of history(); track item.id) {
+            <div class="email-row" [class]="'status-' + item.status.toLowerCase()">
+              <div class="email-status-indicator">
+                @switch (item.status) {
+                  @case ('PROCESSED') {
+                    <span class="status-pill status-processed">
+                      <mat-icon>check_circle</mat-icon> Application
+                    </span>
+                  }
+                  @case ('SKIPPED') {
+                    <span class="status-pill status-skipped">
+                      <mat-icon>filter_alt</mat-icon> Skipped
+                    </span>
+                  }
+                  @case ('REJECTED') {
+                    <span class="status-pill status-rejected">
+                      <mat-icon>do_not_disturb</mat-icon> Dismissed
+                    </span>
+                  }
+                  @case ('FAILED') {
+                    <span class="status-pill status-failed">
+                      <mat-icon>error_outline</mat-icon> Failed
+                    </span>
+                  }
+                }
+              </div>
+
+              <div class="email-main">
+                <div class="email-subject-line">
+                  <span class="email-subject" [title]="item.subject">{{ item.subject }}</span>
+                  @if (item.confidenceScore !== null && item.confidenceScore !== undefined) {
+                    <span
+                      class="confidence-badge"
+                      [class]="getConfidenceClass(item.confidenceScore)"
+                      matTooltip="AI Confidence Score">
+                      {{ item.confidenceScore * 100 | number: '1.0-0' }}% match
+                    </span>
+                  }
+                </div>
+                <div class="email-meta">
+                  <span class="email-sender" [title]="item.sender">From: {{ item.sender }}</span>
+                  <span class="meta-dot">•</span>
+                  <span class="email-date">{{ item.receivedAt | date: 'mediumDate' }}</span>
+                </div>
+                @if (item.rejectionReason) {
+                  <div class="rejection-hint">
+                    <mat-icon class="hint-icon">info</mat-icon>
+                    <span>{{ item.rejectionReason }}</span>
+                  </div>
+                }
+              </div>
+
+              <div class="email-actions">
+                @if (item.status === 'SKIPPED' || item.status === 'REJECTED') {
+                  <button
+                    mat-stroked-button
+                    class="reingest-btn"
+                    matTooltip="Re-evaluate or force-ingest this email with AI"
+                    (click)="reIngest(item)">
+                    <mat-icon>refresh</mat-icon>
+                    <span>Re-evaluate</span>
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Pagination Controls -->
+        @if (totalPages() > 1) {
+          <div class="pagination-footer">
+            <span class="page-indicator">
+              Page {{ currentPage() + 1 }} of {{ totalPages() }} ({{ totalElements() }} items)
+            </span>
+            <div class="page-buttons">
+              <button
+                mat-button
+                [disabled]="currentPage() === 0"
+                (click)="goToPage(currentPage() - 1)">
+                <mat-icon>chevron_left</mat-icon> Previous
+              </button>
+              <button
+                mat-button
+                [disabled]="currentPage() >= totalPages() - 1"
+                (click)="goToPage(currentPage() + 1)">
+                Next <mat-icon>chevron_right</mat-icon>
+              </button>
+            </div>
+          </div>
+        }
+      } @else if (!loading()) {
+        <div class="empty-feed">
+          <mat-icon class="empty-icon">mail_outline</mat-icon>
+          <h3>No Ingested Emails in this Filter</h3>
+          <p>Scan your inbox to discover applications or switch to "All" to view previous records.</p>
+          <button mat-stroked-button (click)="triggerSync()" [disabled]="syncing()">
+            Scan Inbox Now
+          </button>
+        </div>
+      }
+    </div>
+  </section>
+</div>

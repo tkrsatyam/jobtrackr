@@ -2,6 +2,7 @@ package com.jobtrackr.email_ingestion_service.repository;
 
 import com.jobtrackr.email_ingestion_service.entity.EmailProcessingStatus;
 import com.jobtrackr.email_ingestion_service.entity.ProcessedEmail;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -25,4 +26,16 @@ public interface ProcessedEmailRepository extends JpaRepository<ProcessedEmail, 
             int maxRetries,
             Pageable pageable
     );
+
+    Page<ProcessedEmail> findByUserIdOrderByReceivedAtDesc(UUID userId, Pageable pageable);
+
+    Page<ProcessedEmail> findByUserIdAndStatusOrderByReceivedAtDesc(
+            UUID userId,
+            EmailProcessingStatus status,
+            Pageable pageable
+    );
+
+    long countByUserId(UUID userId);
+
+    long countByUserIdAndStatus(UUID userId, EmailProcessingStatus status);
 }
