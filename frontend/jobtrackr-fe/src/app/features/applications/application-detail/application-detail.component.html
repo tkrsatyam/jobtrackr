@@ -38,7 +38,7 @@
             </div>
         </div>
 
-        @if (app.proposedStatus) {
+        @if (app.proposedStatus && hasValidProposal()) {
             <div class="proposal-banner" role="alert">
                 <mat-icon class="proposal-icon">auto_awesome</mat-icon>
                 <div class="proposal-content">

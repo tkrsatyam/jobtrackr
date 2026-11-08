@@ -5,6 +5,7 @@ import com.jobtrackr.application_service.entity.enums.ApplicationStatus;
 public class InvalidStatusTransitionException extends RuntimeException {
 
     public InvalidStatusTransitionException(ApplicationStatus from, ApplicationStatus to) {
-        super("Cannot transition from " + from + " to " + to);
+        super("Cannot transition from " + (from != null ? from.getDisplayName() : "Unknown")
+                + " to " + (to != null ? to.getDisplayName() : "Unknown"));
     }
 }

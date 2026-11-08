@@ -169,20 +169,26 @@ public class ApplicationIngestionService {
             }
 
             // Status Proposal Workflow:
-            // Propose status changes rather than silently overwriting them without user awareness
+            // Propose status changes rather than silently overwriting them without user awareness.
+            // Only propose transitions that are valid in the pipeline (no backward or illegal jumps).
             if (event.status() != null) {
                 try {
                     ApplicationStatus incomingStatus = ApplicationStatus.valueOf(event.status());
                     if (incomingStatus != existing.getStatus()) {
-                        existing.setProposedStatus(incomingStatus);
-                        String proposalReason = event.notes() != null && !event.notes().isBlank()
-                                ? event.notes()
-                                : (event.emailSubject() != null ? event.emailSubject() : "Detected from incoming email");
-                        existing.setStatusProposalReason(proposalReason);
-                        existing.setStatusProposalReceivedAt(event.emailReceivedAt() != null ? event.emailReceivedAt() : Instant.now());
+                        if (transitionValidator.getAllowedTransitions(existing.getStatus()).contains(incomingStatus)) {
+                            existing.setProposedStatus(incomingStatus);
+                            String proposalReason = event.notes() != null && !event.notes().isBlank()
+                                    ? event.notes()
+                                    : (event.emailSubject() != null ? event.emailSubject() : "Detected from incoming email");
+                            existing.setStatusProposalReason(proposalReason);
+                            existing.setStatusProposalReceivedAt(event.emailReceivedAt() != null ? event.emailReceivedAt() : Instant.now());
 
-                        log.info("Registered status proposal {} for application {} (company '{}', requiresReview={}) based on email {}",
-                                incomingStatus, existing.getApplicationId(), existing.getCompanyName(), existing.getRequiresReview(), event.emailMessageId());
+                            log.info("Registered status proposal {} for application {} (company '{}', requiresReview={}) based on email {}",
+                                    incomingStatus, existing.getApplicationId(), existing.getCompanyName(), existing.getRequiresReview(), event.emailMessageId());
+                        } else {
+                            log.info("Ignored invalid status proposal {} for application {} currently in status {}",
+                                    incomingStatus, existing.getApplicationId(), existing.getStatus());
+                        }
                     }
                 } catch (IllegalArgumentException ignored) {}
             }

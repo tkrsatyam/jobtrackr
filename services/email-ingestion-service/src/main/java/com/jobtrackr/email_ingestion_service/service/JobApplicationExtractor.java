@@ -150,10 +150,10 @@ public class JobApplicationExtractor {
                 * REJECTED: email states application is not moving forward, candidate not selected, pursuing other candidates, or regret to inform/unsuccessful.
                 * OFFER: formal job offer, offer letter, employment offer, or compensation package details.
                 * ACCEPTED: welcome to the team, signing confirmation, or onboarding after offer acceptance.
-                * TECHNICAL_ROUND: coding challenge, technical assessment, HackerRank, CodeSignal, take-home assignment, live coding, or technical interview.
+                * TECHNICAL_ROUND: coding challenge, technical assessment, HackerRank, CodeSignal, take-home assignment, live coding, technical interview, AI interview, or automated assessment/screening (such as micro1, HireVue, Karat, etc.).
                 * HR_ROUND: HR round, culture fit interview, behavioral questions, or final managerial discussion.
                 * PHONE_SCREEN: recruiter phone screen, introductory talent call, preliminary screening, or screening chat.
-                * INTERVIEW: general interview invitation or unspecified interview schedule. Do NOT mark questionnaires, candidate portal profile setup, or Workday task notifications as INTERVIEW (they should be APPLIED).
+                * INTERVIEW: interview invitation or scheduled rounds with human interviewers (recruiter, hiring manager, panel). Do NOT mark automated AI interviews, coding assessments, questionnaires, candidate portal profile setup, or Workday task notifications as INTERVIEW.
                 * APPLIED: application submission confirmation, questionnaire task, candidate portal setup, or "thank you for applying".
               - location: candidate or job location if mentioned, else null.
               - jobUrl: job posting or application status URL if found in the email, else null.

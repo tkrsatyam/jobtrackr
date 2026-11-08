@@ -19,6 +19,16 @@ import java.util.UUID;
 @Component
 public class ApplicationMapper {
 
+    private final StatusTransitionValidator transitionValidator;
+
+    public ApplicationMapper() {
+        this.transitionValidator = new StatusTransitionValidator();
+    }
+
+    public ApplicationMapper(StatusTransitionValidator transitionValidator) {
+        this.transitionValidator = transitionValidator != null ? transitionValidator : new StatusTransitionValidator();
+    }
+
     public Application toEntity(CreateApplicationRequest request, UUID userId) {
         Application application = Application.builder()
                 .userId(userId)
@@ -68,6 +78,16 @@ public class ApplicationMapper {
                 .toList()
                 : Collections.emptyList();
 
+        ApplicationStatus proposedStatus = application.getProposedStatus();
+        String proposalReason = application.getStatusProposalReason();
+        java.time.Instant proposalReceivedAt = application.getStatusProposalReceivedAt();
+
+        if (proposedStatus != null && !transitionValidator.getAllowedTransitions(application.getStatus()).contains(proposedStatus)) {
+            proposedStatus = null;
+            proposalReason = null;
+            proposalReceivedAt = null;
+        }
+
         return ApplicationResponse.builder()
                 .applicationId(application.getApplicationId())
                 .userId(application.getUserId())
@@ -92,9 +112,9 @@ public class ApplicationMapper {
                 .rawEmailSnippet(application.getRawEmailSnippet())
                 .emailMessageId(application.getEmailMessageId())
                 .emailReceivedAt(application.getEmailReceivedAt())
-                .proposedStatus(application.getProposedStatus())
-                .statusProposalReason(application.getStatusProposalReason())
-                .statusProposalReceivedAt(application.getStatusProposalReceivedAt())
+                .proposedStatus(proposedStatus)
+                .statusProposalReason(proposalReason)
+                .statusProposalReceivedAt(proposalReceivedAt)
                 .createdAt(application.getCreatedAt())
                 .updatedAt(application.getUpdatedAt())
                 .tags(tags)

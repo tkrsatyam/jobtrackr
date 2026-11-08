@@ -393,4 +393,37 @@ class ApplicationIngestionServiceTest {
         assertThat(existing.getStatusProposalReason()).isEqualTo("Next round interview invite");
         assertThat(existing.getStatusHistory()).isNotEmpty();
     }
+
+    @Test
+    @DisplayName("Should not propose invalid or backward status transition from technical round to interview")
+    void testDoNotProposeInvalidOrBackwardTransition() {
+        when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-invalid-proposal")).thenReturn(false);
+
+        Application existing = Application.builder()
+                .applicationId(UUID.randomUUID())
+                .userId(userId)
+                .companyName("micro1")
+                .role("Java Developer")
+                .status(ApplicationStatus.TECHNICAL_ROUND)
+                .source(ApplicationSource.EMAIL)
+                .appliedDate(LocalDate.now().minusDays(10))
+                .requiresReview(false)
+                .build();
+
+        when(applicationRepository.findPotentialDuplicates(eq(userId), eq("micro1"), eq("Java Developer"), any()))
+                .thenReturn(List.of(existing));
+
+        ApplicationDiscoveredEvent backwardEvent = new ApplicationDiscoveredEvent(
+                UUID.randomUUID(), userId, "micro1", "Java Developer", "INTERVIEW",
+                null, null, null, null,
+                "Complete your AI interview", 0.95,
+                "msg-invalid-proposal", "AI Interview", "support@micro1.ai", Instant.now()
+        );
+
+        ingestionService.processDiscoveredApplication(backwardEvent);
+
+        verify(applicationRepository).save(existing);
+        assertThat(existing.getStatus()).isEqualTo(ApplicationStatus.TECHNICAL_ROUND);
+        assertThat(existing.getProposedStatus()).isNull();
+    }
 }

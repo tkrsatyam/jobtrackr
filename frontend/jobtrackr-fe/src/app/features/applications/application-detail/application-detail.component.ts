@@ -20,7 +20,7 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
 import { MatTooltip } from "@angular/material/tooltip";
 import { FormsModule } from '@angular/forms';
 import { MatMenuModule } from '@angular/material/menu';
-import { isTerminal } from '../../../shared/constants/status-transitions';
+import { getAllowedTransitions, isTerminal } from '../../../shared/constants/status-transitions';
 
 @Component({
   selector: 'app-application-detail',
@@ -60,6 +60,12 @@ export class ApplicationDetailComponent implements OnInit {
   workModeLabels = WORK_MODE_LABELS;
   sourceLabels = SOURCE_LABELS;
   statusLabels = STATUS_LABELS;
+
+  hasValidProposal = computed(() => {
+    const app = this.application();
+    if (!app || !app.proposedStatus) return false;
+    return getAllowedTransitions(app.status).includes(app.proposedStatus);
+  });
 
   /** The seven active pipeline stages in order. Terminal outcomes are handled separately. */
   readonly pipelineStages: ApplicationStatus[] = [
@@ -127,6 +133,15 @@ export class ApplicationDetailComponent implements OnInit {
     });
   }
 
+  formatErrorMessage(msg: string): string {
+    if (!msg) return msg;
+    let formatted = msg;
+    for (const [code, label] of Object.entries(this.statusLabels)) {
+      formatted = formatted.replace(new RegExp(`\\b${code}\\b`, 'g'), label);
+    }
+    return formatted;
+  }
+
   onStatusChange(event: { status: ApplicationStatus; note: string }): void {
     const app = this.application();
     if (!app) return;
@@ -134,6 +149,10 @@ export class ApplicationDetailComponent implements OnInit {
       next: updated => {
         this.application.set(updated);
         this.snackBar.open('Status updated', 'OK', { duration: 3000 });
+      },
+      error: err => {
+        const detail = err?.error?.detail || err?.error?.message || 'Failed to update status';
+        this.snackBar.open(this.formatErrorMessage(detail), 'Close', { duration: 5000 });
       }
     });
   }
@@ -190,7 +209,8 @@ export class ApplicationDetailComponent implements OnInit {
       },
       error: err => {
         this.isProcessingProposal.set(false);
-        this.snackBar.open(err?.error?.detail || 'Failed to accept status proposal', 'Close', { duration: 5000 });
+        const detail = err?.error?.detail || err?.error?.message || 'Failed to accept status proposal';
+        this.snackBar.open(this.formatErrorMessage(detail), 'Close', { duration: 5000 });
       }
     });
   }
@@ -207,7 +227,8 @@ export class ApplicationDetailComponent implements OnInit {
       },
       error: err => {
         this.isProcessingProposal.set(false);
-        this.snackBar.open(err?.error?.detail || 'Failed to dismiss status proposal', 'Close', { duration: 5000 });
+        const detail = err?.error?.detail || err?.error?.message || 'Failed to dismiss status proposal';
+        this.snackBar.open(this.formatErrorMessage(detail), 'Close', { duration: 5000 });
       }
     });
   }
