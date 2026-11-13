@@ -165,6 +165,32 @@ class ApplicationReviewTest {
     }
 
     @Test
+    @DisplayName("Should restore review by unmarking isDeleted and marking requiresReview as true")
+    void testRestoreReview() {
+        Application app = Application.builder()
+                .applicationId(appId)
+                .userId(userId)
+                .companyName("Restored Corp")
+                .role("Restored Role")
+                .status(ApplicationStatus.APPLIED)
+                .requiresReview(false)
+                .aiDiscovered(true)
+                .isDeleted(true)
+                .build();
+
+        when(applicationRepository.findById(appId))
+                .thenReturn(Optional.of(app));
+        when(applicationRepository.save(app))
+                .thenReturn(app);
+
+        applicationService.restoreReview(appId, httpRequest);
+
+        assertThat(app.getIsDeleted()).isFalse();
+        assertThat(app.getRequiresReview()).isTrue();
+        verify(applicationRepository).save(app);
+    }
+
+    @Test
     @DisplayName("Should accept status proposal and emit StatusUpdatedEvent with companyName and note")
     void testAcceptStatusProposal() {
         Application app = Application.builder()

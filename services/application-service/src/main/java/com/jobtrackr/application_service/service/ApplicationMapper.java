@@ -11,12 +11,23 @@ import com.jobtrackr.application_service.entity.enums.ApplicationStatus;
 import com.jobtrackr.application_service.entity.enums.PriorityLevel;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 @Component
 public class ApplicationMapper {
+
+    private final StatusTransitionValidator transitionValidator;
+
+    public ApplicationMapper() {
+        this.transitionValidator = new StatusTransitionValidator();
+    }
+
+    public ApplicationMapper(StatusTransitionValidator transitionValidator) {
+        this.transitionValidator = transitionValidator != null ? transitionValidator : new StatusTransitionValidator();
+    }
 
     public Application toEntity(CreateApplicationRequest request, UUID userId) {
         Application application = Application.builder()
@@ -67,6 +78,16 @@ public class ApplicationMapper {
                 .toList()
                 : Collections.emptyList();
 
+        ApplicationStatus proposedStatus = application.getProposedStatus();
+        String proposalReason = application.getStatusProposalReason();
+        java.time.Instant proposalReceivedAt = application.getStatusProposalReceivedAt();
+
+        if (proposedStatus != null && !transitionValidator.getAllowedTransitions(application.getStatus()).contains(proposedStatus)) {
+            proposedStatus = null;
+            proposalReason = null;
+            proposalReceivedAt = null;
+        }
+
         return ApplicationResponse.builder()
                 .applicationId(application.getApplicationId())
                 .userId(application.getUserId())
@@ -91,9 +112,9 @@ public class ApplicationMapper {
                 .rawEmailSnippet(application.getRawEmailSnippet())
                 .emailMessageId(application.getEmailMessageId())
                 .emailReceivedAt(application.getEmailReceivedAt())
-                .proposedStatus(application.getProposedStatus())
-                .statusProposalReason(application.getStatusProposalReason())
-                .statusProposalReceivedAt(application.getStatusProposalReceivedAt())
+                .proposedStatus(proposedStatus)
+                .statusProposalReason(proposalReason)
+                .statusProposalReceivedAt(proposalReceivedAt)
                 .createdAt(application.getCreatedAt())
                 .updatedAt(application.getUpdatedAt())
                 .tags(tags)
@@ -117,10 +138,15 @@ public class ApplicationMapper {
     }
 
     public ApplicationStatusHistory toHistoryEntity(Application application, ApplicationStatus status, String note) {
+        return toHistoryEntity(application, status, note, LocalDateTime.now());
+    }
+
+    public ApplicationStatusHistory toHistoryEntity(Application application, ApplicationStatus status, String note, LocalDateTime changedAt) {
         return ApplicationStatusHistory.builder()
                 .application(application)
                 .status(status)
                 .note(note)
+                .changedAt(changedAt != null ? changedAt : LocalDateTime.now())
                 .build();
     }
 }

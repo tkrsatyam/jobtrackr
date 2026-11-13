@@ -15,8 +15,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -29,6 +29,7 @@ public class ApplicationIngestionService {
 
     private final ApplicationRepository applicationRepository;
     private final StatusTransitionValidator transitionValidator;
+    private final ApplicationMapper applicationMapper;
 
     @Transactional
     public void processDiscoveredApplication(ApplicationDiscoveredEvent event) {
@@ -37,11 +38,27 @@ public class ApplicationIngestionService {
             return;
         }
 
-        // 1. Idempotency check on emailMessageId
-        if (event.emailMessageId() != null &&
-                applicationRepository.existsByUserIdAndEmailMessageId(event.userId(), event.emailMessageId())) {
-            log.info("Email message {} already ingested for user {}, skipping", event.emailMessageId(), event.userId());
-            return;
+        // 1. Idempotency Check & Candidate Revival
+        if (event.emailMessageId() != null) {
+            List<Application> existingByEmail = applicationRepository.findByUserIdAndEmailMessageId(event.userId(), event.emailMessageId());
+            if (!existingByEmail.isEmpty()) {
+                boolean restoredAny = false;
+                for (Application app : existingByEmail) {
+                    if (Boolean.TRUE.equals(app.getIsDeleted())) {
+                        log.info("Email message {} was previously dismissed/soft-deleted for user {}. Restoring candidate awaiting review.",
+                                event.emailMessageId(), event.userId());
+                        app.setIsDeleted(false);
+                        app.setRequiresReview(true);
+                        applicationRepository.save(app);
+                        restoredAny = true;
+                    }
+                }
+                if (restoredAny) {
+                    return;
+                }
+                log.info("Email message {} already ingested for user {}, skipping", event.emailMessageId(), event.userId());
+                return;
+            }
         }
 
         LocalDate appliedDate = event.emailReceivedAt() != null
@@ -51,7 +68,7 @@ public class ApplicationIngestionService {
         // 2. Matching and Deduplication
         LocalDate fourteenDaysAgo = appliedDate.minusDays(14);
         LocalDate ninetyDaysAgo = appliedDate.minusDays(90);
-        String roleTitle = event.roleTitle() != null ? event.roleTitle().trim() : "Applicant Position";
+        String roleTitle = event.roleTitle() != null ? event.roleTitle().trim() : "Role Not Specified";
 
         List<Application> potentialMatches = applicationRepository.findPotentialDuplicates(
                 event.userId(),
@@ -74,7 +91,9 @@ public class ApplicationIngestionService {
         }
 
         // Single active application fallback for generic role titles
-        boolean isGenericRole = roleTitle.equalsIgnoreCase("Applicant Position") || roleTitle.isBlank();
+        boolean isGenericRole = roleTitle.equalsIgnoreCase("Applicant Position")
+                || roleTitle.equalsIgnoreCase("Role Not Specified")
+                || roleTitle.isBlank();
         if (existing == null && isGenericRole) {
             List<Application> activeCompanyApps = applicationRepository.findActiveByCompany(
                     event.userId(),
@@ -133,42 +152,46 @@ public class ApplicationIngestionService {
                 }
             }
 
+            // Update candidate details if incoming has higher confidence or non-generic role
             if (Boolean.TRUE.equals(existing.getRequiresReview())) {
-                // If candidate is still awaiting review, update role/confidence if incoming is more confident
                 if (newConfidence != null && (existing.getConfidenceScore() == null || newConfidence.compareTo(existing.getConfidenceScore()) > 0)) {
                     log.info("Incoming application has higher confidence ({} > {}). Updating candidate details.",
                             newConfidence, existing.getConfidenceScore());
                     existing.setConfidenceScore(newConfidence);
-                    if (event.roleTitle() != null && !event.roleTitle().isBlank() && !event.roleTitle().equals("Applicant Position")) {
+                    if (event.roleTitle() != null && !event.roleTitle().isBlank()
+                            && !event.roleTitle().equalsIgnoreCase("Applicant Position")
+                            && !event.roleTitle().equalsIgnoreCase("Role Not Specified")) {
                         existing.setRole(event.roleTitle().trim());
                     }
                 }
+            }
 
-                // Field enrichment: populate missing fields
-                if ((existing.getLocation() == null || existing.getLocation().isBlank()) && event.location() != null) {
-                    existing.setLocation(event.location().trim());
-                }
-                if ((existing.getJobUrl() == null || existing.getJobUrl().isBlank()) && event.jobUrl() != null) {
-                    existing.setJobUrl(event.jobUrl().trim());
-                }
+            // Field enrichment: populate missing fields
+            if ((existing.getLocation() == null || existing.getLocation().isBlank()) && event.location() != null) {
+                existing.setLocation(event.location().trim());
+            }
+            if ((existing.getJobUrl() == null || existing.getJobUrl().isBlank()) && event.jobUrl() != null) {
+                existing.setJobUrl(event.jobUrl().trim());
+            }
 
-                // Advance status along pipeline if incoming status is more advanced
-                if (event.status() != null) {
-                    try {
-                        ApplicationStatus incomingStatus = ApplicationStatus.valueOf(event.status());
-                        if (shouldAdvanceStatus(existing.getStatus(), incomingStatus)) {
-                            log.info("Advancing pending application status from {} to {} based on email {}",
-                                    existing.getStatus(), incomingStatus, event.emailMessageId());
-                            existing.setStatus(incomingStatus);
-                        }
-                    } catch (IllegalArgumentException ignored) {}
-                }
-            } else {
-                // Active application already confirmed by the user (Option B: Status Proposal)
-                if (event.status() != null) {
-                    try {
-                        ApplicationStatus incomingStatus = ApplicationStatus.valueOf(event.status());
-                        if (incomingStatus != existing.getStatus()) {
+            // Baseline status history check: ensure initial status history is never empty
+            if (existing.getStatusHistory().isEmpty()) {
+                LocalDateTime initialTime = existing.getEmailReceivedAt() != null
+                        ? LocalDateTime.ofInstant(existing.getEmailReceivedAt(), ZoneId.systemDefault())
+                        : (existing.getCreatedAt() != null ? existing.getCreatedAt() : LocalDateTime.now());
+                existing.getStatusHistory().add(applicationMapper.toHistoryEntity(
+                        existing, existing.getStatus(), "Initial application discovered via email", initialTime
+                ));
+            }
+
+            // Status Proposal Workflow:
+            // Propose status changes rather than silently overwriting them without user awareness.
+            // Only propose transitions that are valid in the pipeline (no backward or illegal jumps).
+            if (event.status() != null) {
+                try {
+                    ApplicationStatus incomingStatus = ApplicationStatus.valueOf(event.status());
+                    if (incomingStatus != existing.getStatus()) {
+                        if (transitionValidator.getAllowedTransitions(existing.getStatus()).contains(incomingStatus)) {
                             existing.setProposedStatus(incomingStatus);
                             String proposalReason = event.notes() != null && !event.notes().isBlank()
                                     ? event.notes()
@@ -176,18 +199,14 @@ public class ApplicationIngestionService {
                             existing.setStatusProposalReason(proposalReason);
                             existing.setStatusProposalReceivedAt(event.emailReceivedAt() != null ? event.emailReceivedAt() : Instant.now());
 
-                            log.info("Registered status proposal {} for active application {} based on email {}",
-                                    incomingStatus, existing.getApplicationId(), event.emailMessageId());
+                            log.info("Registered status proposal {} for application {} (company '{}', requiresReview={}) based on email {}",
+                                    incomingStatus, existing.getApplicationId(), existing.getCompanyName(), existing.getRequiresReview(), event.emailMessageId());
+                        } else {
+                            log.info("Ignored invalid status proposal {} for application {} currently in status {}",
+                                    incomingStatus, existing.getApplicationId(), existing.getStatus());
                         }
-                    } catch (IllegalArgumentException ignored) {}
-                }
-
-                if ((existing.getLocation() == null || existing.getLocation().isBlank()) && event.location() != null) {
-                    existing.setLocation(event.location().trim());
-                }
-                if ((existing.getJobUrl() == null || existing.getJobUrl().isBlank()) && event.jobUrl() != null) {
-                    existing.setJobUrl(event.jobUrl().trim());
-                }
+                    }
+                } catch (IllegalArgumentException ignored) {}
             }
 
             // Append update to notes if not already present
@@ -227,6 +246,10 @@ public class ApplicationIngestionService {
                 event.notes()
         );
 
+        LocalDateTime historyTime = event.emailReceivedAt() != null
+                ? LocalDateTime.ofInstant(event.emailReceivedAt(), ZoneId.systemDefault())
+                : LocalDateTime.now();
+
         Application application = Application.builder()
                 .userId(event.userId())
                 .companyName(event.companyName().trim())
@@ -248,6 +271,10 @@ public class ApplicationIngestionService {
                 .isDeleted(false)
                 .build();
 
+        application.getStatusHistory().add(applicationMapper.toHistoryEntity(
+                application, status, "[Email Discovery]: " + (event.notes() != null ? event.notes() : "Initial discovery"), historyTime
+        ));
+
         applicationRepository.save(application);
         log.info("Persisted AI-discovered application {} for user {} awaiting review",
                 application.getApplicationId(), event.userId());
@@ -264,36 +291,6 @@ public class ApplicationIngestionService {
             case COMPANY_WEBSITE, REFERRAL -> 2;
             case EMAIL -> 1;
             case OTHER -> 0;
-        };
-    }
-
-    private boolean shouldAdvanceStatus(ApplicationStatus current, ApplicationStatus incoming) {
-        if (incoming == null || current == incoming) return false;
-        if (current == ApplicationStatus.ACCEPTED || current == ApplicationStatus.REJECTED
-                || current == ApplicationStatus.GHOSTED || current == ApplicationStatus.WITHDRAWN) {
-            return false;
-        }
-        if (incoming == ApplicationStatus.REJECTED || incoming == ApplicationStatus.OFFER || incoming == ApplicationStatus.ACCEPTED) {
-            return true;
-        }
-        int currentRank = getPipelineRank(current);
-        int incomingRank = getPipelineRank(incoming);
-        return (incomingRank > currentRank && incomingRank != -1)
-                || (transitionValidator != null && transitionValidator.getAllowedTransitions(current).contains(incoming));
-    }
-
-    private int getPipelineRank(ApplicationStatus status) {
-        if (status == null) return -1;
-        return switch (status) {
-            case SAVED -> 0;
-            case APPLIED -> 1;
-            case PHONE_SCREEN -> 2;
-            case INTERVIEW -> 3;
-            case TECHNICAL_ROUND -> 4;
-            case HR_ROUND -> 5;
-            case OFFER -> 6;
-            case ACCEPTED -> 7;
-            default -> -1;
         };
     }
 

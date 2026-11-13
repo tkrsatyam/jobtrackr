@@ -27,6 +27,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.time.Instant;
@@ -256,36 +257,54 @@ public class GmailPollingWorker {
 
                 if (extraction.isPresent()) {
                     JobApplicationExtractionRecord rec = extraction.get();
-                    ApplicationDiscoveredEvent event = new ApplicationDiscoveredEvent(
-                            UUID.randomUUID(),
-                            userId,
-                            rec.companyName(),
-                            rec.roleTitle(),
-                            rec.status(),
-                            rec.location(),
-                            rec.jobUrl(),
-                            rec.recruiterName(),
-                            rec.recruiterEmail(),
-                            rec.notes(),
-                            rec.confidenceScore(),
-                            ref.id(),
-                            subject,
-                            sender,
-                            receivedAt
-                    );
+                    BigDecimal confidence = rec.confidenceScore() != null ? BigDecimal.valueOf(rec.confidenceScore()) : null;
 
-                    ingestionEventProducer.publishApplicationDiscovered(event);
+                    if (rec.isJobApplication() && rec.confidenceScore() != null && rec.confidenceScore() >= 0.60) {
+                        ApplicationDiscoveredEvent event = new ApplicationDiscoveredEvent(
+                                UUID.randomUUID(),
+                                userId,
+                                rec.companyName(),
+                                rec.roleTitle(),
+                                rec.status(),
+                                rec.location(),
+                                rec.jobUrl(),
+                                rec.recruiterName(),
+                                rec.recruiterEmail(),
+                                rec.notes(),
+                                rec.confidenceScore(),
+                                ref.id(),
+                                subject,
+                                sender,
+                                receivedAt
+                        );
 
-                    ProcessedEmail processed = ProcessedEmail.builder()
-                            .userId(userId)
-                            .messageId(ref.id())
-                            .subject(subject)
-                            .sender(sender)
-                            .receivedAt(receivedAt)
-                            .status(EmailProcessingStatus.PROCESSED)
-                            .build();
-                    processedEmailRepository.save(processed);
-                    discoveredCount++;
+                        ingestionEventProducer.publishApplicationDiscovered(event);
+
+                        ProcessedEmail processed = ProcessedEmail.builder()
+                                .userId(userId)
+                                .messageId(ref.id())
+                                .subject(subject)
+                                .sender(sender)
+                                .receivedAt(receivedAt)
+                                .status(EmailProcessingStatus.PROCESSED)
+                                .confidenceScore(confidence)
+                                .rejectionReason(rec.rejectionReason())
+                                .build();
+                        processedEmailRepository.save(processed);
+                        discoveredCount++;
+                    } else {
+                        ProcessedEmail skipped = ProcessedEmail.builder()
+                                .userId(userId)
+                                .messageId(ref.id())
+                                .subject(subject)
+                                .sender(sender)
+                                .receivedAt(receivedAt)
+                                .status(EmailProcessingStatus.SKIPPED)
+                                .confidenceScore(confidence)
+                                .rejectionReason(rec.rejectionReason() != null ? rec.rejectionReason() : "AI classified as non-job application or confidence below threshold")
+                                .build();
+                        processedEmailRepository.save(skipped);
+                    }
                 } else {
                     ProcessedEmail skipped = ProcessedEmail.builder()
                             .userId(userId)
@@ -294,6 +313,7 @@ public class GmailPollingWorker {
                             .sender(sender)
                             .receivedAt(receivedAt)
                             .status(EmailProcessingStatus.SKIPPED)
+                            .rejectionReason("Pre-filter: aggregated digest or newsletter sender")
                             .build();
                     processedEmailRepository.save(skipped);
                 }
@@ -369,38 +389,53 @@ public class GmailPollingWorker {
 
                 if (extraction.isPresent()) {
                     JobApplicationExtractionRecord rec = extraction.get();
-                    ApplicationDiscoveredEvent event = new ApplicationDiscoveredEvent(
-                            UUID.randomUUID(),
-                            userId,
-                            rec.companyName(),
-                            rec.roleTitle(),
-                            rec.status(),
-                            rec.location(),
-                            rec.jobUrl(),
-                            rec.recruiterName(),
-                            rec.recruiterEmail(),
-                            rec.notes(),
-                            rec.confidenceScore(),
-                            failed.getMessageId(),
-                            failed.getSubject(),
-                            failed.getSender(),
-                            failed.getReceivedAt()
-                    );
+                    BigDecimal confidence = rec.confidenceScore() != null ? BigDecimal.valueOf(rec.confidenceScore()) : null;
+                    failed.setConfidenceScore(confidence);
+                    failed.setRejectionReason(rec.rejectionReason());
 
-                    ingestionEventProducer.publishApplicationDiscovered(event);
+                    if (rec.isJobApplication() && rec.confidenceScore() != null && rec.confidenceScore() >= 0.60) {
+                        ApplicationDiscoveredEvent event = new ApplicationDiscoveredEvent(
+                                UUID.randomUUID(),
+                                userId,
+                                rec.companyName(),
+                                rec.roleTitle(),
+                                rec.status(),
+                                rec.location(),
+                                rec.jobUrl(),
+                                rec.recruiterName(),
+                                rec.recruiterEmail(),
+                                rec.notes(),
+                                rec.confidenceScore(),
+                                failed.getMessageId(),
+                                failed.getSubject(),
+                                failed.getSender(),
+                                failed.getReceivedAt()
+                        );
 
-                    failed.setStatus(EmailProcessingStatus.PROCESSED);
-                    failed.setBodyText(null);
-                    failed.setLastError(null);
-                    processedEmailRepository.save(failed);
-                    recoveredCount++;
-                    log.info("Successfully recovered failed email {} for user {}", failed.getMessageId(), userId);
+                        ingestionEventProducer.publishApplicationDiscovered(event);
+
+                        failed.setStatus(EmailProcessingStatus.PROCESSED);
+                        failed.setBodyText(null);
+                        failed.setLastError(null);
+                        processedEmailRepository.save(failed);
+                        recoveredCount++;
+                        log.info("Successfully recovered failed email {} for user {}", failed.getMessageId(), userId);
+                    } else {
+                        failed.setStatus(EmailProcessingStatus.SKIPPED);
+                        failed.setBodyText(null);
+                        failed.setLastError(null);
+                        if (failed.getRejectionReason() == null) {
+                            failed.setRejectionReason("AI classified as non-job application or confidence below threshold");
+                        }
+                        processedEmailRepository.save(failed);
+                        log.info("Retry determined email {} is not a job application. Marked SKIPPED.", failed.getMessageId());
+                    }
                 } else {
                     failed.setStatus(EmailProcessingStatus.SKIPPED);
                     failed.setBodyText(null);
                     failed.setLastError(null);
+                    failed.setRejectionReason("Pre-filter: aggregated digest or newsletter sender");
                     processedEmailRepository.save(failed);
-                    log.info("Retry determined email {} is not a job application. Marked SKIPPED.", failed.getMessageId());
                 }
             } catch (AiExtractionException e) {
                 int nextRetryCount = failed.getRetryCount() + 1;

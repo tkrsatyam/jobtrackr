@@ -55,6 +55,10 @@ export const routes: Routes = [
             {
                 path: 'settings',
                 loadComponent:() => import('./features/settings/settings.component').then(m => m.SettingsComponent)
+            },
+            {
+                path: 'email-sync',
+                loadComponent: () => import('./features/inbox-sync/inbox-sync.component').then(m => m.InboxSyncComponent)
             }
         ]
     },

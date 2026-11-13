@@ -130,6 +130,46 @@ class GmailPollingWorkerTest {
     }
 
     @Test
+    @DisplayName("Should mark email as SKIPPED and persist confidence score and rejection reason when AI classifies low confidence")
+    void testPollForUserSkippedWithAiConfidence() {
+        String token = "mock-access-token";
+        when(userServiceClient.getGoogleToken(userId))
+                .thenReturn(new UserGoogleTokenDTO(userId, "test@example.com", token, Instant.now().plusSeconds(3600)));
+
+        when(emailPollingStateRepository.findById(userId))
+                .thenReturn(Optional.of(EmailPollingState.builder().userId(userId).build()));
+
+        GmailMessageRef msgRef = new GmailMessageRef("msg-low-conf", "thread-low");
+        when(gmailClient.listMessages(eq(token), anyString(), eq(25)))
+                .thenReturn(List.of(msgRef));
+
+        when(processedEmailRepository.existsByUserIdAndMessageId(userId, "msg-low-conf"))
+                .thenReturn(false);
+
+        GmailMessageDetail detail = new GmailMessageDetail("msg-low-conf", "thread-low", "12347", "Coding Ninjas", 1700000000000L, null);
+        when(gmailClient.getMessage(token, "msg-low-conf"))
+                .thenReturn(Optional.of(detail));
+
+        JobApplicationExtractionRecord record = new JobApplicationExtractionRecord(
+                false, null, null, "APPLIED",
+                null, null, null, null, null, 0.15, "Course bootcamp ad"
+        );
+        when(jobApplicationExtractor.extract(any(), any(), any()))
+                .thenReturn(Optional.of(record));
+
+        int discovered = worker.pollForUser(userId);
+
+        assertThat(discovered).isEqualTo(0);
+        verify(ingestionEventProducer, never()).publishApplicationDiscovered(any());
+
+        ArgumentCaptor<ProcessedEmail> emailCaptor = ArgumentCaptor.forClass(ProcessedEmail.class);
+        verify(processedEmailRepository).save(emailCaptor.capture());
+        assertThat(emailCaptor.getValue().getStatus()).isEqualTo(EmailProcessingStatus.SKIPPED);
+        assertThat(emailCaptor.getValue().getConfidenceScore()).isEqualTo(java.math.BigDecimal.valueOf(0.15));
+        assertThat(emailCaptor.getValue().getRejectionReason()).isEqualTo("Course bootcamp ad");
+    }
+
+    @Test
     @DisplayName("Should mark email as SKIPPED and not publish event when email is not job related")
     void testPollForUserSkipped() {
         String token = "mock-access-token";

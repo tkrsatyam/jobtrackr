@@ -48,7 +48,7 @@ public class Application {
     @Column(nullable = false, length = 200)
     private String role;
 
-    @Column(length = 1000)
+    @Column(columnDefinition = "TEXT")
     private String jobUrl;
 
     @Enumerated(EnumType.STRING)

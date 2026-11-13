@@ -67,6 +67,11 @@ public class ApplicationController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{id}/restore-review")
+    public ResponseEntity<ApplicationResponse> restoreReview(@PathVariable UUID id, HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(applicationService.restoreReview(id, httpRequest));
+    }
+
     @PostMapping("/{id}/accept-status-proposal")
     public ResponseEntity<ApplicationResponse> acceptStatusProposal(@PathVariable UUID id, HttpServletRequest httpRequest) {
         return ResponseEntity.ok(applicationService.acceptStatusProposal(id, httpRequest));
