@@ -23,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -58,11 +60,17 @@ public class EmailIngestionQueryService {
                 .map(EmailPollingState::getLastPolledAt)
                 .orElse(null);
 
-        long totalScanned = processedEmailRepository.countByUserId(userId);
-        long totalProcessed = processedEmailRepository.countByUserIdAndStatus(userId, EmailProcessingStatus.PROCESSED);
-        long totalSkipped = processedEmailRepository.countByUserIdAndStatus(userId, EmailProcessingStatus.SKIPPED);
-        long totalRejected = processedEmailRepository.countByUserIdAndStatus(userId, EmailProcessingStatus.REJECTED);
-        long totalFailed = processedEmailRepository.countByUserIdAndStatus(userId, EmailProcessingStatus.FAILED);
+        Map<EmailProcessingStatus, Long> counts = new EnumMap<>(EmailProcessingStatus.class);
+        long totalScanned = 0;
+        for (StatusCountDTO item : processedEmailRepository.countGroupedByStatus(userId)) {
+            counts.put(item.status(), item.count());
+            totalScanned += item.count();
+        }
+
+        long totalProcessed = counts.getOrDefault(EmailProcessingStatus.PROCESSED, 0L);
+        long totalSkipped = counts.getOrDefault(EmailProcessingStatus.SKIPPED, 0L);
+        long totalRejected = counts.getOrDefault(EmailProcessingStatus.REJECTED, 0L);
+        long totalFailed = counts.getOrDefault(EmailProcessingStatus.FAILED, 0L);
 
         return new IngestionStatusResponse(
                 isConnected,
