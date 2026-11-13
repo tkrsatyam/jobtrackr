@@ -38,11 +38,27 @@ public class ApplicationIngestionService {
             return;
         }
 
-        // 1. Idempotency check on emailMessageId
-        if (event.emailMessageId() != null &&
-                applicationRepository.existsByUserIdAndEmailMessageId(event.userId(), event.emailMessageId())) {
-            log.info("Email message {} already ingested for user {}, skipping", event.emailMessageId(), event.userId());
-            return;
+        // 1. Idempotency Check & Candidate Revival
+        if (event.emailMessageId() != null) {
+            List<Application> existingByEmail = applicationRepository.findByUserIdAndEmailMessageId(event.userId(), event.emailMessageId());
+            if (!existingByEmail.isEmpty()) {
+                boolean restoredAny = false;
+                for (Application app : existingByEmail) {
+                    if (Boolean.TRUE.equals(app.getIsDeleted())) {
+                        log.info("Email message {} was previously dismissed/soft-deleted for user {}. Restoring candidate awaiting review.",
+                                event.emailMessageId(), event.userId());
+                        app.setIsDeleted(false);
+                        app.setRequiresReview(true);
+                        applicationRepository.save(app);
+                        restoredAny = true;
+                    }
+                }
+                if (restoredAny) {
+                    return;
+                }
+                log.info("Email message {} already ingested for user {}, skipping", event.emailMessageId(), event.userId());
+                return;
+            }
         }
 
         LocalDate appliedDate = event.emailReceivedAt() != null

@@ -44,6 +44,8 @@ public interface ApplicationRepository extends JpaRepository<Application, UUID>,
 
     boolean existsByUserIdAndEmailMessageId(UUID userId, String emailMessageId);
 
+    List<Application> findByUserIdAndEmailMessageId(UUID userId, String emailMessageId);
+
     List<Application> findByUserIdAndRequiresReviewTrueAndIsDeletedFalseOrderByCreatedAtDesc(UUID userId);
 
     long countByUserIdAndRequiresReviewTrueAndIsDeletedFalse(UUID userId);

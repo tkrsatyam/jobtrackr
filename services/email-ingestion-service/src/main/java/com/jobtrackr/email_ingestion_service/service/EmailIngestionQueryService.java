@@ -137,7 +137,6 @@ public class EmailIngestionQueryService {
                 email.setSubject(subject);
                 email.setSender(sender);
                 email.setReceivedAt(receivedAt);
-                email.setBodyText(bodyText);
             }
         }
 
@@ -172,11 +171,13 @@ public class EmailIngestionQueryService {
                 ingestionEventProducer.publishApplicationDiscovered(event);
 
                 email.setStatus(EmailProcessingStatus.PROCESSED);
+                email.setBodyText(null);
                 email.setLastError(null);
                 processedEmailRepository.save(email);
                 log.info("Re-ingested email {} as PROCESSED for user {}", messageId, userId);
             } else {
                 email.setStatus(EmailProcessingStatus.SKIPPED);
+                email.setBodyText(null);
                 email.setLastError(null);
                 if (email.getRejectionReason() == null) {
                     email.setRejectionReason("AI classified as non-job application or confidence below threshold");
@@ -186,6 +187,7 @@ public class EmailIngestionQueryService {
             }
         } else {
             email.setStatus(EmailProcessingStatus.SKIPPED);
+            email.setBodyText(null);
             email.setLastError(null);
             email.setRejectionReason("Pre-filter: aggregated digest or newsletter sender");
             processedEmailRepository.save(email);

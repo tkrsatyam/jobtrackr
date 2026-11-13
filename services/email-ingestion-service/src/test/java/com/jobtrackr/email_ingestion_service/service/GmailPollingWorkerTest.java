@@ -315,7 +315,7 @@ class GmailPollingWorkerTest {
         verify(processedEmailRepository).save(captor.capture());
         ProcessedEmail updated = captor.getValue();
         assertThat(updated.getStatus()).isEqualTo(EmailProcessingStatus.PROCESSED);
-        assertThat(updated.getBodyText()).isEqualTo("We would like to invite you for an interview.");
+        assertThat(updated.getBodyText()).isNull();
         assertThat(updated.getLastError()).isNull();
     }
 

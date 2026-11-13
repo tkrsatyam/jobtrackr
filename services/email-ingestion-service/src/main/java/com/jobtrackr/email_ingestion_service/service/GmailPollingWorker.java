@@ -286,7 +286,6 @@ public class GmailPollingWorker {
                                 .subject(subject)
                                 .sender(sender)
                                 .receivedAt(receivedAt)
-                                .bodyText(bodyText)
                                 .status(EmailProcessingStatus.PROCESSED)
                                 .confidenceScore(confidence)
                                 .rejectionReason(rec.rejectionReason())
@@ -300,7 +299,6 @@ public class GmailPollingWorker {
                                 .subject(subject)
                                 .sender(sender)
                                 .receivedAt(receivedAt)
-                                .bodyText(bodyText)
                                 .status(EmailProcessingStatus.SKIPPED)
                                 .confidenceScore(confidence)
                                 .rejectionReason(rec.rejectionReason() != null ? rec.rejectionReason() : "AI classified as non-job application or confidence below threshold")
@@ -314,7 +312,6 @@ public class GmailPollingWorker {
                             .subject(subject)
                             .sender(sender)
                             .receivedAt(receivedAt)
-                            .bodyText(bodyText)
                             .status(EmailProcessingStatus.SKIPPED)
                             .rejectionReason("Pre-filter: aggregated digest or newsletter sender")
                             .build();
@@ -418,12 +415,14 @@ public class GmailPollingWorker {
                         ingestionEventProducer.publishApplicationDiscovered(event);
 
                         failed.setStatus(EmailProcessingStatus.PROCESSED);
+                        failed.setBodyText(null);
                         failed.setLastError(null);
                         processedEmailRepository.save(failed);
                         recoveredCount++;
                         log.info("Successfully recovered failed email {} for user {}", failed.getMessageId(), userId);
                     } else {
                         failed.setStatus(EmailProcessingStatus.SKIPPED);
+                        failed.setBodyText(null);
                         failed.setLastError(null);
                         if (failed.getRejectionReason() == null) {
                             failed.setRejectionReason("AI classified as non-job application or confidence below threshold");
@@ -433,6 +432,7 @@ public class GmailPollingWorker {
                     }
                 } else {
                     failed.setStatus(EmailProcessingStatus.SKIPPED);
+                    failed.setBodyText(null);
                     failed.setLastError(null);
                     failed.setRejectionReason("Pre-filter: aggregated digest or newsletter sender");
                     processedEmailRepository.save(failed);

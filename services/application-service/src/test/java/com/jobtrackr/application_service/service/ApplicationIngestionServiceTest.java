@@ -48,9 +48,10 @@ class ApplicationIngestionServiceTest {
     }
 
     @Test
-    @DisplayName("Should skip event if emailMessageId already ingested")
+    @DisplayName("Should skip event if emailMessageId already ingested and active")
     void testSkipDuplicateMessageId() {
-        when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-123")).thenReturn(true);
+        Application activeApp = Application.builder().isDeleted(false).build();
+        when(applicationRepository.findByUserIdAndEmailMessageId(userId, "msg-123")).thenReturn(List.of(activeApp));
 
         ApplicationDiscoveredEvent event = new ApplicationDiscoveredEvent(
                 UUID.randomUUID(), userId, "Google", "SWE", "APPLIED",
@@ -64,10 +65,32 @@ class ApplicationIngestionServiceTest {
     }
 
     @Test
+    @DisplayName("Should restore soft-deleted application if emailMessageId re-ingested")
+    void testRestoreSoftDeletedApplicationOnReIngest() {
+        Application dismissedApp = Application.builder()
+                .applicationId(UUID.randomUUID())
+                .userId(userId)
+                .isDeleted(true)
+                .requiresReview(false)
+                .build();
+        when(applicationRepository.findByUserIdAndEmailMessageId(userId, "msg-restore")).thenReturn(List.of(dismissedApp));
+
+        ApplicationDiscoveredEvent event = new ApplicationDiscoveredEvent(
+                UUID.randomUUID(), userId, "Google", "SWE", "APPLIED",
+                "Remote", null, null, null, "Applied", 0.9,
+                "msg-restore", "Subject", "from@google.com", Instant.now()
+        );
+
+        ingestionService.processDiscoveredApplication(event);
+
+        assertThat(dismissedApp.getIsDeleted()).isFalse();
+        assertThat(dismissedApp.getRequiresReview()).isTrue();
+        verify(applicationRepository).save(dismissedApp);
+    }
+
+    @Test
     @DisplayName("Should update existing application notes if duplicate role at company within 14 days")
     void testDeduplicateExistingApplication() {
-        when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-456")).thenReturn(false);
-
         Application existing = Application.builder()
                 .applicationId(UUID.randomUUID())
                 .userId(userId)
@@ -99,8 +122,6 @@ class ApplicationIngestionServiceTest {
     @Test
     @DisplayName("Should upgrade confidence score and enrich jobUrl when incoming unreviewed event has higher confidence")
     void testUpgradeConfidenceAndEnrichFieldsWhenInReview() {
-        when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-novo-direct")).thenReturn(false);
-
         Application existing = Application.builder()
                 .applicationId(UUID.randomUUID())
                 .userId(userId)
@@ -138,8 +159,6 @@ class ApplicationIngestionServiceTest {
     @Test
     @DisplayName("Should retain higher confidence score but enrich missing location when incoming event has lower confidence")
     void testRetainHigherConfidenceAndEnrichMissingLocation() {
-        when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-indeed-second")).thenReturn(false);
-
         Application existing = Application.builder()
                 .applicationId(UUID.randomUUID())
                 .userId(userId)
@@ -174,7 +193,6 @@ class ApplicationIngestionServiceTest {
     @Test
     @DisplayName("Should create new application with requiresReview=true when no duplicate exists")
     void testCreateNewApplicationAwaitingReview() {
-        when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-789")).thenReturn(false);
         when(applicationRepository.findPotentialDuplicates(eq(userId), eq("Netflix"), eq("Senior Engineer"), any()))
                 .thenReturn(Collections.emptyList());
 
@@ -205,7 +223,6 @@ class ApplicationIngestionServiceTest {
     @Test
     @DisplayName("Should match single active application by company when role is generic Applicant Position")
     void testSingleActiveCompanyFallbackForGenericRole() {
-        when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-stripe-invite")).thenReturn(false);
         when(applicationRepository.findPotentialDuplicates(eq(userId), eq("Stripe"), eq("Applicant Position"), any()))
                 .thenReturn(Collections.emptyList());
 
@@ -238,7 +255,6 @@ class ApplicationIngestionServiceTest {
     @Test
     @DisplayName("Should not auto-match when multiple active applications exist for company with generic role")
     void testMultipleActiveCompanyFallbackDoesNotAutoMatch() {
-        when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-multi-stripe")).thenReturn(false);
         when(applicationRepository.findPotentialDuplicates(eq(userId), eq("Stripe"), eq("Applicant Position"), any()))
                 .thenReturn(Collections.emptyList());
 
@@ -283,8 +299,6 @@ class ApplicationIngestionServiceTest {
     @Test
     @DisplayName("Should upgrade source from generic EMAIL to specific INDEED upon duplicate merge")
     void testUpgradeSourceFromEmailToIndeedOnMerge() {
-        when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-indeed")).thenReturn(false);
-
         Application existing = Application.builder()
                 .applicationId(UUID.randomUUID())
                 .userId(userId)
@@ -315,8 +329,6 @@ class ApplicationIngestionServiceTest {
     @Test
     @DisplayName("Should preserve multi-email snippets in ascending chronological order")
     void testMultiEmailSnippetsPreservedInAscendingOrder() {
-        when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-earlier-application")).thenReturn(false);
-
         Instant laterTime = Instant.parse("2026-10-05T17:50:49Z");
         Instant earlierTime = Instant.parse("2026-10-05T10:50:49Z");
 
@@ -361,8 +373,6 @@ class ApplicationIngestionServiceTest {
     @Test
     @DisplayName("Should propose status update upon merge rather than silently overwriting status")
     void testAdvanceStatusThroughIntermediateStagesOnMerge() {
-        when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-interview")).thenReturn(false);
-
         Application existing = Application.builder()
                 .applicationId(UUID.randomUUID())
                 .userId(userId)
@@ -397,8 +407,6 @@ class ApplicationIngestionServiceTest {
     @Test
     @DisplayName("Should not propose invalid or backward status transition from technical round to interview")
     void testDoNotProposeInvalidOrBackwardTransition() {
-        when(applicationRepository.existsByUserIdAndEmailMessageId(userId, "msg-invalid-proposal")).thenReturn(false);
-
         Application existing = Application.builder()
                 .applicationId(UUID.randomUUID())
                 .userId(userId)
