@@ -23,7 +23,8 @@ public class RouterValidator {
             return false;
         }
 
+        String path = request.getRequestURI();
         return OPEN_ENDPOINTS.stream()
-                .noneMatch(uri -> request.getRequestURI().contains(uri));
+                .noneMatch(openEndpoint -> path.equals(openEndpoint) || path.startsWith(openEndpoint + "/"));
     }
 }

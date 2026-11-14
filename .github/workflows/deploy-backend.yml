@@ -13,6 +13,7 @@ jobs:
       user: ${{ steps.filter.outputs.user }}
       application: ${{ steps.filter.outputs.application }}
       ingestion: ${{ steps.filter.outputs.ingestion }}
+      platform: ${{ steps.filter.outputs.platform }}
     steps:
       - uses: actions/checkout@v4
 
@@ -29,6 +30,9 @@ jobs:
               - 'services/application-service/**'
             ingestion:
               - 'services/email-ingestion-service/**'
+            platform:
+              - 'docker-compose.prod.yml'
+              - 'monitoring/**'
 
   build-gateway:
     needs: detect-changes
@@ -191,7 +195,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy-oci:
-    needs: [build-gateway, build-user-service, build-application-service, build-email-ingestion-service]
+    needs: [detect-changes, build-gateway, build-user-service, build-application-service, build-email-ingestion-service]
     if: |
       always() &&
       !contains(needs.*.result, 'failure') &&
@@ -199,11 +203,25 @@ jobs:
       (needs.build-gateway.result == 'success' ||
        needs.build-user-service.result == 'success' ||
        needs.build-application-service.result == 'success' ||
-       needs.build-email-ingestion-service.result == 'success')
+       needs.build-email-ingestion-service.result == 'success' ||
+       needs.detect-changes.outputs.platform == 'true')
     runs-on: ubuntu-latest
     env:
       OCI_HOST: ${{ secrets.OCI_HOST }}
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync compose and monitoring configuration to OCI host
+        if: env.OCI_HOST != ''
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.OCI_HOST }}
+          username: ${{ secrets.OCI_USERNAME || 'ubuntu' }}
+          key: ${{ secrets.OCI_SSH_KEY }}
+          source: "docker-compose.prod.yml,monitoring/**"
+          target: "/opt/jobtrackr"
+          overwrite: true
+
       - name: Deploy to OCI host
         if: env.OCI_HOST != ''
         uses: appleboy/ssh-action@v1.0.3
