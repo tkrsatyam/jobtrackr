@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jobtrackr-config
+data:
+  SPRING_PROFILES_ACTIVE: "docker"
+  REDIS_URL: "redis://redis:6379"
+  SPRING_DATA_REDIS_HOST: "redis"
+  SPRING_DATA_REDIS_PORT: "6379"
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+  ALLOWED_ORIGINS: "http://localhost:4200,https://jobtrackr-portal.vercel.app"
+  USER_SERVICE_URL: "http://user-service:8081"
+  APPLICATION_SERVICE_URL: "http://application-service:8082"
+  EMAIL_INGESTION_SERVICE_URL: "http://email-ingestion-service:8088"
+  INGESTION_SCHEDULER_ENABLED: "false"

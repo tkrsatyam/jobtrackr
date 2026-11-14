@@ -14,7 +14,8 @@ public class RouterValidator {
             "/api/auth/refresh",
             "/api/auth/oauth2",
             "/ping",
-            "/api/ingestion/health"
+            "/api/ingestion/health",
+            "/actuator"
     );
 
     public boolean isSecured(HttpServletRequest request) {
@@ -22,7 +23,8 @@ public class RouterValidator {
             return false;
         }
 
+        String path = request.getRequestURI();
         return OPEN_ENDPOINTS.stream()
-                .noneMatch(uri -> request.getRequestURI().contains(uri));
+                .noneMatch(openEndpoint -> path.equals(openEndpoint) || path.startsWith(openEndpoint + "/"));
     }
 }

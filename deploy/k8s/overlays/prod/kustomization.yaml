@@ -1,0 +1,57 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: jobtrackr
+
+resources:
+  - ../../base
+
+images:
+  - name: jobtrackr-api-gateway
+    newName: satyamk07/jobtrackr-api-gateway
+    newTag: latest
+  - name: jobtrackr-user-service
+    newName: satyamk07/jobtrackr-user-service
+    newTag: latest
+  - name: jobtrackr-application-service
+    newName: satyamk07/jobtrackr-application-service
+    newTag: latest
+  - name: jobtrackr-email-ingestion-service
+    newName: satyamk07/jobtrackr-email-ingestion-service
+    newTag: latest
+
+patches:
+  - target:
+      kind: Deployment
+      name: api-gateway
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+  - target:
+      kind: Deployment
+      name: user-service
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+  - target:
+      kind: Deployment
+      name: application-service
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+  - target:
+      kind: Deployment
+      name: email-ingestion-service
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
