@@ -33,6 +33,7 @@ jobs:
             platform:
               - 'docker-compose.prod.yml'
               - 'monitoring/**'
+              - 'scripts/**'
 
   build-gateway:
     needs: detect-changes
@@ -218,7 +219,7 @@ jobs:
           host: ${{ secrets.OCI_HOST }}
           username: ${{ secrets.OCI_USERNAME || 'ubuntu' }}
           key: ${{ secrets.OCI_SSH_KEY }}
-          source: "docker-compose.prod.yml,monitoring/**"
+          source: "docker-compose.prod.yml,monitoring/**,scripts/**"
           target: "/opt/jobtrackr"
           overwrite: true
 
